@@ -68,10 +68,10 @@ def sampling_circle(gene_u0_s0):
     return(idx_choice)
 
 
-def sampling_adata(detail, para):
+def sampling_adata(detail, para, step_i=20, step_j=20):
     if para == 'neighbors':
         data_U_S= np.array(detail[["u0","s0"]])
-        idx = sampling_neighbors(data_U_S)
+        idx = sampling_neighbors(data_U_S, step_i, step_j)
     elif para == 'inverse':
         data_U_S= np.array(detail[["u0","s0"]])
         idx = sampling_inverse(data_U_S)
