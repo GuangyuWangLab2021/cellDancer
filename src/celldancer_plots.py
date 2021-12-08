@@ -54,6 +54,11 @@ cell_type=cell_type
 g_list=gene_plot_l_28
 
 def heatmap(data,para,detail,cell_type,g_list):
+  '''
+  heatmap for the alpha or s0. Row is gene. Col is cell.
+  data: detail
+  para: "s0", "alpha_normlized"
+  '''
     
     detail["alpha_new"]=detail["alpha"]/detail["beta"]
     detail["beta_new"]=detail["beta"]/detail["beta"]
