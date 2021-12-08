@@ -68,10 +68,10 @@ def sampling_circle(gene_u0_s0):
     return(idx_choice)
 
 
-def sampling_adata(detail, para, step_i=20, step_j=20):
+def sampling_adata(detail, para):
     if para == 'neighbors':
         data_U_S= np.array(detail[["u0","s0"]])
-        idx = sampling_neighbors(data_U_S, step_i, step_j)
+        idx = sampling_neighbors(data_U_S)
     elif para == 'inverse':
         data_U_S= np.array(detail[["u0","s0"]])
         idx = sampling_inverse(data_U_S)
@@ -96,13 +96,48 @@ def adata_to_detail(data, para, gene):
     return(detail)
 
 
+####################################### 
+# dateset2 (figure3): for XXXXX data #
+#######################################
 
 
+# preprocess data
 adata = scv.datasets.pancreas()
 scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=2000)
 find_neighbors(adata, n_pcs=30, n_neighbors=30)
 moments(adata)
 
+# training model
 detail2 = adata_to_detail(adata, para=['Mu', 'Ms'], gene='Tmem163')
-idx = sampling_adata(detail2, para='neighbors')
+idx = sampling_adata(detail2, para='neighbors')   # optional
 detail_down_sampling  = detail2[detail2.index.isin(idx)]
+model1 = nn_model(layer = 3, note = [4,5,6])
+brief, velocity = train(model1, max_epoches=1000)
+cell_velocity = cell_velo(velocity)
+# plot figures
+plot_heatmap(velocity, gene_list)
+plot_scanter(velocity, gene_list)
+
+
+
+####################################### 
+# dateset2 (figure3): for XXXXX data #
+#######################################
+
+# preprocess data
+adata = scv.datasets.pancreas()
+scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=2000)
+find_neighbors(adata, n_pcs=30, n_neighbors=30)
+moments(adata)
+
+# training model
+detail2 = adata_to_detail(adata, para=['Mu', 'Ms'], gene='Tmem163')
+idx = sampling_adata(detail2, para='neighbors')   # optional
+detail_down_sampling  = detail2[detail2.index.isin(idx)]
+model1 = nn_model(layer = 3, note = [4,5,6])
+brief, velocity = train(model1, max_epoches=1000)
+cell_velocity = cell_velo(velocity)
+# plot figures
+plot_heatmap(velocity, gene_list)
+plot_scanter(velocity, gene_list)
+
