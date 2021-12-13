@@ -40,25 +40,22 @@ cell_type=["Ductal",
             "Delta",
             "Epsilon"]
 list_e=[0,5,10,50,100,200,210,225,250,275,300,400,500,1000]
-
+list_e=[0,5,10,50,100,500]
+list_e=[200]
 
 
 #### Heatmap for alpha/ expression/ others ####
 # TO DO: Add the info of each cell
-list_e=[500]
+list_e=[0,5,10,50,100,500]
+
 para="alpha_new"
 savepath_para_heat="output/heatmap/alpha_allcell/alpha_e"
-para="s0" #=exp
-savepath_para_heat="output/heatmap/exp_allcell/exp_e"
+#para="s0" #=exp
+#savepath_para_heat="output/heatmap/exp_allcell/exp_e"
 cell_type=cell_type
 g_list=gene_plot_l_28
 
 def heatmap(data,para,detail,cell_type,g_list):
-  '''
-  heatmap for the alpha or s0. Row is gene. Col is cell.
-  data: detail
-  para: "s0", "alpha_normlized"
-  '''
     
     detail["alpha_new"]=detail["alpha"]/detail["beta"]
     detail["beta_new"]=detail["beta"]/detail["beta"]
@@ -175,7 +172,7 @@ for e_num in list_e:
     vmin=0
     vmax=1
     for i in g_list:
-        save_path="output/velo_plot_adj_e/e"+i+"_"+str(e_num)+".pdf"
+        save_path="output/velo_plot_adj_e/"+i+"_"+"e"+str(e_num)+".pdf"# notice: changed
         velocity_plot(detail, [i],detailfinfo,color_scatter,pointsize,alpha_inside,color_map,vmin,vmax,save_path) # from cell dancer
 
 

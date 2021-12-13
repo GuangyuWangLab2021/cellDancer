@@ -8,7 +8,7 @@ import scvelo as scv
 
 
 
-def sampling_neighbors(gene_u0_s0,step_i=20,step_j=20):
+def sampling_neighbors(gene_u0_s0,step_i=30,step_j=30): # current version will obtain ~100 cells. e.g. Ntrk2:109; Tmem163:104
     from scipy.stats import norm
     def gaussian_kernel(X, mu = 0, sigma=1):
         return np.exp(-(X - mu)**2 / (2*sigma**2)) / np.sqrt(2*np.pi*sigma**2)
@@ -67,7 +67,6 @@ def sampling_circle(gene_u0_s0):
     idx_choice = r.rvs(size=500)
     return(idx_choice)
 
-
 def sampling_adata(detail, para):
     if para == 'neighbors':
         data_U_S= np.array(detail[["u0","s0"]])
@@ -96,48 +95,47 @@ def adata_to_detail(data, para, gene):
     return(detail)
 
 
-####################################### 
-# dateset2 (figure3): for XXXXX data #
-#######################################
+# ####################################### 
+# # dateset2 (figure3): for XXXXX data #
+# #######################################
 
 
-# preprocess data
-adata = scv.datasets.pancreas()
-scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=2000)
-find_neighbors(adata, n_pcs=30, n_neighbors=30)
-moments(adata)
+# # preprocess data
+# adata = scv.datasets.pancreas()
+# scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=2000)
+# find_neighbors(adata, n_pcs=30, n_neighbors=30)
+# moments(adata)
 
-# training model
-detail2 = adata_to_detail(adata, para=['Mu', 'Ms'], gene='Tmem163')
-idx = sampling_adata(detail2, para='neighbors')   # optional
-detail_down_sampling  = detail2[detail2.index.isin(idx)]
-model1 = nn_model(layer = 3, note = [4,5,6])
-brief, velocity = train(model1, max_epoches=1000)
-cell_velocity = cell_velo(velocity)
-# plot figures
-plot_heatmap(velocity, gene_list)
-plot_scanter(velocity, gene_list)
+# # training model
+# detail2 = adata_to_detail(adata, para=['Mu', 'Ms'], gene='Tmem163')
+# idx = sampling_adata(detail2, para='neighbors')   # optional ['neighbors','inverse','circle']
+# detail_down_sampling  = detail2[detail2.index.isin(idx)]
+# model1 = nn_model(layer = 3, note = [4,5,6])
+# brief, velocity = train(model1, max_epoches=1000)
+# cell_velocity = cell_velo(velocity)
+# # plot figures
+# plot_heatmap(velocity, gene_list)
+# plot_scanter(velocity, gene_list)
 
 
 
-####################################### 
-# dateset2 (figure3): for XXXXX data #
-#######################################
+# ####################################### 
+# # dateset2 (figure3): for XXXXX data #
+# #######################################
 
-# preprocess data
-adata = scv.datasets.pancreas()
-scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=2000)
-find_neighbors(adata, n_pcs=30, n_neighbors=30)
-moments(adata)
+# # preprocess data
+# adata = scv.datasets.pancreas()
+# scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=2000)
+# find_neighbors(adata, n_pcs=30, n_neighbors=30)
+# moments(adata)
 
-# training model
-detail2 = adata_to_detail(adata, para=['Mu', 'Ms'], gene='Tmem163')
-idx = sampling_adata(detail2, para='neighbors')   # optional
-detail_down_sampling  = detail2[detail2.index.isin(idx)]
-model1 = nn_model(layer = 3, note = [4,5,6])
-brief, velocity = train(model1, max_epoches=1000)
-cell_velocity = cell_velo(velocity)
-# plot figures
-plot_heatmap(velocity, gene_list)
-plot_scanter(velocity, gene_list)
-
+# # training model
+# detail2 = adata_to_detail(adata, para=['Mu', 'Ms'], gene='Tmem163')
+# idx = sampling_adata(detail2, para='neighbors')   # optional
+# detail_down_sampling  = detail2[detail2.index.isin(idx)]
+# model1 = nn_model(layer = 3, note = [4,5,6])
+# brief, velocity = train(model1, max_epoches=1000)
+# cell_velocity = cell_velo(velocity)
+# # plot figures
+# plot_heatmap(velocity, gene_list)
+# plot_scanter(velocity, gene_list)
