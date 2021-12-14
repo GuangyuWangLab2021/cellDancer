@@ -91,21 +91,28 @@ class DynamicModule(nn.Module):
         #print(u0, s0)
         points = np.array([s0.numpy(), u0.numpy()]).transpose()
         nbrs = NearestNeighbors(n_neighbors=self.n_neighbors, algorithm='ball_tree').fit(points)
-        distances, indices = nbrs.kneighbors(points)
+        distances, indices = nbrs.kneighbors(points) # indices: raw is individe cell, col is nearby cells, value is the index of cells, the fist col is the index of row
+
         expr = pd.merge(pd.DataFrame(s0, columns=['s0']), pd.DataFrame(u0, columns=['u0']), left_index=True, right_index=True)
         if barcode is not None:
             expr.index = barcode
-
+            
         u0 = torch.tensor(expr['u0'])
         s0 = torch.tensor(expr['s0'])
+        # print('--------indices0--------')
+        # print(indices)
+        #np.savetxt("output/indices.csv", indices, delimiter=",")
+
         indices = torch.tensor(indices)
+        # print('--------indices1--------')
+        # print(indices)
 
         u1, s1, alphas, beta, gamma = self.module(u0, s0, alpha0, beta0, gamma0, dt)
 
-        def cosine(u0, s0, u1, s1, indices):
+        def cosine_similarity(u0, s0, u1, s1, indices):
             """Cost function
             Return:
-                list of cosine distance
+                list of cosine distance and a list of the index of the next cell
             """
             # Velocity from (u0, s0) to (u1, s1)
             uv, sv = u1-u0, s1-s0 
@@ -114,10 +121,189 @@ class DynamicModule(nn.Module):
 
             den = torch.sqrt(unv**2 + snv**2) * torch.sqrt(uv**2+sv**2)
             den[den==0] = -1 # den==0 will cause nan in training 
-            cosine = torch.where(den!=-1, (unv*uv + snv*sv) / den, torch.tensor(1.))
+            cosine = torch.where(den!=-1, (unv*uv + snv*sv) / den, torch.tensor(1.)) # cosine: col is individuel cell (cellI), row is nearby cells of cellI, value is the cosine between col and row cells
             cosine_max = torch.max(cosine, 0)[0]
-            return 1 - cosine_max   
-        cost = cosine(u0, s0, u1, s1, indices)
+            cosine_max_idx = torch.argmax(cosine, 0)
+            cell_idx = torch.diag(indices[:, cosine_max_idx+1])
+            # print("------cosine------")
+            # print(u0.shape)
+            # print(s0.shape)
+            # print(u1.shape)
+            # print(s1.shape)
+            # print(cosine.shape)
+            # print(cosine)
+            # print(cosine_max.shape)
+            # print(cosine_max)
+            # print(cosine_max_idx)
+            # print(indices)
+            # print(cell_idx)
+            return 1 - cosine_max, cell_idx
+        
+        
+
+        def trace_cost(u0, s0, u1, s1, idx):
+            uv, sv = u1-u0, s1-s0
+            print('-------uv----------')
+            print(uv)
+            print('-------sv----------')
+            print(sv)
+            print('-------uv/sv----------')
+            print(uv/sv)
+            
+            #sv[sv==0] = 1000000 
+            
+            tan = torch.where(sv!=1000000, uv/sv, torch.tensor(0.00001))
+            atan_theta = torch.atan(tan) + torch.pi/2
+            # print("-------cosin1-------")
+            # print(cosin)
+            atan_theta2=[]
+            for i in range(idx.size()[0]):
+                atan_theta2.append(atan_theta[idx[i]].tolist())
+            atan_theta2=torch.tensor(atan_theta2)
+            # print("-------cosin2-------")
+            # print(tan2)
+
+            atan_theta3=[]
+            # print("-------idx-------")
+            # print(idx)
+            idx_1=list(range(0,idx.size()[0]))
+            # print(idx_1)
+            for i in range(idx.size()[0]):
+                # print("--i--")
+                # print(i)
+                idx_3_temp=idx_1.index(idx[i])
+                # print(idx_3_temp)
+                idx_3=atan_theta[idx_3_temp]
+                # print(idx_3)
+                atan_theta3.append(idx_3.tolist())
+            # print("-------cosin3-------")
+            atan_theta3=torch.tensor(atan_theta3)
+            # print(cosin3)
+
+            cost = atan_theta2/atan_theta+atan_theta3/atan_theta2
+            # print("---cost02---")
+            # print(cost)
+            return(cost)
+
+
+        cost1,idx = cosine_similarity(u0, s0, u1, s1, indices)
+
+        # cost1 = cosine_similarity(u0, s0, u1, s1, indices)[0]
+        # idx = cosine_similarity(u0, s0, u1, s1, indices)[1]
+        cost2 = trace_cost(u0, s0, u1, s1, idx)
+        # cost=cost1
+        # cost= 0.8*(cost1-torch.min(cost1))/torch.max(cost1) + 0.2*(cost2-torch.min(cost2))/torch.max(cost2)
+        cost= (cost1-torch.min(cost1))/torch.max(cost1)
+        print("---cost1------")
+        print((cost1-torch.min(cost1))/torch.max(cost1))
+        print("---cost2------")
+        print((cost2-torch.min(cost2))/torch.max(cost2))
+
+        return cost1, cost2, u1, s1, alphas, beta, gamma # to do
+
+    def cost_fn_test(self, u0, s0, alpha0, beta0, gamma0, barcode = None, dt = 0.5):
+        '''
+        for real dataset
+        calculate loss function
+        predict u1 s1 from network 
+        '''
+
+        #generate neighbour indices and expr dataframe
+        #print(u0, s0)
+        points = np.array([s0.numpy(), u0.numpy()]).transpose()
+        nbrs = NearestNeighbors(n_neighbors=self.n_neighbors, algorithm='ball_tree').fit(points)
+        distances, indices = nbrs.kneighbors(points) # indices: raw is individe cell, col is nearby cells, value is the index of cells, the fist col is the index of row
+
+        expr = pd.merge(pd.DataFrame(s0, columns=['s0']), pd.DataFrame(u0, columns=['u0']), left_index=True, right_index=True)
+        if barcode is not None:
+            expr.index = barcode
+            
+        u0 = torch.tensor(expr['u0'])
+        s0 = torch.tensor(expr['s0'])
+        # print('--------indices0--------')
+        # print(indices)
+        #np.savetxt("output/indices.csv", indices, delimiter=",")
+
+        indices = torch.tensor(indices)
+        # print('--------indices1--------')
+        # print(indices)
+
+        u1, s1, alphas, beta, gamma = self.module(u0, s0, alpha0, beta0, gamma0, dt)
+
+        def cosine_similarity(u0, s0, u1, s1, indices):
+            """Cost function
+            Return:
+                list of cosine distance and a list of the index of the next cell
+            """
+            # Velocity from (u0, s0) to (u1, s1)
+            uv, sv = u1-u0, s1-s0 
+            # Velocity from (u0, s0) to its neighbors
+            unv, snv = u0[indices.T[1:]] - u0, s0[indices.T[1:]] - s0 
+
+            den = torch.sqrt(unv**2 + snv**2) * torch.sqrt(uv**2+sv**2)
+            den[den==0] = -1 # den==0 will cause nan in training 
+            cosine = torch.where(den!=-1, (unv*uv + snv*sv) / den, torch.tensor(1.)) # cosine: col is individuel cell (cellI), row is nearby cells of cellI, value is the cosine between col and row cells
+            cosine_max = torch.max(cosine, 0)[0]
+            cosine_max_idx = torch.argmax(cosine, 0)
+            cell_idx = torch.diag(indices[:, cosine_max_idx+1])
+            # print("------cosine------")
+            # print(u0.shape)
+            # print(s0.shape)
+            # print(u1.shape)
+            # print(s1.shape)
+            # print(cosine.shape)
+            # print(cosine)
+            # print(cosine_max.shape)
+            # print(cosine_max)
+            # print(cosine_max_idx)
+            # print(indices)
+            # print(cell_idx)
+            return 1 - cosine_max, cell_idx
+        
+        
+
+        # def trace_cost(u0, s0, u1, s1, idx):
+        #     uv, sv = u1-u0, s1-s0 
+        #     cosin = uv/sv
+        #     print("-------cosin1-------")
+        #     print(cosin)
+        #     cosin2=[]
+        #     for i in range(idx.size()[0]):
+        #         cosin2.append(cosin[idx[i]].tolist())
+        #     cosin2=torch.tensor(cosin2)
+        #     print("-------cosin2-------")
+        #     print(cosin2)
+
+        #     cosin3=[]
+        #     print("-------idx-------")
+        #     print(idx)
+        #     idx_1=list(range(0,idx.size()[0]))
+        #     print(idx_1)
+        #     for i in range(idx.size()[0]):
+        #         # print("--i--")
+        #         # print(i)
+        #         idx_3_temp=idx_1.index(idx[i])
+        #         # print(idx_3_temp)
+        #         idx_3=cosin[idx_3_temp]
+        #         # print(idx_3)
+        #         cosin3.append(idx_3.tolist())
+        #     print("-------cosin3-------")
+        #     cosin3=torch.tensor(cosin3)
+        #     print(cosin3)
+
+        #     cost=cosin2/cosin+cosin3/cosin2
+        #     print("---cost02---")
+        #     print(cost)
+        #     return(cost)
+
+
+        cost1,idx = cosine_similarity(u0, s0, u1, s1, indices)
+
+        # cost1 = cosine_similarity(u0, s0, u1, s1, indices)[0]
+        # idx = cosine_similarity(u0, s0, u1, s1, indices)[1]
+        #cost2 = trace_cost(u0, s0, u1, s1, idx)
+        cost=cost1+0
+
         return cost, u1, s1, alphas, beta, gamma
 
     #train with true u1, s1
@@ -228,7 +414,9 @@ class ltmodule(pl.LightningModule):
         '''
         u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs = batch #result of getitem
         u0, s0, u1t, s1t, true_alpha, true_beta, true_gamma, gene_name, type, u0max, s0max = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0]
-
+        # print("-----training_step-----")
+        # print(u0.shape)
+        # print(s0.shape)
         umax = u0max
         smax = s0max
         alpha0 = np.float32(umax*self.initial_zoom)
@@ -238,8 +426,16 @@ class ltmodule(pl.LightningModule):
         if self.pretrain:
             cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn2(u0, s0, u1t, s1t, alpha0, beta0, gamma0) # for simulation
         else:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn(u0, s0, alpha0, beta0, gamma0) # for real dataset, u0: np.array(u0 for cells selected by __getitem__) to a tensor in pytorch, s0 the same as u0
-        cost_mean = torch.mean(cost)    # cost: a list of cost of each cell for a given gene
+            cost1, cost2, u1, s1, alphas, beta, gamma = self.backbone.cost_fn(u0, s0, alpha0, beta0, gamma0) # for real dataset, u0: np.array(u0 for cells selected by __getitem__) to a tensor in pytorch, s0 the same as u0
+
+            # cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn(u0, s0, alpha0, beta0, gamma0) # for real dataset, u0: np.array(u0 for cells selected by __getitem__) to a tensor in pytorch, s0 the same as u0
+        cost1_mean = torch.mean(cost1)
+        cost2_mean = torch.mean(cost2)
+        if cost2_mean<0.5:           
+            cost_mean = cost1_mean
+        else:
+            cost_mean = 0.8*cost1_mean + 0.2*cost2_mean
+        # cost_mean = torch.mean(cost)    # cost: a list of cost of each cell for a given gene
         self.log("loss", cost_mean) # used for early stop. controled by log_every_n_steps(default 50) 
 
         return {
@@ -321,7 +517,7 @@ class ltmodule(pl.LightningModule):
         if self.pretrain:
             cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
         else:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn(u0, s0, alpha0, beta0, gamma0)
+            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn_test(u0, s0, alpha0, beta0, gamma0)
             true_cost, t1, t2, t3, t4, t5 = self.backbone.cost_fn2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
         cost_mean = torch.mean(cost)
         true_cost_mean = torch.mean(true_cost)
@@ -673,6 +869,7 @@ def training_realdata_figure1b():
     #         "Adk","Smoc1","Mapre3","Pim2","Tspan7",
     #         "Top2a","Rap1b","Sulf2"]
     gene_choice=["Ntrk2","Tmem163"]
+    gene_choice=["Ntrk2"]
     gene_choice=["Ank","Abcc8","Tcp11","Nfib","Ppp3ca",
             "Rbfox3","Cdk1","Gng12","Map1b","Cpe",
             "Gnao1","Pcsk2","Tmem163","Pak3","Wfdc15b",
@@ -703,25 +900,25 @@ def training_realdata_figure1b():
             "Adk","Smoc1","Mapre3","Pim2","Tspan7",
             "Top2a","Rap1b","Sulf2","Ntrk2"]
     gene_choice=['Ank',
- 'Btbd17',
- 'Cdk1',
- 'Cpe',
- 'Gnao1',
- 'Gng12',
- 'Map1b',
- 'Mapre3',
- 'Nnat',
- 'Ntrk2',
- 'Pak3',
- 'Pcsk2',
- 'Ppp3ca',
- 'Rap1b',
- 'Rbfox3',
- 'Smoc1',
- 'Sulf2',
- 'Tmem163',
- 'Top2a',
- 'Tspan7']
+                'Btbd17',
+                'Cdk1',
+                'Cpe',
+                'Gnao1',
+                'Gng12',
+                'Map1b',
+                'Mapre3',
+                'Nnat',
+                'Ntrk2',
+                'Pak3',
+                'Pcsk2',
+                'Ppp3ca',
+                'Rap1b',
+                'Rbfox3',
+                'Smoc1',
+                'Sulf2',
+                'Tmem163',
+                'Top2a',
+                'Tspan7']
     data_df=den_gyr[['gene_list', 'u0','s0']][den_gyr.gene_list.isin(gene_choice)]
     data_df_downsampled=downsampling(data_df,gene_choice,para='neighbors')
 
@@ -732,7 +929,7 @@ def training_realdata_figure1b():
     # data = smoothing2(adata)
     #datamodule = realDataMododule(data_train = df[id,:], k=100, gene_list=tgene_list, sampling=True, sampling_ratio="y=1/x")
 
-    datamodule = realDataMododule(data_fit = data_df_downsampled, data_predict=data_df, sampling_ratio=1)
+    datamodule = realDataMododule(data_fit = data_df_downsampled, data_predict=data_df, sampling_ratio=0.5)
 
     brief_e0, detail_e0 = train(datamodule,model_path='../../data/model2', max_epoches=0, n_jobs=8)
     brief_e5, detail_e5 = train(datamodule,model_path='../../data/model2', max_epoches=5, n_jobs=8)
@@ -740,11 +937,9 @@ def training_realdata_figure1b():
     brief_e50, detail_e50 = train(datamodule,model_path='../../data/model2', max_epoches=50, n_jobs=8)
     brief_e100, detail_e100 = train(datamodule,model_path='../../data/model2', max_epoches=100, n_jobs=8)
     brief_e200, detail_e200 = train(datamodule,model_path='../../data/model2', max_epoches=200, n_jobs=8)
-    
-    brief_e210, detail_e210 = train(datamodule,model_path='../../data/model2', max_epoches=210, n_jobs=8)
-    brief_e225, detail_e225 = train(datamodule,model_path='../../data/model2', max_epoches=225, n_jobs=8)
-    brief_e250, detail_e250 = train(datamodule,model_path='../../data/model2', max_epoches=250, n_jobs=8)
-    brief_e275, detail_e275 = train(datamodule,model_path='../../data/model2', max_epoches=275, n_jobs=8)
+    # brief_e225, detail_e225 = train(datamodule,model_path='../../data/model2', max_epoches=225, n_jobs=8)
+    # brief_e250, detail_e250 = train(datamodule,model_path='../../data/model2', max_epoches=250, n_jobs=8)
+    # brief_e275, detail_e275 = train(datamodule,model_path='../../data/model2', max_epoches=275, n_jobs=8)
 
     brief_e300, detail_e300 = train(datamodule,model_path='../../data/model2', max_epoches=300, n_jobs=8)
     brief_e400, detail_e400 = train(datamodule,model_path='../../data/model2', max_epoches=400, n_jobs=8)
