@@ -11,49 +11,41 @@ import scvelo as scv
 import numpy as np
 
 #### backup of gene, celltype ####
-gene_plot_l_28_alphabet=['Abcc8', 'Actn4', 'Adk', 'Ank', 'Anxa4', 
-                    'Btbd17', 'Cdk1', 'Cpe', 'Dcdc2a', 'Gnao1', 
-                    'Gng12', 'Map1b', 'Mapre3', 'Nfib', 'Nnat', 
-                    'Pak3', 'Pcsk2', 'Pim2', 'Ppp3ca', 'Rap1b', 
-                    'Rbfox3', 'Smoc1', 'Sulf2', 'Tcp11', 'Tmem163', 
-                    'Top2a', 'Tspan7', 'Wfdc15b'] #28 alphabet order
-gene_plot_l_28=["Ank","Abcc8","Tcp11","Nfib","Ppp3ca",# 28 genes after did the re_clustering
-            "Rbfox3","Cdk1","Gng12","Map1b","Cpe",
-            "Gnao1","Pcsk2","Tmem163","Pak3","Wfdc15b",
-            "Nnat","Anxa4","Actn4","Btbd17","Dcdc2a",
-            "Adk","Smoc1","Mapre3","Pim2","Tspan7",
-            "Top2a","Rap1b","Sulf2"]
-gene_plot_l_3=["Wfdc15b","Abcc8","Sulf2"] # 3 picked sample genes
-adata = scv.datasets.pancreas()
-gene_plot_l_all=adata.var_names # TO DO: If we output the heatmap, there contains some NAN when we check the nalist in the heatmap function. This problem needs to be figured out later.
-cell_type_5=["Ductal",
-            "Ngn3 low EP",
-            "Ngn3 high EP",
-            "Pre-endocrine",
-            "Endocrine"]
-cell_type=["Ductal",
-            "Ngn3 low EP",
-            "Ngn3 high EP",
-            "Pre-endocrine",
-            "Alpha",
-            "Beta",
-            "Delta",
-            "Epsilon"]
-list_e=[0,5,10,50,100,200,210,225,250,275,300,400,500,1000]
-list_e=[0,5,10,50,100,500]
-list_e=[200]
+# gene_plot_l_28_alphabet=['Abcc8', 'Actn4', 'Adk', 'Ank', 'Anxa4', 
+#                     'Btbd17', 'Cdk1', 'Cpe', 'Dcdc2a', 'Gnao1', 
+#                     'Gng12', 'Map1b', 'Mapre3', 'Nfib', 'Nnat', 
+#                     'Pak3', 'Pcsk2', 'Pim2', 'Ppp3ca', 'Rap1b', 
+#                     'Rbfox3', 'Smoc1', 'Sulf2', 'Tcp11', 'Tmem163', 
+#                     'Top2a', 'Tspan7', 'Wfdc15b'] #28 alphabet order
+# gene_plot_l_28=["Ank","Abcc8","Tcp11","Nfib","Ppp3ca",# 28 genes after did the re_clustering
+#             "Rbfox3","Cdk1","Gng12","Map1b","Cpe",
+#             "Gnao1","Pcsk2","Tmem163","Pak3","Wfdc15b",
+#             "Nnat","Anxa4","Actn4","Btbd17","Dcdc2a",
+#             "Adk","Smoc1","Mapre3","Pim2","Tspan7",
+#             "Top2a","Rap1b","Sulf2"]
+# gene_plot_l_3=["Wfdc15b","Abcc8","Sulf2"] # 3 picked sample genes
+# adata = scv.datasets.pancreas()
+# gene_plot_l_all=adata.var_names # TO DO: If we output the heatmap, there contains some NAN when we check the nalist in the heatmap function. This problem needs to be figured out later.
+# cell_type_5=["Ductal",
+#             "Ngn3 low EP",
+#             "Ngn3 high EP",
+#             "Pre-endocrine",
+#             "Endocrine"]
+# cell_type=["Ductal",
+#             "Ngn3 low EP",
+#             "Ngn3 high EP",
+#             "Pre-endocrine",
+#             "Alpha",
+#             "Beta",
+#             "Delta",
+#             "Epsilon"]
+# epoches=[0,5,10,50,100,200,210,225,250,275,300,400,500,1000]
+# epoches=[0,5,10,50,100,500]
+# epoches=[200]
 
 
 #### Heatmap for alpha/ expression/ others ####
-# TO DO: Add the info of each cell
-list_e=[0,5,10,50,100,500]
 
-para="alpha_new"
-savepath_para_heat="output/heatmap/alpha_allcell/alpha_e"
-#para="s0" #=exp
-#savepath_para_heat="output/heatmap/exp_allcell/exp_e"
-cell_type=cell_type
-g_list=gene_plot_l_28
 
 def heatmap(data,para,detail,cell_type,g_list):
     
@@ -77,13 +69,22 @@ def heatmap(data,para,detail,cell_type,g_list):
     fin_matrix=pd.concat([pd.DataFrame({'col':g_list}),fin_matrix],axis=1)
     return(fin_matrix)
 
-adata = scv.datasets.pancreas()
-for e_num in list_e:
-    file_path="output/detailcsv/adj_e/detail_e"+str(e_num)+".csv"
-    detail = pd.read_csv (file_path,index_col=False)
-    heat=heatmap(adata,para,detail,cell_type,g_list)
-    heat.to_csv(savepath_para_heat+str(e_num)+".csv",index=False)
+# adata = scv.datasets.pancreas()
+# for e_num in epoches:
+#     file_path="output/detailcsv/adj_e/detail_e"+str(e_num)+".csv"
+#     detail = pd.read_csv (file_path,index_col=False)
+#     heat=heatmap(adata,para,detail,cell_type,gene_choice)
+#     heat.to_csv(savepath_para_heat+str(e_num)+".csv",index=False)
 
+# TO DO: Add the info of each cell
+# epoches=[0,5,10,50,100,500]
+
+# para="alpha_new"
+# savepath_para_heat="output/heatmap/alpha_allcell/alpha_e"
+# #para="s0" #=exp
+# #savepath_para_heat="output/heatmap/exp_allcell/exp_e"
+# cell_type=cell_type
+# gene_choice=gene_plot_l_28
 
 
 #### Velocity ####
@@ -92,7 +93,7 @@ for e_num in list_e:
 # ref: https://github.com/velocyto-team/velocyto-notebooks/blob/master/python/DentateGyrus.ipynb
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
-def sampling_neighbors(embedding,step_i=20,step_j=20):
+def sampling_neighbors(embedding,step_i=30,step_j=30):
     from scipy.stats import norm
     def gaussian_kernel(X, mu = 0, sigma=1):
         return np.exp(-(X - mu)**2 / (2*sigma**2)) / np.sqrt(2*np.pi*sigma**2)
@@ -124,12 +125,12 @@ def sampling_neighbors(embedding,step_i=20,step_j=20):
     ix_choice = ix_choice[bool_density]
     return(embedding[ix_choice,0:4])
 
-def velocity_plot(detail,genelist,detail_i,color_scatter,point_size,alpha_inside,colormap,v_min,v_max,save_path):
+def velocity_plot(detail,genelist,detail_i,color_scatter,point_size,alpha_inside,colormap,v_min,v_max,save_path,step_i,step_j):
     plt.figure(None,(6,6))
     embedding= np.array(detail[detail['gene_name'].isin(genelist)][["u0","s0","u1","s1", 'true_cost']])
 
 
-    sampled_coordinates=sampling_neighbors(embedding) # Sampling
+    sampled_coordinates=sampling_neighbors(embedding,step_i=step_i,step_j=step_j) # Sampling
 
     layer1=plt.scatter(embedding[:, 1], embedding[:, 0],
                 alpha=alpha_inside, s=point_size, edgecolor="none",c=detail[detail['gene_name'].isin(genelist)].alpha_new, cmap=colormap,vmin=v_min,vmax=v_max)
@@ -140,40 +141,43 @@ def velocity_plot(detail,genelist,detail_i,color_scatter,point_size,alpha_inside
     pcm1 = plt.quiver(
     sampled_coordinates[:, 1], sampled_coordinates[:, 0], sampled_coordinates[:, 3]-sampled_coordinates[:, 1], sampled_coordinates[:, 2]-sampled_coordinates[:, 0],
     angles='xy', clim=(0., 1.))
+    plt.title(genelist[0])
     plt.savefig(save_path)
 
 
-list_e=[500]
-pointsize=120
-pointsize=50
-color_scatter="#95D9EF" #blue
-alpha_inside=0.3
+# epoches=[500]
+# epoches=[0,5,10,50,100,200,210,225,250,275,300,400,500,1000]
 
-#color_scatter="#DAC9E7" #light purple
-color_scatter="#8D71B3" #deep purple
-alpha_inside=0.2
-g_list=gene_plot_l_28
+# pointsize=120
+# pointsize=50
+# color_scatter="#95D9EF" #blue
+# alpha_inside=0.3
 
-for e_num in list_e:
-    file_path="output/detailcsv/adj_e/detail_e"+str(e_num)+".csv"
-    detail = pd.read_csv (file_path,index_col=False)
-    detail["alpha_new"]=detail["alpha"]/detail["beta"]
-    detail["beta_new"]=detail["beta"]/detail["beta"]
-    detail["gamma_new"]=detail["gamma"]/detail["beta"]
-    detailfinfo="e"+str(e_num)
+# #color_scatter="#DAC9E7" #light purple
+# color_scatter="#8D71B3" #deep purple
+# alpha_inside=0.2
+# gene_choice=gene_plot_l_28
 
-    #color_map="Spectral"
-    #color_map="PiYG"
-    #color_map="RdBu"
-    color_map="coolwarm"
-    # color_map="bwr"
-    alpha_inside=0.3
-    alpha_inside=1
-    vmin=0
-    vmax=1
-    for i in g_list:
-        save_path="output/velo_plot_adj_e/"+i+"_"+"e"+str(e_num)+".pdf"# notice: changed
-        velocity_plot(detail, [i],detailfinfo,color_scatter,pointsize,alpha_inside,color_map,vmin,vmax,save_path) # from cell dancer
+# for e_num in epoches:
+#     file_path="output/detailcsv/adj_e/detail_e"+str(e_num)+".csv"
+#     detail = pd.read_csv (file_path,index_col=False)
+#     detail["alpha_new"]=detail["alpha"]/detail["beta"]
+#     detail["beta_new"]=detail["beta"]/detail["beta"]
+#     detail["gamma_new"]=detail["gamma"]/detail["beta"]
+#     detailfinfo="e"+str(e_num)
+
+#     #color_map="Spectral"
+#     #color_map="PiYG"
+#     #color_map="RdBu"
+#     color_map="coolwarm"
+#     # color_map="bwr"
+#     alpha_inside=0.3
+#     alpha_inside=1
+#     vmin=0
+#     vmax=5
+#     for i in gene_choice:
+#         save_path="output/velo_plot_adj_e/"+i+"_"+"e"+str(e_num)+".pdf"# notice: changed
+#         velocity_plot(detail, [i],detailfinfo,color_scatter,pointsize,alpha_inside,color_map,vmin,vmax,save_path) # from cell dancer
 
 
 
@@ -203,24 +207,24 @@ def box_attribute(gene,log,ylim,ymin,ymax,att,save_path,detail):
     plt.savefig(save_path)
     return(data)
 
-list_e=[500]
-gene_plot_l=gene_plot_l_28
-att="u0"
-att="s0"
-att="alpha_new"
-cell_type=cell_type
-#log="log";ylim="ylim"
-ymin=-3;ymax=1
-log="no";ylim="no"
+# epoches=[500]
+# gene_plot_l=gene_plot_l_28
+# att="u0"
+# att="s0"
+# att="alpha_new"
+# cell_type=cell_type
+# #log="log";ylim="ylim"
+# ymin=-3;ymax=1
+# log="no";ylim="no"
 
-for e_num in list_e:
-    for g in gene_plot_l:
-        for att in ["u0","s0","alpha_new"]:
-            save_path="output/dancer_plot_compare/box_"+att+"/velonn_"+g+".pdf"
-            file_path="output/detailcsv/adj_e/detail_e"+str(e_num)+".csv"
-            detail = pd.read_csv (file_path,index_col=False)
-            data_att=box_attribute(g,log,ylim,ymin,ymax,att,save_path,detail)
-            data_att.to_csv("output/dancer_plot_compare/box_"+att+"/data/velonn"+g+".csv",index=False)
+# for e_num in epoches:
+#     for g in gene_plot_l:
+#         for att in ["u0","s0","alpha_new"]:
+#             save_path="output/dancer_plot_compare/box_"+att+"/velonn_"+g+".pdf"
+#             file_path="output/detailcsv/adj_e/detail_e"+str(e_num)+".csv"
+#             detail = pd.read_csv (file_path,index_col=False)
+#             data_att=box_attribute(g,log,ylim,ymin,ymax,att,save_path,detail)
+#             data_att.to_csv("output/dancer_plot_compare/box_"+att+"/data/velonn"+g+".csv",index=False)
 
 
 
@@ -256,16 +260,16 @@ def violin_alpha(gene,log,ylim,ymin,ymax,save_path,detail):
     plt.savefig(save_path)
     return(v_data)
 
-e_num=[500]
-gene_plot_l=gene_plot_l_28
-log="log";ylim="ylim"
-ymin=-4;ymax=1
-#log="no";ylim="no"
-for e_num in list_e:
-    file_path="output/detailcsv/adj_e/detail_e"+str(e_num)+".csv"
-    detail = pd.read_csv (file_path,index_col=False)
-    for g in gene_plot_l:
-        save_path="output/alpha_plot/violin/velonn_"+g+".pdf"
-        data_violin=violin_alpha(g,log,ylim,ymin,ymax,save_path,detail)
-        data_violin.to_csv("output/alpha_plot/violin/velonn_"+g+".csv",index=False)
+# e_num=[500]
+# gene_plot_l=gene_plot_l_28
+# log="log";ylim="ylim"
+# ymin=-4;ymax=1
+# #log="no";ylim="no"
+# for e_num in epoches:
+#     file_path="output/detailcsv/adj_e/detail_e"+str(e_num)+".csv"
+#     detail = pd.read_csv (file_path,index_col=False)
+#     for g in gene_plot_l:
+#         save_path="output/alpha_plot/violin/velonn_"+g+".pdf"
+#         data_violin=violin_alpha(g,log,ylim,ymin,ymax,save_path,detail)
+#         data_violin.to_csv("output/alpha_plot/violin/velonn_"+g+".csv",index=False)
 

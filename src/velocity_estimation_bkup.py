@@ -20,10 +20,10 @@ from joblib import Parallel, delayed
 if __name__ == "__main__":# developer test
     sys.path.append('.')
     from simulation_cnn import *
-    from load_data import *
+    from realdata_bkup import *
 else: # make to library
     from .simulation_cnn import * 
-    from .load_data import *
+    from .load_data_bkup import *
 
 class L2Module(nn.Module): #can change name #set the shape of the net
     '''
@@ -79,7 +79,7 @@ class DynamicModule(nn.Module):
         self.module = module
         self.n_neighbors = n_neighbors
 
-    def cost_fn(self, u0, s0, alpha0, beta0, gamma0, barcode = None, dt = 0.5,cost_version=1,cost2_cutoff=0.3,cost1_ratio=0.8):
+    def cost_fn(self, u0, s0, alpha0, beta0, gamma0, barcode = None, dt = 0.5):
         '''
         for real dataset
         calculate loss function
@@ -90,28 +90,21 @@ class DynamicModule(nn.Module):
         #print(u0, s0)
         points = np.array([s0.numpy(), u0.numpy()]).transpose()
         nbrs = NearestNeighbors(n_neighbors=self.n_neighbors, algorithm='ball_tree').fit(points)
-        distances, indices = nbrs.kneighbors(points) # indices: raw is individe cell, col is nearby cells, value is the index of cells, the fist col is the index of row
-
+        distances, indices = nbrs.kneighbors(points)
         expr = pd.merge(pd.DataFrame(s0, columns=['s0']), pd.DataFrame(u0, columns=['u0']), left_index=True, right_index=True)
         if barcode is not None:
             expr.index = barcode
-            
+
         u0 = torch.tensor(expr['u0'])
         s0 = torch.tensor(expr['s0'])
-        # print('--------indices0--------')
-        # print(indices)
-        #np.savetxt("output/indices.csv", indices, delimiter=",")
-
         indices = torch.tensor(indices)
-        # print('--------indices1--------')
-        # print(indices)
 
         u1, s1, alphas, beta, gamma = self.module(u0, s0, alpha0, beta0, gamma0, dt)
 
-        def cosine_similarity(u0, s0, u1, s1, indices):
+        def cosine(u0, s0, u1, s1, indices):
             """Cost function
             Return:
-                list of cosine distance and a list of the index of the next cell
+                list of cosine distance
             """
             # Velocity from (u0, s0) to (u1, s1)
             uv, sv = u1-u0, s1-s0 
@@ -120,179 +113,10 @@ class DynamicModule(nn.Module):
 
             den = torch.sqrt(unv**2 + snv**2) * torch.sqrt(uv**2+sv**2)
             den[den==0] = -1 # den==0 will cause nan in training 
-            cosine = torch.where(den!=-1, (unv*uv + snv*sv) / den, torch.tensor(1.)) # cosine: col is individuel cell (cellI), row is nearby cells of cellI, value is the cosine between col and row cells
+            cosine = torch.where(den!=-1, (unv*uv + snv*sv) / den, torch.tensor(1.))
             cosine_max = torch.max(cosine, 0)[0]
-            cosine_max_idx = torch.argmax(cosine, 0)
-            cell_idx = torch.diag(indices[:, cosine_max_idx+1])
-            return 1 - cosine_max, cell_idx
-        
-        
-
-        def trace_cost(u0, s0, u1, s1, idx,version):
-            uv, sv = u1-u0, s1-s0
-            
-            #sv[sv==0] = 1000000 
-            
-            tan = torch.where(sv!=1000000, uv/sv, torch.tensor(0.00001))
-            atan_theta = torch.atan(tan) + torch.pi/2
-            # print("-------cosin1-------")
-            # print(cosin)
-            atan_theta2=[]
-            for i in range(idx.size()[0]):
-                atan_theta2.append(atan_theta[idx[i]].tolist())
-            atan_theta2=torch.tensor(atan_theta2)
-            # print("-------cosin2-------")
-            # print(tan2)
-
-            atan_theta3=[]
-            # print("-------idx-------")
-            # print(idx)
-            idx_1=list(range(0,idx.size()[0]))
-            # print(idx_1)
-            for i in range(idx.size()[0]):
-                # print("--i--")
-                # print(i)
-                idx_3_temp=idx_1.index(idx[i])
-                # print(idx_3_temp)
-                idx_3=atan_theta[idx_3_temp]
-                # print(idx_3)
-                atan_theta3.append(idx_3.tolist())
-            # print("-------cosin3-------")
-            atan_theta3=torch.tensor(atan_theta3)
-            # print(cosin3)
-
-            if version=="v1":
-                cost = atan_theta2/atan_theta+atan_theta3/atan_theta2
-            elif version=="v2":
-                cost=torch.where(atan_theta<atan_theta2, 1, 0)+torch.where(atan_theta2<atan_theta3, 1, 0) 
-                
-            # print("---cost02---")
-            # print(cost)
-            return(cost)
-
-        if cost_version==1:
-            cost1 = cosine_similarity(u0, s0, u1, s1, indices)[0]
-            cost_fin=torch.mean(cost1)
-        elif cost_version==2:
-            cost1,idx = cosine_similarity(u0, s0, u1, s1, indices)
-            cost2 = trace_cost(u0, s0, u1, s1, idx,"v2")
-
-            cost1_normalize=(cost1-torch.min(cost1))/torch.max(cost1)
-            cost2_normalize=(cost2-torch.min(cost2))/torch.max(cost2)
-
-            cost1_mean = torch.mean(cost1_normalize)
-            cost2_mean = torch.mean(cost2_normalize)
-            if cost2_mean<cost2_cutoff:           
-                cost_mean_v2 = cost1_mean
-            else:
-                cost_mean_v2 = cost1_ratio*cost1_mean + (1-cost1_ratio)*(cost2_mean-cost2_cutoff) # relu activate
-            cost_fin=cost_mean_v2
-
-        return cost_fin, u1, s1, alphas, beta, gamma # to do
-
-    def cost_fn_test(self, u0, s0, alpha0, beta0, gamma0, barcode = None, dt = 0.5):
-        '''
-        for real dataset
-        calculate loss function
-        predict u1 s1 from network 
-        '''
-
-        #generate neighbour indices and expr dataframe
-        #print(u0, s0)
-        points = np.array([s0.numpy(), u0.numpy()]).transpose()
-        nbrs = NearestNeighbors(n_neighbors=self.n_neighbors, algorithm='ball_tree').fit(points)
-        distances, indices = nbrs.kneighbors(points) # indices: raw is individe cell, col is nearby cells, value is the index of cells, the fist col is the index of row
-
-        expr = pd.merge(pd.DataFrame(s0, columns=['s0']), pd.DataFrame(u0, columns=['u0']), left_index=True, right_index=True)
-        if barcode is not None:
-            expr.index = barcode
-            
-        u0 = torch.tensor(expr['u0'])
-        s0 = torch.tensor(expr['s0'])
-        # print('--------indices0--------')
-        # print(indices)
-        #np.savetxt("output/indices.csv", indices, delimiter=",")
-
-        indices = torch.tensor(indices)
-        # print('--------indices1--------')
-        # print(indices)
-
-        u1, s1, alphas, beta, gamma = self.module(u0, s0, alpha0, beta0, gamma0, dt)
-
-        def cosine_similarity(u0, s0, u1, s1, indices):
-            """Cost function
-            Return:
-                list of cosine distance and a list of the index of the next cell
-            """
-            # Velocity from (u0, s0) to (u1, s1)
-            uv, sv = u1-u0, s1-s0 
-            # Velocity from (u0, s0) to its neighbors
-            unv, snv = u0[indices.T[1:]] - u0, s0[indices.T[1:]] - s0 
-
-            den = torch.sqrt(unv**2 + snv**2) * torch.sqrt(uv**2+sv**2)
-            den[den==0] = -1 # den==0 will cause nan in training 
-            cosine = torch.where(den!=-1, (unv*uv + snv*sv) / den, torch.tensor(1.)) # cosine: col is individuel cell (cellI), row is nearby cells of cellI, value is the cosine between col and row cells
-            cosine_max = torch.max(cosine, 0)[0]
-            cosine_max_idx = torch.argmax(cosine, 0)
-            cell_idx = torch.diag(indices[:, cosine_max_idx+1])
-            # print("------cosine------")
-            # print(u0.shape)
-            # print(s0.shape)
-            # print(u1.shape)
-            # print(s1.shape)
-            # print(cosine.shape)
-            # print(cosine)
-            # print(cosine_max.shape)
-            # print(cosine_max)
-            # print(cosine_max_idx)
-            # print(indices)
-            # print(cell_idx)
-            return 1 - cosine_max, cell_idx
-        
-        
-
-        # def trace_cost(u0, s0, u1, s1, idx):
-        #     uv, sv = u1-u0, s1-s0 
-        #     cosin = uv/sv
-        #     print("-------cosin1-------")
-        #     print(cosin)
-        #     cosin2=[]
-        #     for i in range(idx.size()[0]):
-        #         cosin2.append(cosin[idx[i]].tolist())
-        #     cosin2=torch.tensor(cosin2)
-        #     print("-------cosin2-------")
-        #     print(cosin2)
-
-        #     cosin3=[]
-        #     print("-------idx-------")
-        #     print(idx)
-        #     idx_1=list(range(0,idx.size()[0]))
-        #     print(idx_1)
-        #     for i in range(idx.size()[0]):
-        #         # print("--i--")
-        #         # print(i)
-        #         idx_3_temp=idx_1.index(idx[i])
-        #         # print(idx_3_temp)
-        #         idx_3=cosin[idx_3_temp]
-        #         # print(idx_3)
-        #         cosin3.append(idx_3.tolist())
-        #     print("-------cosin3-------")
-        #     cosin3=torch.tensor(cosin3)
-        #     print(cosin3)
-
-        #     cost=cosin2/cosin+cosin3/cosin2
-        #     print("---cost02---")
-        #     print(cost)
-        #     return(cost)
-
-
-        cost1,idx = cosine_similarity(u0, s0, u1, s1, indices)
-
-        # cost1 = cosine_similarity(u0, s0, u1, s1, indices)[0]
-        # idx = cosine_similarity(u0, s0, u1, s1, indices)[1]
-        #cost2 = trace_cost(u0, s0, u1, s1, idx)
-        cost=cost1+0
-
+            return 1 - cosine_max   
+        cost = cosine(u0, s0, u1, s1, indices)
         return cost, u1, s1, alphas, beta, gamma
 
     #train with true u1, s1
@@ -374,15 +198,7 @@ class ltmodule(pl.LightningModule):
     '''
     taining network using loss function "DynamicModule"
     '''
-    def __init__(self, 
-                backbone, 
-                pretrain=False, 
-                initial_zoom=1, 
-                initial_strech=1,
-                learning_rate=0.01,
-                cost_version=1,
-                cost2_cutoff=0.3,
-                cost1_ratio=0.8):
+    def __init__(self, backbone, pretrain=False, initial_zoom=1, initial_strech=1):
         super().__init__()
         self.backbone = backbone   # load network; caculate loss function; predict u1 s1 ("DynamicModule")
         self.pretrain = pretrain   # 
@@ -391,10 +207,6 @@ class ltmodule(pl.LightningModule):
         self.test_brief = None
         self.initial_zoom = initial_zoom
         self.initial_strech = initial_strech
-        self.learning_rate=learning_rate
-        self.cost_version=cost_version
-        self.cost2_cutoff=cost2_cutoff
-        self.cost1_ratio=cost1_ratio
 
     def save(self, model_path):
         self.backbone.module.save(model_path)    # save network
@@ -403,13 +215,8 @@ class ltmodule(pl.LightningModule):
         self.backbone.module.load(model_path)   # load network
 
     def configure_optimizers(self):      # name cannot be changed # define optimizer and paramter in optimizer need to test parameter !!!
-        optimizer = torch.optim.SGD(self.parameters(), lr=self.learning_rate, momentum=0.8)
-        # optimizer = torch.optim.SGD(self.parameters(), lr=0.01, momentum=0.8, weight_decay=1e-5)# check
-        #optimizer = torch.optim.Adam(self.parameters(), lr=0.0001, betas=(0.9, 0.99))
-        #optimizer = torch.optim.SGD(self.parameters(), lr=0.5, momentum=0.8, weight_decay=1e-5)# check
-        #optimizer = torch.optim.SGD(self.parameters(), lr=0.3, momentum=0.8, weight_decay=1e-5)# check
-
-        # https://blog.csdn.net/BVL10101111/article/details/72615621
+        #optimizer = torch.optim.SGD(self.parameters(), lr=0.1, momentum=0.8)
+        optimizer = torch.optim.SGD(self.parameters(), lr=0.1, momentum=0.8, weight_decay=1e-5)
         return optimizer
 
     def training_step(self, batch, batch_idx):# name cannot be changed 
@@ -418,13 +225,11 @@ class ltmodule(pl.LightningModule):
         batch: [] output returned from realDataset.__getitem__
         
         '''
-        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs = batch #result of getitem
+        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs = batch
         u0, s0, u1t, s1t, true_alpha, true_beta, true_gamma, gene_name, type, u0max, s0max = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0]
-        # print("-----training_step-----")
-        # print(u0.shape)
-        # print(s0.shape)
-        umax = u0max
-        smax = s0max
+
+        umax = np.max(np.array(u0))
+        smax = np.max(np.array(s0))
         alpha0 = np.float32(umax*self.initial_zoom)
         beta0 = np.float32(1.0)
         gamma0 = np.float32(umax/smax*self.initial_strech)
@@ -432,12 +237,8 @@ class ltmodule(pl.LightningModule):
         if self.pretrain:
             cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn2(u0, s0, u1t, s1t, alpha0, beta0, gamma0) # for simulation
         else:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn(u0, s0, alpha0, beta0, gamma0,cost_version=self.cost_version,cost2_cutoff=self.cost2_cutoff,cost1_ratio=self.cost1_ratio) # for real dataset, u0: np.array(u0 for cells selected by __getitem__) to a tensor in pytorch, s0 the same as u0
-
-            # cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn(u0, s0, alpha0, beta0, gamma0) # for real dataset, u0: np.array(u0 for cells selected by __getitem__) to a tensor in pytorch, s0 the same as u0
-
-        cost_mean=cost
-        # cost_mean = torch.mean(cost)    # cost: a list of cost of each cell for a given gene
+            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn(u0, s0, alpha0, beta0, gamma0) # for real dataset, u0: np.array(u0 for cells selected by __getitem__) to a tensor in pytorch, s0 the same as u0
+        cost_mean = torch.mean(cost)    # cost: a list of cost of each cell for a given gene
         self.log("loss", cost_mean) # used for early stop. controled by log_every_n_steps(default 50) 
 
         return {
@@ -468,8 +269,8 @@ class ltmodule(pl.LightningModule):
         u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs = batch
         u0, s0, u1t, s1t, true_alpha, true_beta, true_gamma, gene_name, type, u0max, s0max = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0]
 
-        umax = u0max
-        smax = s0max
+        umax = np.max(np.array(u0))
+        smax = np.max(np.array(s0))
         alpha0 = np.float32(umax*2)
         beta0 = np.float32(1.0)
         gamma0 = np.float32(umax/smax)
@@ -510,8 +311,8 @@ class ltmodule(pl.LightningModule):
         u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs = batch
         u0, s0, u1t, s1t, true_alpha, true_beta, true_gamma, gene_name, type, u0max, s0max = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0]
 
-        umax = u0max
-        smax = s0max
+        umax = np.max(np.array(u0))
+        smax = np.max(np.array(s0))
         alpha0 = np.float32(umax*2)
         beta0 = np.float32(1.0)
         gamma0 = np.float32(umax/smax)
@@ -519,7 +320,7 @@ class ltmodule(pl.LightningModule):
         if self.pretrain:
             cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
         else:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn_test(u0, s0, alpha0, beta0, gamma0)
+            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn(u0, s0, alpha0, beta0, gamma0)
             true_cost, t1, t2, t3, t4, t5 = self.backbone.cost_fn2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
         cost_mean = torch.mean(cost)
         true_cost_mean = torch.mean(true_cost)
@@ -560,18 +361,14 @@ class dataMododule(pl.LightningDataModule): # data module for simulation data
     def test_dataloader(self):# name cannot be changed 
         return DataLoader(self.test_dataset)
 
-class feedData(pl.LightningDataModule): #change name to feedData
+class realDataMododule(pl.LightningDataModule):
     '''
     load training and test data
     '''
-    def __init__(self, data_fit=None, data_predict=None,sampling_ratio=1):
+    def __init__(self, adata=None, loom_file="", gene_list=None, smoothing=True, k=500, n_pca_dims=19, pooling=False, pooling_method='x^2+y^2=1', pooling_scale=2):
         super().__init__()
-
-        #change name to fit
-        self.training_dataset = realDataset(data_fit=data_fit, data_predict=data_predict,datastatus="fit_dataset", sampling_ratio=sampling_ratio)
-        
-        #change name to predict
-        self.test_dataset = realDataset(data_fit=data_fit, data_predict=data_predict,datastatus="predict_dataset", sampling_ratio=sampling_ratio)
+        self.training_dataset = realDataset(adata=adata, loom_file=loom_file, gene_list=gene_list, smoothing=smoothing, k=k, n_pca_dims=n_pca_dims, pooling=pooling, pooling_method=pooling_method, pooling_scale=pooling_scale)
+        self.test_dataset = realDataset(adata=adata, loom_file=loom_file, gene_list=gene_list, smoothing=smoothing, k=k, n_pca_dims=n_pca_dims, pooling=False, pooling_method=pooling_method, pooling_scale=pooling_scale)
 
     def subset(self, indices):
         import copy
@@ -597,7 +394,7 @@ def _pretrain_thread(model_name, model_path, n_neighbors, data_path, data_type, 
     if simulation == True:
         selected_data = dataMododule(data_path=data_path, type=data_type, index = data_index)
     else:
-        selected_data = feedData(index = data_index)
+        selected_data = realDataMododule(index = data_index)
     backbone = DynamicModule(L2Module(100, 100), n_neighbors) # 100，100 2层
     model = ltmodule(backbone=backbone, pretrain=False, initial_zoom=initial_zoom, initial_strech=initial_strech)
     if model_path != None:
@@ -621,20 +418,7 @@ def _pretrain_thread(model_name, model_path, n_neighbors, data_path, data_type, 
     detail.insert(0, "model", model_name)
     return brief, detail
 
-def _train_thread(datamodule, 
-                    data_indices, 
-                    model_name, 
-                    model_path, 
-                    n_neighbors=30, 
-                    max_epoches=500, 
-                    check_n_epoch=10, 
-                    initial_zoom=1, 
-                    initial_strech=1, 
-                    model_save_path=None,
-                    learning_rate=0.01,
-                    cost_version=1,
-                    cost2_cutoff=0.3,
-                    cost1_ratio=0.8):
+def _train_thread(datamodule, data_indices, model_name, model_path, n_neighbors=30, max_epoches=500, check_n_epoch=10, initial_zoom=1, initial_strech=1, model_save_path=None):
     '''
     real data
     '''
@@ -646,14 +430,7 @@ def _train_thread(datamodule,
     np.random.seed(seed)
 
     backbone = DynamicModule(L2Module(100, 100), n_neighbors)    # iniate network (L2Module) and loss function (DynamicModule)
-    model = ltmodule(backbone=backbone, 
-                    pretrain=False, 
-                    initial_zoom=initial_zoom, 
-                    initial_strech=initial_strech,
-                    learning_rate=learning_rate,
-                    cost_version=cost_version,
-                    cost2_cutoff=cost2_cutoff,
-                    cost1_ratio=cost1_ratio)
+    model = ltmodule(backbone=backbone, pretrain=False, initial_zoom=initial_zoom, initial_strech=initial_strech)
     if model_path != None:
         model_path = os.path.join(model_path, model_name)
         model.load(model_path)
@@ -707,7 +484,7 @@ def pretrain(
     if simulation:
         all_data = dataMododule(data_path=data_path, type=type, index=index)
     else:
-        all_data = feedData()
+        all_data = realDataMododule()
     data_len = all_data.test_dataset.__len__()
 
     if model_path != None:
@@ -748,7 +525,7 @@ def pretrain(
         detail.to_csv(os.path.join(save_path, "detail.csv"))
     return brief, detail
 
-def train( # use train_thread # change name to velocity estiminate
+def train( # use train_thread
     datamodule,
     model_path = None, 
     model_number = 1, 
@@ -757,12 +534,7 @@ def train( # use train_thread # change name to velocity estiminate
     model_save_path = None,
     result_path = None,
     max_epoches=1000, 
-    n_jobs=8,
-    learning_rate=0.01,
-    cost_version=1,
-    cost2_cutoff=0.3,
-    n_neighbors=30,
-    cost1_ratio=0.8):
+    n_jobs=8):
     '''
     multple jobs
     when model_path is defined, model_number wont be used
@@ -790,13 +562,7 @@ def train( # use train_thread # change name to velocity estiminate
                 model_path=model_path, 
                 max_epoches=max_epoches,
                 initial_zoom=initial_zoom, initial_strech=initial_strech,
-                model_save_path=model_save_path,
-                learning_rate=learning_rate,
-                cost_version=cost_version,
-                cost2_cutoff=cost2_cutoff,
-                n_neighbors=n_neighbors,
-                cost1_ratio=cost1_ratio
-                )
+                model_save_path=model_save_path)
             for data_index in range(data_len)) #for 循环里执行train_thread
 
         for i in range(len(result)):
@@ -866,172 +632,135 @@ def train_simudata_pipeline2():
     brief.to_csv(os.path.join("../../result/result_pl4", "brief_np.csv"))
     detail.to_csv(os.path.join("../../result/result_pl4", "detail_np.csv"))
 
-def downsampling(data_df,gene_choice,para,target_amount,step_i,step_j):
-    data_df_downsampled=pd.DataFrame()
-    for gene in gene_choice:
-        data_df_one_gene=data_df[data_df['gene_list']==gene]
-        idx = sampling_adata(data_df_one_gene, 
-                                para=para,
-                                target_amount=target_amount,
-                                step_i=step_i,
-                                step_j=step_j)
-        data_df_one_gene_downsampled = data_df_one_gene[data_df_one_gene.index.isin(idx)]
-        data_df_downsampled=data_df_downsampled.append(data_df_one_gene_downsampled)
-    return(data_df_downsampled)
 
-if __name__ == "__main__":
+def training_realdata_figure1b():
     from utilities import set_rcParams
     #from utilities import *
     set_rcParams()
     import warnings
-    import os
-    import sys
-    import argparse
     warnings.filterwarnings("ignore")
     from analysis import show_details, show_details2, show_details_simplify
-    from celldancer_plots import *
-    from sampling import *
 
-    print('\nvelocity_estimate.py version 1.0.0')
-    print('python velocity_estimate.py gene_list(split by ,) input_path number_neig number_learning_rate cost2')
-    print('')
+    #gene_list=["Abcc8", "Cdk1", "Nfib", "Rbfox3", "Sulf2", "Wfdc15b"]
+    tgene_list=["Sulf2", "Gnao1", "Actn4", "Rbfox3", "Cdk1", "Abcc8", "Nfib",  "Wfdc15b"]
+    tgene_list=['Abcc8', 'Actn4', 'Adk', 'Ank', 'Anxa4', 
+                    'Btbd17', 'Cdk1', 'Cpe', 'Dcdc2a', 'Gnao1', 
+                    'Gng12', 'Map1b', 'Mapre3', 'Nfib', 'Nnat', 
+                    'Pak3', 'Pcsk2', 'Pim2', 'Ppp3ca', 'Rap1b', 
+                    'Rbfox3', 'Smoc1', 'Sulf2', 'Tcp11', 'Tmem163', 
+                    'Top2a', 'Tspan7', 'Wfdc15b'] #28
+    model_path = '../../data/model2'
+    adata = scv.datasets.pancreas()
+    scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=2000)
+    find_neighbors(adata, n_pcs=30, n_neighbors=30) # calculate !!!!!!!!
+    moments(adata)
+    #datamodule = realDataMododule(adata = adata_scv_pancreas(), smoothing=False, k=100, gene_list=tgene_list, pooling=True, pooling_method='x^2+y^2=1')
+    # data = smoothing2(adata)
 
-    # model_path = '../../data/model2'
-    # adata = scv.datasets.pancreas()
-    # scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=2000)
-    # find_neighbors(adata, n_pcs=30, n_neighbors=30) # calculate !!!!!!!!
-    # moments(adata)
+    df = adata_to_pd(data)
+    id = down_sampling(df)
 
-    import pandas as pd
+    #   s
+    datamodule = realDataMododule(adata = df[id,:], k=100, gene_list=tgene_list, pooling=True, pooling_method="y=1/x")
 
-    data_source="scv"#["scv","denGyr"]
-    platform="local" #["hpc","local"]
-    data_source=sys.argv[1]
-    platform=sys.argv[2]
+    datamodule = realDataMododule(adata = adata, smoothing=False, k=100, gene_list=tgene_list, pooling=True, pooling_method="y=1/x")
 
-    if data_source=="scv":
-        if platform=="local":raw_data_path="data/scv_data.csv" #["velocyto/data/denGyr.csv","data/scv_data.csv"]
-        elif platform=="hpc":
-            raw_data_path_hpc='/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/scv_data.csv'        #["/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/velocyto/data/denGyr.csv","/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/data/scv_data.csv"]
-            raw_data_path=raw_data_path_hpc
-        gene_choice=["Ank","Abcc8","Tcp11","Nfib","Ppp3ca",
-                "Rbfox3","Cdk1","Gng12","Map1b","Cpe",
-                "Gnao1","Pcsk2","Tmem163","Pak3","Wfdc15b",
-                "Nnat","Anxa4","Actn4","Btbd17","Dcdc2a",
-                "Adk","Smoc1","Mapre3","Pim2","Tspan7",
-                "Top2a","Rap1b","Sulf2"]
-        #gene_choice=["Sulf2","Abcc8"]
+    brief_e0, detail_e0 = train(datamodule,model_path='../../data/model2', max_epoches=0, n_jobs=8)
+    brief_e5, detail_e5 = train(datamodule,model_path='../../data/model2', max_epoches=5, n_jobs=8)
+    brief_e10, detail_e10 = train(datamodule,model_path='../../data/model2', max_epoches=10, n_jobs=8)
+    brief_e50, detail_e50 = train(datamodule,model_path='../../data/model2', max_epoches=50, n_jobs=8)
+    brief_e100, detail_e100 = train(datamodule,model_path='../../data/model2', max_epoches=100, n_jobs=8)
+    brief_e200, detail_e200 = train(datamodule,model_path='../../data/model2', max_epoches=200, n_jobs=8)
+    
+    brief_e210, detail_e210 = train(datamodule,model_path='../../data/model2', max_epoches=210, n_jobs=8)
+    brief_e225, detail_e225 = train(datamodule,model_path='../../data/model2', max_epoches=225, n_jobs=8)
+    brief_e250, detail_e250 = train(datamodule,model_path='../../data/model2', max_epoches=250, n_jobs=8)
+    brief_e275, detail_e275 = train(datamodule,model_path='../../data/model2', max_epoches=275, n_jobs=8)
 
-    elif data_source=="denGyr":
-        if platform=="local":raw_data_path="data/denGyr.csv" #["data/denGyr.csv","data/scv_data.csv"]
-        elif platform=="hpc":
-            raw_data_path_hpc="/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/denGyr.csv"         #["/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/velocyto/data/denGyr.csv","/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/data/scv_data.csv"]
-            raw_data_path=raw_data_path_hpc
-        gene_choice=['Ank','Btbd17','Cdk1','Cpe','Gnao1',
-                    'Gng12','Map1b','Mapre3','Nnat','Ntrk2',
-                    'Pak3','Pcsk2','Ppp3ca','Rap1b','Rbfox3',
-                    'Smoc1','Sulf2','Tmem163','Top2a','Tspan7',
-                    "Pdgfra","Igfbpl1"]
-        #gene_choice=["Ntrk2","Tmem163"]
+    brief_e300, detail_e300 = train(datamodule,model_path='../../data/model2', max_epoches=300, n_jobs=8)
+    brief_e400, detail_e400 = train(datamodule,model_path='../../data/model2', max_epoches=400, n_jobs=8)
+    brief_e500, detail_e500 = train(datamodule,model_path='../../data/model2', max_epoches=500, n_jobs=8)
+    brief_e1000, detail_e1000 = train(datamodule,model_path='../../data/model2', max_epoches=1000, n_jobs=8)
+    
 
-    model_dir_hpc="/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/model2"
-    if platform=="local":model_dir='../../data/model2'
-    elif platform=="hpc":model_dir=model_dir_hpc
+    detail_e0.to_csv("output/detailcsv_lq/adj_e/detail_e0.csv")
+    detail_e5.to_csv("output/detailcsv_lq/adj_e/detail_e5.csv")
+    detail_e10.to_csv("output/detailcsv_lq/adj_e/detail_e10.csv")
+    detail_e50.to_csv("output/detailcsv_lq/adj_e/detail_e50.csv")
+    detail_e100.to_csv("output/detailcsv_lq/adj_e/detail_e100.csv")
+    detail_e200.to_csv("output/detailcsv_lq/adj_e/detail_e200.csv")
 
-    #############################################
-    ###########  Set Parameters ############
-    #############################################
-    if platform=="local":
-        epoches=[0,5,10,50,100,200,300,400,500]
-        epoches=[0,10] #######
-        num_jobs=1
-        learning_rate=0.1
-        cost_version=1 # choose from [1,2]; 1 means cost1; 2 means the combination of cost1&2
-        cost1_ratio=0.8 ####### The sum of cost1 and cost2 is 1
-        cost2_cutoff=0.3 
-        downsample_method= "neighbors" # choose from ["neighbors","inverse","circle"]
-        downsample_target_amount=500 # valid for ["inverse","circle"]
-        step_i=30 # valid for ["neighbors"] #step 250 will got 4000 from den_gyr data 
-        step_j=30 # valid for ["neighbors"] #step 250 will got 4000 from den_gyr data 
-        sampling_ratio=0.125 # default 0.5 # the sampling amount inside the fitting
-        n_neighbors=30 # neighbors calculation inside the network # default 30
-    elif platform=="hpc":
-        epoches=[int(sys.argv[3])]
-        num_jobs=int(sys.argv[4])
-        learning_rate=float(sys.argv[5])
-        cost_version=int(sys.argv[6])
-        cost1_ratio=float(sys.argv[7])
-        cost2_cutoff=float(sys.argv[8])
-        downsample_method=sys.argv[9]
-        downsample_target_amount=int(sys.argv[10])
-        step_i=int(sys.argv[11])
-        step_j=int(sys.argv[12])
-        sampling_ratio=float(sys.argv[13])
-        n_neighbors=int(sys.argv[14])
-
-    #### mkdir for output_path with parameters(naming )
-    if platform=="local":output_path="output/detailcsv/adj_e/"
-    elif platform=="hpc":
-        folder_name=(data_source+
-        "Lr"+str(learning_rate)+
-        "Costv"+str(cost_version)+
-        "C1r"+str(cost1_ratio)+
-        "C2cf"+str(cost2_cutoff)+
-        "Down"+downsample_method+str(downsample_target_amount)+"_"+str(step_i)+"_"+str(step_j)+
-        "Ratio"+str(sampling_ratio))
-        output_path=("/condo/wanglab/tmhsxl98/Velocity/cell_dancer/output/detailcsv/adj_e/"+folder_name+"/")
-        if os.path.isdir(output_path):pass
-        else:os.mkdir(output_path)
-
-    load_raw_data=pd.read_csv(raw_data_path,names=['gene_list', 'u0','s0',"clusters"])
-    data_df=load_raw_data[['gene_list', 'u0','s0']][load_raw_data.gene_list.isin(gene_choice)]
-    data_df_downsampled=downsampling(data_df,gene_choice,
-                                    para=downsample_method,
-                                    target_amount=downsample_target_amount,
-                                    step_i=step_i,
-                                    step_j=step_j)
-
-    feed_data = feedData(data_fit = data_df_downsampled, data_predict=data_df, sampling_ratio=sampling_ratio) # default sampling_ratio=0.5
+    detail_e210.to_csv("output/detailcsv_lq/adj_e/detail_e210.csv")
+    detail_e225.to_csv("output/detailcsv_lq/adj_e/detail_e225.csv")
+    detail_e250.to_csv("output/detailcsv_lq/adj_e/detail_e250.csv")
+    detail_e275.to_csv("output/detailcsv_lq/adj_e/detail_e275.csv")
 
 
-    for epoch in epoches:
-        #############################################
-        ###########  Fitting and Predict ############
-        #############################################
-        brief, detail = train(feed_data,
-                                model_path=model_dir, 
-                                max_epoches=epoch, 
-                                n_jobs=num_jobs,
-                                learning_rate=learning_rate,
-                                cost_version=cost_version,
-                                cost2_cutoff=cost2_cutoff,
-                                n_neighbors=n_neighbors,
-                                cost1_ratio=cost1_ratio)
-        detail.to_csv(output_path+"detail_e"+str(epoch)+".csv")
-        brief.to_csv(output_path+"brief_e"+str(epoch)+".csv")
-        detail["alpha_new"]=detail["alpha"]/detail["beta"]
-        detail["beta_new"]=detail["beta"]/detail["beta"]
-        detail["gamma_new"]=detail["gamma"]/detail["beta"]
-        detailfinfo="e"+str(epoch)
-        ##########################################
-        ###########       Plot        ############
-        ##########################################
-        pointsize=120
-        pointsize=50
-        color_scatter="#95D9EF" #blue
-        alpha_inside=0.3
+    detail_e300.to_csv("output/detailcsv_lq/adj_e/detail_e300.csv")
+    detail_e400.to_csv("output/detailcsv_lq/adj_e/detail_e400.csv")
+    detail_e500.to_csv("output/detailcsv_lq/adj_e/detail_e500.csv")
+    detail_e1000.to_csv("output/detailcsv_lq/adj_e/detail_e1000.csv")
 
-        #color_scatter="#DAC9E7" #light purple
-        color_scatter="#8D71B3" #deep purple
-        alpha_inside=0.2
-        color_map="coolwarm"
-        alpha_inside=0.3
-        alpha_inside=1
-        vmin=0
-        vmax=5
-        step_i=20
-        step_j=20
 
-        for i in gene_choice:
-            save_path=output_path+i+"_"+"e"+str(epoch)+".pdf"# notice: changed
-            velocity_plot(detail, [i],detailfinfo,color_scatter,pointsize,alpha_inside,color_map,vmin,vmax,save_path,step_i=step_i,step_j=step_j) # from cell dancer
+
+
+
+
+
+
+
+
+
+    brief0, detail0 = train(datamodule, model_path=model_path, max_epoches=0, n_jobs=8)
+    brief1, detail1 = train(datamodule, model_path=model_path, max_epoches=5, n_jobs=8)
+    brief2, detail2 = train(datamodule, model_path=model_path, max_epoches=10, n_jobs=8)
+    brief3, detail3 = train(datamodule, model_path=model_path, max_epoches=100, n_jobs=8)
+    brief4, detail4 = train(datamodule, model_path=model_path, max_epoches=1000, n_jobs=8)
+
+    show_details(detail4)
+
+    gene_list=["Sulf2"]
+    color = 'firebrick'
+    seed = 0
+    scale=0.003
+
+    gene_list=["Gnao1"]
+    color = 'firebrick'
+    seed = 0
+    scale=0.05
+
+    gene_list=["Actn4"]
+    color = 'firebrick'
+    seed = 0
+    scale=0.005
+
+    gene_list=["Rbfox3"]
+    color = 'firebrick'
+    seed = 0
+    scale=0.05
+
+    gene_list=["Wfdc15b"]
+    color = 'firebrick'
+    seed = 0
+    scale=0.005
+
+    gene_list=["Abcc8"]
+    color = 'firebrick'
+    seed = 0
+    scale=0.03
+
+    show_details_simplify(detail0, gene_name =gene_list, scale=scale, color=color, seed = seed, title="epoch0")
+    #show_details_simplify(detail1, gene_name =gene_list, scale=scale, color=color, seed = seed, title="epoch5")
+    show_details_simplify(detail2, gene_name =gene_list, scale=scale, color=color, seed = seed, title="epoch10")
+    show_details_simplify(detail3, gene_name =gene_list, scale=scale, color=color, seed = seed, title="epoch100")
+    show_details_simplify(detail4, gene_name =gene_list, scale=scale, color=color, seed = seed, title="epoch1000")
+
+if __name__ == "__main__":
+    from utilities import set_rcParams
+    set_rcParams()
+    import warnings
+    warnings.filterwarnings("ignore")
+    from analysis import *
+    # could be moved to the top
+
+    #pretrain_v2()
