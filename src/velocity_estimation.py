@@ -68,7 +68,7 @@ class L2Module(nn.Module): #can change name #set the shape of the net
         self.l2 = checkpoint["l2"]
         self.l3 = checkpoint["l3"]
 
-class DynamicModule(nn.Module):
+class DynamicModule(nn.Module): # deep learning module
     '''
     calculate loss function
     load network "L2Module"
@@ -89,6 +89,9 @@ class DynamicModule(nn.Module):
         #generate neighbour indices and expr dataframe
         #print(u0, s0)
         points = np.array([s0.numpy(), u0.numpy()]).transpose()
+        
+        # 用downsampling以后的cell，计算neighbors，作为输入
+        # 加入neighbor信息
         nbrs = NearestNeighbors(n_neighbors=self.n_neighbors, algorithm='ball_tree').fit(points)
         distances, indices = nbrs.kneighbors(points) # indices: raw is individe cell, col is nearby cells, value is the index of cells, the fist col is the index of row
 
@@ -382,7 +385,8 @@ class ltmodule(pl.LightningModule):
                 learning_rate=0.01,
                 cost_version=1,
                 cost2_cutoff=0.3,
-                cost1_ratio=0.8):
+                cost1_ratio=0.8,
+                optimizer="SGD"):
         super().__init__()
         self.backbone = backbone   # load network; caculate loss function; predict u1 s1 ("DynamicModule")
         self.pretrain = pretrain   # 
@@ -395,6 +399,7 @@ class ltmodule(pl.LightningModule):
         self.cost_version=cost_version
         self.cost2_cutoff=cost2_cutoff
         self.cost1_ratio=cost1_ratio
+        self.optimizer=optimizer
 
     def save(self, model_path):
         self.backbone.module.save(model_path)    # save network
@@ -403,11 +408,13 @@ class ltmodule(pl.LightningModule):
         self.backbone.module.load(model_path)   # load network
 
     def configure_optimizers(self):      # name cannot be changed # define optimizer and paramter in optimizer need to test parameter !!!
-        optimizer = torch.optim.SGD(self.parameters(), lr=self.learning_rate, momentum=0.8)
-        # optimizer = torch.optim.SGD(self.parameters(), lr=0.01, momentum=0.8, weight_decay=1e-5)# check
-        #optimizer = torch.optim.Adam(self.parameters(), lr=0.0001, betas=(0.9, 0.99))
-        #optimizer = torch.optim.SGD(self.parameters(), lr=0.5, momentum=0.8, weight_decay=1e-5)# check
-        #optimizer = torch.optim.SGD(self.parameters(), lr=0.3, momentum=0.8, weight_decay=1e-5)# check
+        if self.optimizer=="SGD":
+            optimizer = torch.optim.SGD(self.parameters(), lr=self.learning_rate, momentum=0.8)
+            # optimizer = torch.optim.SGD(self.parameters(), lr=0.01, momentum=0.8, weight_decay=1e-5)# check
+            #optimizer = torch.optim.SGD(self.parameters(), lr=0.5, momentum=0.8, weight_decay=1e-5)# check
+            #optimizer = torch.optim.SGD(self.parameters(), lr=0.3, momentum=0.8, weight_decay=1e-5)# check
+        elif self.optimizer=="Adam":
+            optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, betas=(0.9, 0.99))
 
         # https://blog.csdn.net/BVL10101111/article/details/72615621
         return optimizer
@@ -634,7 +641,8 @@ def _train_thread(datamodule,
                     learning_rate=0.01,
                     cost_version=1,
                     cost2_cutoff=0.3,
-                    cost1_ratio=0.8):
+                    cost1_ratio=0.8,
+                    optimizer="SGD"):
     '''
     real data
     '''
@@ -653,7 +661,8 @@ def _train_thread(datamodule,
                     learning_rate=learning_rate,
                     cost_version=cost_version,
                     cost2_cutoff=cost2_cutoff,
-                    cost1_ratio=cost1_ratio)
+                    cost1_ratio=cost1_ratio,
+                    optimizer=optimizer)
     if model_path != None:
         model_path = os.path.join(model_path, model_name)
         model.load(model_path)
@@ -762,7 +771,8 @@ def train( # use train_thread # change name to velocity estiminate
     cost_version=1,
     cost2_cutoff=0.3,
     n_neighbors=30,
-    cost1_ratio=0.8):
+    cost1_ratio=0.8,
+    optimizer="SGD"):
     '''
     multple jobs
     when model_path is defined, model_number wont be used
@@ -795,7 +805,8 @@ def train( # use train_thread # change name to velocity estiminate
                 cost_version=cost_version,
                 cost2_cutoff=cost2_cutoff,
                 n_neighbors=n_neighbors,
-                cost1_ratio=cost1_ratio
+                cost1_ratio=cost1_ratio,
+                optimizer=optimizer
                 )
             for data_index in range(data_len)) #for 循环里执行train_thread
 
@@ -879,6 +890,13 @@ def downsampling(data_df,gene_choice,para,target_amount,step_i,step_j):
         data_df_downsampled=data_df_downsampled.append(data_df_one_gene_downsampled)
     return(data_df_downsampled)
 
+import matplotlib.pyplot as plt
+def vaildation_plot(gene,validation_result,save_path_validation):
+    plt.figure()
+    plt.scatter(validation_result.epoch, validation_result.cost)
+    plt.title(gene)
+    plt.savefig(save_path_validation)
+
 if __name__ == "__main__":
     from utilities import set_rcParams
     #from utilities import *
@@ -893,7 +911,7 @@ if __name__ == "__main__":
     from sampling import *
 
     print('\nvelocity_estimate.py version 1.0.0')
-    print('python velocity_estimate.py gene_list(split by ,) input_path number_neig number_learning_rate cost2')
+    print('python velocity_estimate.py')
     print('')
 
     # model_path = '../../data/model2'
@@ -903,12 +921,20 @@ if __name__ == "__main__":
     # moments(adata)
 
     import pandas as pd
+    use_all_gene=False
+    plot_trigger=True
 
-    data_source="scv"#["scv","denGyr"]
+    data_source="denGyr"#["scv","denGyr"]
     platform="local" #["hpc","local"]
-    data_source=sys.argv[1]
-    platform=sys.argv[2]
-
+    if platform=="hpc":
+        data_source=sys.argv[1]
+        platform=sys.argv[2]
+        print("---Parameters---")
+        for i in sys.argv:
+            print(i)
+        print("----------------")
+    
+    # set data_source
     if data_source=="scv":
         if platform=="local":raw_data_path="data/scv_data.csv" #["velocyto/data/denGyr.csv","data/scv_data.csv"]
         elif platform=="hpc":
@@ -920,7 +946,7 @@ if __name__ == "__main__":
                 "Nnat","Anxa4","Actn4","Btbd17","Dcdc2a",
                 "Adk","Smoc1","Mapre3","Pim2","Tspan7",
                 "Top2a","Rap1b","Sulf2"]
-        #gene_choice=["Sulf2","Abcc8"]
+        gene_choice=["Sulf2","Top2a","Abcc8"]
 
     elif data_source=="denGyr":
         if platform=="local":raw_data_path="data/denGyr.csv" #["data/denGyr.csv","data/scv_data.csv"]
@@ -932,19 +958,16 @@ if __name__ == "__main__":
                     'Pak3','Pcsk2','Ppp3ca','Rap1b','Rbfox3',
                     'Smoc1','Sulf2','Tmem163','Top2a','Tspan7',
                     "Pdgfra","Igfbpl1"]
-        #gene_choice=["Ntrk2","Tmem163"]
-
-    model_dir_hpc="/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/model2"
-    if platform=="local":model_dir='../../data/model2'
-    elif platform=="hpc":model_dir=model_dir_hpc
+        gene_choice=["Ntrk2","Tmem163"]
 
     #############################################
-    ###########  Set Parameters ############
+    ###########     Set Parameters   ############
     #############################################
     if platform=="local":
+        model_dir='../../data/model2'
         epoches=[0,5,10,50,100,200,300,400,500]
-        epoches=[0,10] #######
-        num_jobs=1
+        epoches=[0,10]
+        num_jobs=8
         learning_rate=0.1
         cost_version=1 # choose from [1,2]; 1 means cost1; 2 means the combination of cost1&2
         cost1_ratio=0.8 ####### The sum of cost1 and cost2 is 1
@@ -954,8 +977,10 @@ if __name__ == "__main__":
         step_i=30 # valid for ["neighbors"] #step 250 will got 4000 from den_gyr data 
         step_j=30 # valid for ["neighbors"] #step 250 will got 4000 from den_gyr data 
         sampling_ratio=0.125 # default 0.5 # the sampling amount inside the fitting
-        n_neighbors=30 # neighbors calculation inside the network # default 30
+        n_neighbors=20 # neighbors calculation inside the network # default 30
+        optimizer="SGD" #["SGD","Adam"]
     elif platform=="hpc":
+        model_dir="/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/model2"
         epoches=[int(sys.argv[3])]
         num_jobs=int(sys.argv[4])
         learning_rate=float(sys.argv[5])
@@ -968,22 +993,30 @@ if __name__ == "__main__":
         step_j=int(sys.argv[12])
         sampling_ratio=float(sys.argv[13])
         n_neighbors=int(sys.argv[14])
+        optimizer=sys.argv[15] #["SGD","Adam"]
 
-    #### mkdir for output_path with parameters(naming )
-    if platform=="local":output_path="output/detailcsv/adj_e/"
-    elif platform=="hpc":
-        folder_name=(data_source+
+    #### mkdir for output_path with parameters(naming)
+    folder_name=(data_source+
         "Lr"+str(learning_rate)+
         "Costv"+str(cost_version)+
         "C1r"+str(cost1_ratio)+
         "C2cf"+str(cost2_cutoff)+
         "Down"+downsample_method+str(downsample_target_amount)+"_"+str(step_i)+"_"+str(step_j)+
-        "Ratio"+str(sampling_ratio))
+        "Ratio"+str(sampling_ratio)+
+        "N"+str(n_neighbors)+
+        "O"+optimizer)
+    if platform=="local":
+        output_path=("output/detailcsv/adj_e/"+folder_name+"/")
+        if os.path.isdir(output_path):pass
+        else:os.mkdir(output_path)
+    elif platform=="hpc":
         output_path=("/condo/wanglab/tmhsxl98/Velocity/cell_dancer/output/detailcsv/adj_e/"+folder_name+"/")
         if os.path.isdir(output_path):pass
         else:os.mkdir(output_path)
 
+    # load data_source
     load_raw_data=pd.read_csv(raw_data_path,names=['gene_list', 'u0','s0',"clusters"])
+    if use_all_gene: gene_choice=list(set(load_raw_data.gene_list))
     data_df=load_raw_data[['gene_list', 'u0','s0']][load_raw_data.gene_list.isin(gene_choice)]
     data_df_downsampled=downsampling(data_df,gene_choice,
                                     para=downsample_method,
@@ -991,6 +1024,7 @@ if __name__ == "__main__":
                                     step_i=step_i,
                                     step_j=step_j)
 
+    # set fitting data, data to be predicted, and sampling ratio in fitting data
     feed_data = feedData(data_fit = data_df_downsampled, data_predict=data_df, sampling_ratio=sampling_ratio) # default sampling_ratio=0.5
 
 
@@ -1006,7 +1040,8 @@ if __name__ == "__main__":
                                 cost_version=cost_version,
                                 cost2_cutoff=cost2_cutoff,
                                 n_neighbors=n_neighbors,
-                                cost1_ratio=cost1_ratio)
+                                cost1_ratio=cost1_ratio,
+                                optimizer=optimizer)
         detail.to_csv(output_path+"detail_e"+str(epoch)+".csv")
         brief.to_csv(output_path+"brief_e"+str(epoch)+".csv")
         detail["alpha_new"]=detail["alpha"]/detail["beta"]
@@ -1016,22 +1051,25 @@ if __name__ == "__main__":
         ##########################################
         ###########       Plot        ############
         ##########################################
-        pointsize=120
-        pointsize=50
-        color_scatter="#95D9EF" #blue
-        alpha_inside=0.3
+        if plot_trigger:
+            pointsize=120
+            pointsize=50
+            color_scatter="#95D9EF" #blue
+            alpha_inside=0.3
 
-        #color_scatter="#DAC9E7" #light purple
-        color_scatter="#8D71B3" #deep purple
-        alpha_inside=0.2
-        color_map="coolwarm"
-        alpha_inside=0.3
-        alpha_inside=1
-        vmin=0
-        vmax=5
-        step_i=20
-        step_j=20
+            #color_scatter="#DAC9E7" #light purple
+            color_scatter="#8D71B3" #deep purple
+            alpha_inside=0.2
+            color_map="coolwarm"
+            alpha_inside=0.3
+            alpha_inside=1
+            vmin=0
+            vmax=5
+            step_i=20
+            step_j=20
 
-        for i in gene_choice:
-            save_path=output_path+i+"_"+"e"+str(epoch)+".pdf"# notice: changed
-            velocity_plot(detail, [i],detailfinfo,color_scatter,pointsize,alpha_inside,color_map,vmin,vmax,save_path,step_i=step_i,step_j=step_j) # from cell dancer
+            for i in gene_choice:
+                save_path=output_path+i+"_"+"e"+str(epoch)+".pdf"# notice: changed
+                velocity_plot(detail, [i],detailfinfo,color_scatter,pointsize,alpha_inside,color_map,vmin,vmax,save_path,step_i=step_i,step_j=step_j) # from cell dancer
+                save_path_validation=output_path+i+"_validation_"+"e"+str(epoch)+".pdf"
+                if epoch>0:vaildation_plot(gene=i,validation_result=brief[brief["gene_name"]==i],save_path_validation=save_path_validation)
