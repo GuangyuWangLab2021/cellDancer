@@ -106,6 +106,7 @@ def smoothing2(adata, k=500, n_pca_dims=19, diag: float=1):
     return adata
 
 
+
 class realDataset(Dataset):
     def __init__(self, data_fit=None, data_predict=None,datastatus="predict_dataset", sampling_ratio=1): #point_number=600 for training
         self.data_fit=data_fit
@@ -152,7 +153,13 @@ class realDataset(Dataset):
         gamma = np.float32(0)
         type = "real"
 
-        return u0, s0, u1, s1, alpha, beta, gamma, gene_name, type, u0max, s0max
+        # add embedding (Guangyu)
+        embedding1 = np.array(data.embedding1.copy().astype(np.float32))
+        embedding2 = np.array(data.embedding2.copy().astype(np.float32))
+        # print(embedding1)
+
+        return u0, s0, u1, s1, alpha, beta, gamma, gene_name, type, u0max, s0max, embedding1, embedding2
+
 
 def test_pooling(u0, s0):
     import matplotlib.mlab as mlab
