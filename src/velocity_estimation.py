@@ -79,8 +79,9 @@ class DynamicModule(nn.Module): # deep learning module
         self.module = module
         self.n_neighbors = n_neighbors
 
-    def cost_fn(self, u0, s0, alpha0, beta0, gamma0, barcode = None, dt = 0.5,cost_version=1,cost2_cutoff=0.3,cost1_ratio=0.8):
+    def cost_fn(self, u0, s0, alpha0, beta0, gamma0,embedding1,embedding2, barcode = None, dt = 0.5,cost_version=1,cost2_cutoff=0.3,cost1_ratio=0.8):
         '''
+        add embedding (Guangyu)
         for real dataset
         calculate loss function
         predict u1 s1 from network 
@@ -88,12 +89,17 @@ class DynamicModule(nn.Module): # deep learning module
 
         #generate neighbour indices and expr dataframe
         #print(u0, s0)
-        points = np.array([s0.numpy(), u0.numpy()]).transpose()
+        points = np.array([embedding1.numpy(), embedding2.numpy()]).transpose()
         
         # 用downsampling以后的cell，计算neighbors，作为输入
         # 加入neighbor信息
         nbrs = NearestNeighbors(n_neighbors=self.n_neighbors, algorithm='ball_tree').fit(points)
         distances, indices = nbrs.kneighbors(points) # indices: raw is individe cell, col is nearby cells, value is the index of cells, the fist col is the index of row
+        
+        # plt.scatter(embedding1, embedding2)
+        # plt.scatter(embedding1[indices[0]], embedding2[indices[0]])
+        # plt.scatter(embedding1[0], embedding2[0],c='r')
+        # plt.show()
 
         expr = pd.merge(pd.DataFrame(s0, columns=['s0']), pd.DataFrame(u0, columns=['u0']), left_index=True, right_index=True)
         if barcode is not None:
@@ -129,8 +135,6 @@ class DynamicModule(nn.Module): # deep learning module
             cell_idx = torch.diag(indices[:, cosine_max_idx+1])
             return 1 - cosine_max, cell_idx
         
-        
-
         def trace_cost(u0, s0, u1, s1, idx,version):
             uv, sv = u1-u0, s1-s0
             
@@ -193,8 +197,9 @@ class DynamicModule(nn.Module): # deep learning module
 
         return cost_fin, u1, s1, alphas, beta, gamma # to do
 
-    def cost_fn_test(self, u0, s0, alpha0, beta0, gamma0, barcode = None, dt = 0.5):
+    def cost_fn_test(self, u0, s0, alpha0, beta0, gamma0,embedding1,embedding2, barcode = None, dt = 0.5):
         '''
+        add embedding (Guangyu)
         for real dataset
         calculate loss function
         predict u1 s1 from network 
@@ -202,7 +207,7 @@ class DynamicModule(nn.Module): # deep learning module
 
         #generate neighbour indices and expr dataframe
         #print(u0, s0)
-        points = np.array([s0.numpy(), u0.numpy()]).transpose()
+        points = np.array([embedding1.numpy(), embedding2.numpy()]).transpose()
         nbrs = NearestNeighbors(n_neighbors=self.n_neighbors, algorithm='ball_tree').fit(points)
         distances, indices = nbrs.kneighbors(points) # indices: raw is individe cell, col is nearby cells, value is the index of cells, the fist col is the index of row
 
@@ -425,11 +430,13 @@ class ltmodule(pl.LightningModule):
         batch: [] output returned from realDataset.__getitem__
         
         '''
-        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs = batch #result of getitem
-        u0, s0, u1t, s1t, true_alpha, true_beta, true_gamma, gene_name, type, u0max, s0max = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0]
-        # print("-----training_step-----")
-        # print(u0.shape)
-        # print(s0.shape)
+        ###############################################
+        #########       add embedding         #########
+        ###############################################
+        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs, embedding1s, embedding2s = batch
+        u0, s0, u1t, s1t, true_alpha, true_beta, true_gamma, gene_name, type, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
+        print('-----------training_step------------')
+
         umax = u0max
         smax = s0max
         alpha0 = np.float32(umax*self.initial_zoom)
@@ -439,10 +446,7 @@ class ltmodule(pl.LightningModule):
         if self.pretrain:
             cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn2(u0, s0, u1t, s1t, alpha0, beta0, gamma0) # for simulation
         else:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn(u0, s0, alpha0, beta0, gamma0,cost_version=self.cost_version,cost2_cutoff=self.cost2_cutoff,cost1_ratio=self.cost1_ratio) # for real dataset, u0: np.array(u0 for cells selected by __getitem__) to a tensor in pytorch, s0 the same as u0
-
-            # cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn(u0, s0, alpha0, beta0, gamma0) # for real dataset, u0: np.array(u0 for cells selected by __getitem__) to a tensor in pytorch, s0 the same as u0
-
+            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2,cost_version=self.cost_version,cost2_cutoff=self.cost2_cutoff,cost1_ratio=self.cost1_ratio) # for real dataset, u0: np.array(u0 for cells selected by __getitem__) to a tensor in pytorch, s0 the same as u0
         cost_mean=cost
         # cost_mean = torch.mean(cost)    # cost: a list of cost of each cell for a given gene
         self.log("loss", cost_mean) # used for early stop. controled by log_every_n_steps(default 50) 
@@ -472,9 +476,12 @@ class ltmodule(pl.LightningModule):
         predict u1, s1 on the training dataset 
         caculate every 10 times taining
         '''
-        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs = batch
-        u0, s0, u1t, s1t, true_alpha, true_beta, true_gamma, gene_name, type, u0max, s0max = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0]
-
+        ###############################################
+        #########       add embedding         #########
+        ###############################################
+        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs, embedding1s, embedding2s = batch
+        u0, s0, u1t, s1t, true_alpha, true_beta, true_gamma, gene_name, type, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
+        print('-----------validation_step------------')
         umax = u0max
         smax = s0max
         alpha0 = np.float32(umax*2)
@@ -484,7 +491,7 @@ class ltmodule(pl.LightningModule):
         if self.pretrain:
             cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
         else:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn(u0, s0, alpha0, beta0, gamma0)
+            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2)
             true_cost, t1, t2, t3, t4, t5 = self.backbone.cost_fn2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
         cost_mean = torch.mean(cost)
         true_cost_mean = torch.mean(true_cost)
@@ -513,10 +520,12 @@ class ltmodule(pl.LightningModule):
         '''
         define test_step
         '''
-
-        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs = batch
-        u0, s0, u1t, s1t, true_alpha, true_beta, true_gamma, gene_name, type, u0max, s0max = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0]
-
+        ###############################################
+        #########       add embedding         #########
+        ###############################################
+        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs, embedding1s, embedding2s = batch
+        u0, s0, u1t, s1t, true_alpha, true_beta, true_gamma, gene_name, type, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
+        print('-----------test_step------------')
         umax = u0max
         smax = s0max
         alpha0 = np.float32(umax*2)
@@ -526,7 +535,7 @@ class ltmodule(pl.LightningModule):
         if self.pretrain:
             cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
         else:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn_test(u0, s0, alpha0, beta0, gamma0)
+            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn_test(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2)
             true_cost, t1, t2, t3, t4, t5 = self.backbone.cost_fn2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
         cost_mean = torch.mean(cost)
         true_cost_mean = torch.mean(true_cost)
@@ -877,17 +886,59 @@ def train_simudata_pipeline2():
     brief.to_csv(os.path.join("../../result/result_pl4", "brief_np.csv"))
     detail.to_csv(os.path.join("../../result/result_pl4", "detail_np.csv"))
 
-def downsampling(data_df,gene_choice,para,target_amount,step_i,step_j):
+
+# old version
+# def downsampling(data_df,gene_choice,para,target_amount,step_i,step_j):
+#     data_df_downsampled=pd.DataFrame()
+#     for gene in gene_choice:
+#         data_df_one_gene=data_df[data_df['gene_list']==gene]
+#         idx = sampling_adata(data_df_one_gene, 
+#                                 para=para,
+#                                 target_amount=target_amount,
+#                                 step_i=step_i,
+#                                 step_j=step_j)
+#         data_df_one_gene_downsampled = data_df_one_gene[data_df_one_gene.index.isin(idx)]
+#         data_df_downsampled=data_df_downsampled.append(data_df_one_gene_downsampled)
+#     return(data_df_downsampled)
+
+
+def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors):
+    '''
+    Guangyu
+    sampling cells by embedding
+    return: sampled embedding, the indexs of sampled cells, and the neighbors of sampled cells
+    '''
+
+    gene = data_df['gene_list'].drop_duplicates().iloc[0]
+    embedding = data_df.loc[data_df['gene_list']==gene][['embedding1','embedding2']]
+    idx_downSampling_embedding = sampling_embedding(embedding,
+                para=para,
+                target_amount=target_amount,
+                step_i=step_i,
+                step_j=step_j
+                )
+    embedding_downsampling = embedding.iloc[idx_downSampling_embedding][['embedding1','embedding2']]
+    nn = NearestNeighbors(n_neighbors=n_neighbors + 1)
+    nn.fit(embedding_downsampling)  # NOTE should support knn in high dimensions
+    embedding_knn = nn.kneighbors_graph(mode="connectivity")
+    neighbor_ixs = embedding_knn.indices.reshape((-1, n_neighbors + 1))
+    return(embedding_downsampling, idx_downSampling_embedding, neighbor_ixs)
+
+def downsampling(data_df, gene_choice, downsampling_ixs):
+    '''
+    Guangyu
+    '''
     data_df_downsampled=pd.DataFrame()
     for gene in gene_choice:
         data_df_one_gene=data_df[data_df['gene_list']==gene]
-        idx = sampling_adata(data_df_one_gene, 
-                                para=para,
-                                target_amount=target_amount,
-                                step_i=step_i,
-                                step_j=step_j)
-        data_df_one_gene_downsampled = data_df_one_gene[data_df_one_gene.index.isin(idx)]
+        data_df_one_gene_downsampled = data_df_one_gene.iloc[downsampling_ixs]
         data_df_downsampled=data_df_downsampled.append(data_df_one_gene_downsampled)
+
+        # plt.scatter(data_df_one_gene['embedding1'], data_df_one_gene['embedding2'])
+        # plt.scatter(data_df_one_gene.iloc[downsampling_ixs]['embedding1'], data_df_one_gene.iloc[downsampling_ixs]['embedding2'])
+        # plt.scatter(embedding_downsampling.iloc[0]['embedding1'], embedding_downsampling.iloc[0]['embedding2'])
+        # plt.scatter(embedding_downsampling.iloc[neighbor_ixs[0,:]]['embedding1'], embedding_downsampling.iloc[neighbor_ixs[0,:]]['embedding2'])
+        # plt.show()
     return(data_df_downsampled)
 
 import matplotlib.pyplot as plt
@@ -896,6 +947,16 @@ def vaildation_plot(gene,validation_result,save_path_validation):
     plt.scatter(validation_result.epoch, validation_result.cost)
     plt.title(gene)
     plt.savefig(save_path_validation)
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == "__main__":
     from utilities import set_rcParams
@@ -936,7 +997,7 @@ if __name__ == "__main__":
     
     # set data_source
     if data_source=="scv":
-        if platform=="local":raw_data_path="data/scv_data.csv" #["velocyto/data/denGyr.csv","data/scv_data.csv"]
+        if platform=="local":raw_data_path="/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/neighbor/scv_data.csv" #["velocyto/data/denGyr.csv","data/scv_data.csv"]
         elif platform=="hpc":
             raw_data_path_hpc='/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/scv_data.csv'        #["/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/velocyto/data/denGyr.csv","/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/data/scv_data.csv"]
             raw_data_path=raw_data_path_hpc
@@ -949,7 +1010,7 @@ if __name__ == "__main__":
         gene_choice=["Sulf2","Top2a","Abcc8"]
 
     elif data_source=="denGyr":
-        if platform=="local":raw_data_path="data/denGyr.csv" #["data/denGyr.csv","data/scv_data.csv"]
+        if platform=="local":raw_data_path="/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/neighbor/denGyr_test_2.csv" #["data/denGyr.csv","data/scv_data.csv"]
         elif platform=="hpc":
             raw_data_path_hpc="/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/denGyr.csv"         #["/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/velocyto/data/denGyr.csv","/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/data/scv_data.csv"]
             raw_data_path=raw_data_path_hpc
@@ -964,10 +1025,10 @@ if __name__ == "__main__":
     ###########     Set Parameters   ############
     #############################################
     if platform=="local":
-        model_dir='../../data/model2'
+        model_dir='model2'
         epoches=[0,5,10,50,100,200,300,400,500]
-        epoches=[0,10]
-        num_jobs=8
+        # epoches=[0,10]
+        num_jobs=1
         learning_rate=0.1
         cost_version=1 # choose from [1,2]; 1 means cost1; 2 means the combination of cost1&2
         cost1_ratio=0.8 ####### The sum of cost1 and cost2 is 1
@@ -1006,7 +1067,7 @@ if __name__ == "__main__":
         "N"+str(n_neighbors)+
         "O"+optimizer)
     if platform=="local":
-        output_path=("output/detailcsv/adj_e/"+folder_name+"/")
+        output_path=("/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/neighbor/output/detailcsv/"+folder_name+"/")
         if os.path.isdir(output_path):pass
         else:os.mkdir(output_path)
     elif platform=="hpc":
@@ -1015,33 +1076,62 @@ if __name__ == "__main__":
         else:os.mkdir(output_path)
 
     # load data_source
-    load_raw_data=pd.read_csv(raw_data_path,names=['gene_list', 'u0','s0',"clusters"])
+    # load_raw_data=pd.read_csv(raw_data_path,names=['gene_list', 'u0','s0',"clusters"])
+    # if use_all_gene: gene_choice=list(set(load_raw_data.gene_list))
+
+    # data_df=load_raw_data[['gene_list', 'u0','s0']][load_raw_data.gene_list.isin(gene_choice)]
+    # data_df_downsampled=downsampling(data_df,gene_choice,
+    #                                 para=downsample_method,
+    #                                 target_amount=downsample_target_amount,
+    #                                 step_i=step_i,
+    #                                 step_j=step_j)
+
+    ######################################################
+    ############             Guangyu          ############
+    ############                              ############
+    ######################################################
+    
+    load_raw_data=pd.read_csv(raw_data_path,names=['gene_list', 'u0','s0',"clusters",'cellID','embedding1','embedding2'])
     if use_all_gene: gene_choice=list(set(load_raw_data.gene_list))
-    data_df=load_raw_data[['gene_list', 'u0','s0']][load_raw_data.gene_list.isin(gene_choice)]
-    data_df_downsampled=downsampling(data_df,gene_choice,
-                                    para=downsample_method,
-                                    target_amount=downsample_target_amount,
-                                    step_i=step_i,
-                                    step_j=step_j)
+    data_df=load_raw_data[['gene_list', 'u0','s0','cellID','embedding1','embedding2']][load_raw_data.gene_list.isin(gene_choice)]
+
+    embedding_downsampling, sampling_ixs, neighbor_ixs = downsampling_embedding(data_df,
+                        para=downsample_method,
+                        target_amount=downsample_target_amount,
+                        step_i=250,
+                        step_j=250,
+                        n_neighbors=n_neighbors)
+    gene_downsampling = downsampling(data_df=data_df, gene_choice=gene_choice, downsampling_ixs=sampling_ixs)
+
+
+
+
 
     # set fitting data, data to be predicted, and sampling ratio in fitting data
-    feed_data = feedData(data_fit = data_df_downsampled, data_predict=data_df, sampling_ratio=sampling_ratio) # default sampling_ratio=0.5
+    feed_data = feedData(data_fit = gene_downsampling, data_predict=data_df, sampling_ratio=sampling_ratio) # default sampling_ratio=0.5
 
 
     for epoch in epoches:
         #############################################
         ###########  Fitting and Predict ############
         #############################################
+
+        # epoch = epoches[1]
+
         brief, detail = train(feed_data,
                                 model_path=model_dir, 
                                 max_epoches=epoch, 
-                                n_jobs=num_jobs,
+                                n_jobs=1,
                                 learning_rate=learning_rate,
                                 cost_version=cost_version,
                                 cost2_cutoff=cost2_cutoff,
                                 n_neighbors=n_neighbors,
                                 cost1_ratio=cost1_ratio,
                                 optimizer=optimizer)
+
+        # plt.scatter(gene_downsampling['embedding1'],gene_downsampling['embedding2'])
+
+
         detail.to_csv(output_path+"detail_e"+str(epoch)+".csv")
         brief.to_csv(output_path+"brief_e"+str(epoch)+".csv")
         detail["alpha_new"]=detail["alpha"]/detail["beta"]
@@ -1073,3 +1163,4 @@ if __name__ == "__main__":
                 velocity_plot(detail, [i],detailfinfo,color_scatter,pointsize,alpha_inside,color_map,vmin,vmax,save_path,step_i=step_i,step_j=step_j) # from cell dancer
                 save_path_validation=output_path+i+"_validation_"+"e"+str(epoch)+".pdf"
                 if epoch>0:vaildation_plot(gene=i,validation_result=brief[brief["gene_name"]==i],save_path_validation=save_path_validation)
+                

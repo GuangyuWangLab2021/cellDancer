@@ -152,7 +152,11 @@ class realDataset(Dataset):
         gamma = np.float32(0)
         type = "real"
 
-        return u0, s0, u1, s1, alpha, beta, gamma, gene_name, type, u0max, s0max
+        # add embedding (Guangyu)
+        embedding1 = np.array(data.embedding1.copy().astype(np.float32))
+        embedding2 = np.array(data.embedding2.copy().astype(np.float32))
+
+        return u0, s0, u1, s1, alpha, beta, gamma, gene_name, type, u0max, s0max, embedding1, embedding2
 
 def test_pooling(u0, s0):
     import matplotlib.mlab as mlab

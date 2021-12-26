@@ -86,6 +86,30 @@ def sampling_adata(detail,
         print('para is neighbors or inverse or circle')
     return(idx)
 
+def sampling_embedding(detail, 
+                    para,
+                    target_amount=500,
+                    step_i=30,
+                    step_j=30):
+
+    '''
+    Guangyu
+    '''
+    if para == 'neighbors':
+        data_U_S= np.array(detail[["embedding1","embedding2"]])
+        idx = sampling_neighbors(data_U_S,step_i,step_j)
+    elif para == 'inverse':
+        data_U_S= np.array(detail[["embedding1","embedding2"]])
+        idx = sampling_inverse(data_U_S,target_amount)
+    elif para == 'circle':
+        data_U_S= np.array(detail[["embedding1","embedding2"]])
+        idx = sampling_circle(data_U_S,target_amount)
+    else:
+        print('para is neighbors or inverse or circle')
+    return(idx)
+
+
+
 def adata_to_detail(data, para, gene):
     '''
     convert adata to detail format
