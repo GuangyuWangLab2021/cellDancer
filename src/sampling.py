@@ -9,6 +9,7 @@ import scvelo as scv
 
 
 def sampling_neighbors(gene_u0_s0,step_i=30,step_j=30): # current version will obtain ~100 cells. e.g. Ntrk2:109; Tmem163:104
+    #step 250 will got 4000 from den data 
     from scipy.stats import norm
     def gaussian_kernel(X, mu = 0, sigma=1):
         return np.exp(-(X - mu)**2 / (2*sigma**2)) / np.sqrt(2*np.pi*sigma**2)
@@ -40,7 +41,7 @@ def sampling_neighbors(gene_u0_s0,step_i=30,step_j=30): # current version will o
     ix_choice = ix_choice[bool_density]
     return(ix_choice)
 
-def sampling_inverse(gene_u0_s0):
+def sampling_inverse(gene_u0_s0,target_amount=500):
     u0 = gene_u0_s0[:,0]
     s0 = gene_u0_s0[:,1]
     values = np.vstack([u0,s0])
@@ -50,10 +51,10 @@ def sampling_inverse(gene_u0_s0):
     p2 = (1/p)/sum(1/p)
     idx = np.arange(values.shape[1])
     r = scipy.stats.rv_discrete(values=(idx, p2))
-    idx_choice = r.rvs(size=500)
+    idx_choice = r.rvs(size=target_amount)
     return(idx_choice)
 
-def sampling_circle(gene_u0_s0):
+def sampling_circle(gene_u0_s0,target_amount=500):
     u0 = gene_u0_s0[:,0]
     s0 = gene_u0_s0[:,1]
     values = np.vstack([u0,s0])
@@ -64,22 +65,50 @@ def sampling_circle(gene_u0_s0):
     # tmp_p = np.square((1-(((p+0.4*max(p))*4-2*max(p+0.4*max(p)))/(2*max(p+0.4*max(p))))**2))+0.0001
     p2 = tmp_p/sum(tmp_p)
     r = scipy.stats.rv_discrete(values=(idx, p2))
-    idx_choice = r.rvs(size=500)
+    idx_choice = r.rvs(size=target_amount)
     return(idx_choice)
 
-def sampling_adata(detail, para):
+def sampling_adata(detail, 
+                    para,
+                    target_amount=500,
+                    step_i=30,
+                    step_j=30):
     if para == 'neighbors':
         data_U_S= np.array(detail[["u0","s0"]])
-        idx = sampling_neighbors(data_U_S)
+        idx = sampling_neighbors(data_U_S,step_i,step_j)
     elif para == 'inverse':
         data_U_S= np.array(detail[["u0","s0"]])
-        idx = sampling_inverse(data_U_S)
+        idx = sampling_inverse(data_U_S,target_amount)
     elif para == 'circle':
         data_U_S= np.array(detail[["u0","s0"]])
-        idx = sampling_circle(data_U_S)
+        idx = sampling_circle(data_U_S,target_amount)
     else:
         print('para is neighbors or inverse or circle')
     return(idx)
+
+def sampling_embedding(detail, 
+                    para,
+                    target_amount=500,
+                    step_i=30,
+                    step_j=30):
+
+    '''
+    Guangyu
+    '''
+    if para == 'neighbors':
+        data_U_S= np.array(detail[["embedding1","embedding2"]])
+        idx = sampling_neighbors(data_U_S,step_i,step_j)
+    elif para == 'inverse':
+        data_U_S= np.array(detail[["embedding1","embedding2"]])
+        idx = sampling_inverse(data_U_S,target_amount)
+    elif para == 'circle':
+        data_U_S= np.array(detail[["embedding1","embedding2"]])
+        idx = sampling_circle(data_U_S,target_amount)
+    else:
+        print('para is neighbors or inverse or circle')
+    return(idx)
+
+
 
 def adata_to_detail(data, para, gene):
     '''
