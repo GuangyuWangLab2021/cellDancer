@@ -68,7 +68,7 @@ class L2Module(nn.Module): #can change name #set the shape of the net
         self.l2 = checkpoint["l2"]
         self.l3 = checkpoint["l3"]
 
-class DynamicModule(nn.Module): # deep learning module
+class stochasticModule(nn.Module): # deep learning module
     '''
     calculate loss function
     load network "L2Module"
@@ -79,7 +79,7 @@ class DynamicModule(nn.Module): # deep learning module
         self.module = module
         self.n_neighbors = n_neighbors
 
-    def cost_fn(self, u0, s0, alpha0, beta0, gamma0,embedding1,embedding2, barcode = None, dt = 0.5,cost_version=1,cost2_cutoff=0.3,cost1_ratio=0.8):
+    def velocity_calculate(self, u0, s0, alpha0, beta0, gamma0,embedding1,embedding2, barcode = None, dt = 0.5,cost_version=1,cost2_cutoff=0.3,cost1_ratio=0.8):
         '''
         add embedding (Guangyu)
         for real dataset
@@ -170,7 +170,7 @@ class DynamicModule(nn.Module): # deep learning module
 
         return cost_fin, u1, s1, alphas, beta, gamma # to do
 
-    def cost_fn_test(self, u0, s0, alpha0, beta0, gamma0,embedding1,embedding2, barcode = None, dt = 0.5):
+    def velocity_calculate_test(self, u0, s0, alpha0, beta0, gamma0,embedding1,embedding2, barcode = None, dt = 0.5):
         '''
         add embedding (Guangyu)
         for real dataset
@@ -277,7 +277,7 @@ class DynamicModule(nn.Module): # deep learning module
         return cost, u1, s1, alphas, beta, gamma
 
     #train with true u1, s1
-    def cost_fn2(self, u0, s0, u1t, s1t, alpha0, beta0, gamma0, barcode = None, dt = 0.001):
+    def velocity_calculate2(self, u0, s0, u1t, s1t, alpha0, beta0, gamma0, barcode = None, dt = 0.001):
         u0 = torch.tensor(u0)
         s0 = torch.tensor(s0)
         u1, s1, alphas, beta, gamma = self.module(u0, s0, alpha0, beta0, gamma0, dt)
@@ -299,7 +299,7 @@ class DynamicModule(nn.Module): # deep learning module
         cost = cosine(u0, s0, u1, s1, u1t, s1t)
         return cost, u1, s1, alphas, beta, gamma
 
-    def summary_para(self, u0, s0, u1, s1, alphas, beta, gamma, cost, cost_mean, true_cost, true_cost_mean, figure=False): # before got detail; build df
+    def summary_para(self, u0, s0, u1, s1, alphas, beta, gamma, cost, cost_mean, backgroud_true_cost, backgroud_true_cost_mean, figure=False): # before got detail; build df
         barcode = None
         detail = pd.merge(pd.DataFrame(s0, columns=['s0']), pd.DataFrame(u0, columns=['u0']), left_index=True, right_index=True) 
         detail['u1'] = u1
@@ -308,7 +308,7 @@ class DynamicModule(nn.Module): # deep learning module
         detail['beta'] = beta
         detail['gamma'] = gamma
         detail['cost'] = cost
-        detail['true_cost'] = true_cost
+        detail['backgroud_true_cost'] = backgroud_true_cost
         if barcode is not None:
             detail.index = barcode
 
@@ -332,7 +332,7 @@ class DynamicModule(nn.Module): # deep learning module
             'beta': beta,
             'gamma': gamma,
             'cost': cost_mean,
-            'true_cost': true_cost_mean}, index=[0])
+            'backgroud_true_cost': backgroud_true_cost_mean}, index=[0])
 
         if figure:
             self.summary(detail)
@@ -351,9 +351,9 @@ class DynamicModule(nn.Module): # deep learning module
         plt.colorbar(pcm1, cmap=plt.cm.jet, ax=axs[1])
         plt.show()
 
-class ltmodule(pl.LightningModule):
+class ltModule(pl.LightningModule):
     '''
-    taining network using loss function "DynamicModule"
+    taining network using loss function "stochasticModule"
     '''
     def __init__(self, 
                 backbone, 
@@ -418,9 +418,9 @@ class ltmodule(pl.LightningModule):
         gamma0 = np.float32(umax/smax*self.initial_strech)
 
         if self.pretrain:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn2(u0, s0, u1t, s1t, alpha0, beta0, gamma0) # for simulation
+            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate2(u0, s0, u1t, s1t, alpha0, beta0, gamma0) # for simulation
         else:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2,cost_version=self.cost_version,cost2_cutoff=self.cost2_cutoff,cost1_ratio=self.cost1_ratio) # for real dataset, u0: np.array(u0 for cells selected by __getitem__) to a tensor in pytorch, s0 the same as u0
+            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2,cost_version=self.cost_version,cost2_cutoff=self.cost2_cutoff,cost1_ratio=self.cost1_ratio) # for real dataset, u0: np.array(u0 for cells selected by __getitem__) to a tensor in pytorch, s0 the same as u0
         cost_mean=cost
         # cost_mean = torch.mean(cost)    # cost: a list of cost of each cell for a given gene
         self.log("loss", cost_mean) # used for early stop. controled by log_every_n_steps(default 50) 
@@ -464,17 +464,17 @@ class ltmodule(pl.LightningModule):
         gamma0 = np.float32(umax/smax)
 
         if self.pretrain:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
+            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
         else:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2)
-            true_cost, t1, t2, t3, t4, t5 = self.backbone.cost_fn2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
+            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2)
+            backgroud_true_cost, t1, t2, t3, t4, t5 = self.backbone.velocity_calculate2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
         cost_mean = torch.mean(cost)
-        true_cost_mean = torch.mean(true_cost)
+        backgroud_true_cost_mean = torch.mean(backgroud_true_cost)
         detail, brief = self.backbone.summary_para(
             u0, s0, u1.data.numpy(), s1.data.numpy(), 
             alphas.data.numpy(), beta.data.numpy(), gamma.data.numpy(), 
             cost.data.numpy(), cost_mean.data.numpy(),
-            true_cost.data.numpy(), true_cost_mean.data.numpy())
+            backgroud_true_cost.data.numpy(), backgroud_true_cost_mean.data.numpy())
         
         ## For single figure debug
         #print(self.current_epoch, "alpha0, beta0, gamma0")
@@ -509,17 +509,17 @@ class ltmodule(pl.LightningModule):
         gamma0 = np.float32(umax/smax)
 
         if self.pretrain:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
+            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
         else:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.cost_fn_test(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2)
-            true_cost, t1, t2, t3, t4, t5 = self.backbone.cost_fn2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
+            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate_test(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2)
+            backgroud_true_cost, t1, t2, t3, t4, t5 = self.backbone.velocity_calculate2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
         cost_mean = torch.mean(cost)
-        true_cost_mean = torch.mean(true_cost)
+        backgroud_true_cost_mean = torch.mean(backgroud_true_cost)
         self.test_detail, self.test_brief = self.backbone.summary_para(
             u0, s0, u1.data.numpy(), s1.data.numpy(), 
             alphas.data.numpy(), beta.data.numpy(), gamma.data.numpy(), 
             cost.data.numpy(), cost_mean.data.numpy(),
-            true_cost.data.numpy(), true_cost_mean.data.numpy())
+            backgroud_true_cost.data.numpy(), backgroud_true_cost_mean.data.numpy())
         
         self.test_detail.insert(0, "gene_name", gene_name)
         self.test_detail.insert(1, "type", type)
@@ -529,7 +529,7 @@ class ltmodule(pl.LightningModule):
     def summary_test(self):
         return self.backbone.summary(self.test_result)
 
-class dataMododule(pl.LightningDataModule): # data module for simulation data
+class dataModule(pl.LightningDataModule): # data module for simulation data
     def __init__(self, data_path: str="./", type: str="all", index=None, point_number=600):
         super().__init__()
         self.training_dir = data_path
@@ -587,11 +587,11 @@ def _pretrain_thread(model_name, model_path, n_neighbors, data_path, data_type, 
     np.random.seed(seed)
 
     if simulation == True:
-        selected_data = dataMododule(data_path=data_path, type=data_type, index = data_index)
+        selected_data = dataModule(data_path=data_path, type=data_type, index = data_index)
     else:
         selected_data = feedData(index = data_index)
-    backbone = DynamicModule(L2Module(100, 100), n_neighbors) # 100，100 2层
-    model = ltmodule(backbone=backbone, pretrain=False, initial_zoom=initial_zoom, initial_strech=initial_strech)
+    backbone = stochasticModule(L2Module(100, 100), n_neighbors) # 100，100 2层
+    model = ltModule(backbone=backbone, pretrain=False, initial_zoom=initial_zoom, initial_strech=initial_strech)
     if model_path != None:
         model_path = os.path.join(model_path, model_name)
         model.load(model_path)
@@ -640,8 +640,8 @@ def _train_thread(datamodule,
     
     
 
-    backbone = DynamicModule(L2Module(100, 100), n_neighbors)    # iniate network (L2Module) and loss function (DynamicModule)
-    model = ltmodule(backbone=backbone, 
+    backbone = stochasticModule(L2Module(100, 100), n_neighbors)    # iniate network (L2Module) and loss function (DynamicModule)
+    model = ltModule(backbone=backbone, 
                     pretrain=False, 
                     initial_zoom=initial_zoom, 
                     initial_strech=initial_strech,
@@ -678,71 +678,71 @@ def _train_thread(datamodule,
     detail.insert(0, "model", model_name)
     return brief, detail
 
-def pretrain(
-    model_path = None, 
-    model_number = 1, 
-    type="all", 
-    index = None,
-    n_neighbors= 30, 
-    initial_zoom=2, 
-    initial_strech=1, 
-    model_save_path = None,
-    data_path = "../../data/simulation/training.hdf5", 
-    result_path = None,
-    max_epoches=1000, 
-    simulation = True,
-    n_jobs=8):
-    '''when model_path is defined, model_number wont be used'''
+# def pretrain(
+#     model_path = None, 
+#     model_number = 1, 
+#     type="all", 
+#     index = None,
+#     n_neighbors= 30, 
+#     initial_zoom=2, 
+#     initial_strech=1, 
+#     model_save_path = None,
+#     data_path = "../../data/simulation/training.hdf5", 
+#     result_path = None,
+#     max_epoches=1000, 
+#     simulation = True,
+#     n_jobs=8):
+#     '''when model_path is defined, model_number wont be used'''
 
-    if not os.path.isfile(data_path):
-        print("Error: No such file:", data_path)
-        return
+#     if not os.path.isfile(data_path):
+#         print("Error: No such file:", data_path)
+#         return
 
-    brief = pd.DataFrame()
-    detail = pd.DataFrame()
-    if simulation:
-        all_data = dataMododule(data_path=data_path, type=type, index=index)
-    else:
-        all_data = feedData()
-    data_len = all_data.test_dataset.__len__()
+#     brief = pd.DataFrame()
+#     detail = pd.DataFrame()
+#     if simulation:
+#         all_data = dataModule(data_path=data_path, type=type, index=index)
+#     else:
+#         all_data = feedData()
+#     data_len = all_data.test_dataset.__len__()
 
-    if model_path != None:
-        model_names = os.listdir(model_path)
-        model_number = len(model_names)
-    else:
-        model_names = list(map(lambda x: "m"+str(x), range(model_number)))
+#     if model_path != None:
+#         model_names = os.listdir(model_path)
+#         model_number = len(model_names)
+#     else:
+#         model_names = list(map(lambda x: "m"+str(x), range(model_number)))
 
-    if index == None:
-        data_indices = range(data_len)
-    else:
-        data_indices = [index]
+#     if index == None:
+#         data_indices = range(data_len)
+#     else:
+#         data_indices = [index]
 
-    for model_index in range(model_number):
-        model_name = model_names[model_index]
-        result = Parallel(n_jobs=n_jobs, backend="loky")(
-            delayed(_pretrain_thread)(
-                model_name=model_name,
-                model_path=model_path, 
-                n_neighbors = n_neighbors,
-                data_path=data_path, 
-                data_type=type,
-                data_index=data_index, 
-                max_epoches=max_epoches,
-                initial_zoom=initial_zoom, initial_strech=initial_strech,
-                model_save_path=model_save_path,
-                simulation=simulation)
-            for data_index in data_indices)
+#     for model_index in range(model_number):
+#         model_name = model_names[model_index]
+#         result = Parallel(n_jobs=n_jobs, backend="loky")(
+#             delayed(_pretrain_thread)(
+#                 model_name=model_name,
+#                 model_path=model_path, 
+#                 n_neighbors = n_neighbors,
+#                 data_path=data_path, 
+#                 data_type=type,
+#                 data_index=data_index, 
+#                 max_epoches=max_epoches,
+#                 initial_zoom=initial_zoom, initial_strech=initial_strech,
+#                 model_save_path=model_save_path,
+#                 simulation=simulation)
+#             for data_index in data_indices)
 
-        for i in range(len(result)):
-            temp_brief, temp_detail = result[i]
-            brief = brief.append(temp_brief)
-            detail = detail.append(temp_detail)
+#         for i in range(len(result)):
+#             temp_brief, temp_detail = result[i]
+#             brief = brief.append(temp_brief)
+#             detail = detail.append(temp_detail)
 
-    save_path = result_path
-    if save_path != None:
-        brief.to_csv(os.path.join(save_path, "brief.csv"))
-        detail.to_csv(os.path.join(save_path, "detail.csv"))
-    return brief, detail
+#     save_path = result_path
+#     if save_path != None:
+#         brief.to_csv(os.path.join(save_path, "brief.csv"))
+#         detail.to_csv(os.path.join(save_path, "detail.csv"))
+#     return brief, detail
 
 def train( # use train_thread # change name to velocity estiminate
     datamodule,
@@ -808,15 +808,15 @@ def train( # use train_thread # change name to velocity estiminate
         detail.to_csv(os.path.join(save_path, "detail.csv"))
     return brief, detail
 
-def pretrain_pipeline():
-    '''pretrain pipeline left unchanged. but train function should be used instead here in the next version'''
-    brief, detail = pretrain(type="normal", max_epoches=200, index=2, n_jobs=1, model_save_path = '../../data/model2/normal.pt')
+# def pretrain_pipeline():
+#     '''pretrain pipeline left unchanged. but train function should be used instead here in the next version'''
+#     brief, detail = pretrain(type="normal", max_epoches=200, index=2, n_jobs=1, model_save_path = '../../data/model2/normal.pt')
 
-    show_details(detail, cols=4)
-    show_details(detail, cols=4, true_cost=True)
+#     show_details(detail, cols=4)
+#     show_details(detail, cols=4, backgroud_true_cost=True)
 
-    sns.relplot(data=brief, kind="line", col="type", col_wrap=4, hue="gene_name", x="epoch", y="cost", legend = False)
-    sns.relplot(data=brief, kind="line", col="type", col_wrap=4, hue="gene_name", x="epoch", y="true_cost", legend = False)
+#     sns.relplot(data=brief, kind="line", col="type", col_wrap=4, hue="gene_name", x="epoch", y="cost", legend = False)
+#     sns.relplot(data=brief, kind="line", col="type", col_wrap=4, hue="gene_name", x="epoch", y="backgroud_true_cost", legend = False)
 
 def train_simudata_pipeline1():
     from utilities import set_rcParams
@@ -828,16 +828,16 @@ def train_simudata_pipeline1():
     data_path = "../../data/simulation/training.hdf5"
     type = "all"
     index = None
-    all_data = dataMododule(data_path=data_path, type=type, index=index)
+    all_data = dataModule(data_path=data_path, type=type, index=index)
 
     model_path='../../data/model2'
     max_epoches=1000
     brief, detail = train(all_data, model_path=model_path, max_epoches=max_epoches, n_jobs=8)
 
     show_details(detail, cols=10)
-    show_details(detail, cols=10, true_cost=True)
+    show_details(detail, cols=10, backgroud_true_cost=True)
     sns.relplot(data=brief, kind="line", col="type", col_wrap=4, hue="gene_name", x="epoch", y="cost", legend = False)
-    sns.relplot(data=brief, kind="line", col="type", col_wrap=4, hue="gene_name", x="epoch", y="true_cost", legend = False)
+    sns.relplot(data=brief, kind="line", col="type", col_wrap=4, hue="gene_name", x="epoch", y="backgroud_true_cost", legend = False)
 
     brief.to_csv(os.path.join("../../result/result_pl4", "brief_p.csv"))
     detail.to_csv(os.path.join("../../result/result_pl4", "detail_p.csv"))
@@ -851,15 +851,15 @@ def train_simudata_pipeline2():
 
     data_path = "../../data/simulation/small.hdf5"
     type = "all"
-    all_data = dataMododule(data_path=data_path, type=type, index=None)
+    all_data = dataModule(data_path=data_path, type=type, index=None)
 
     max_epoches=500
     brief, detail = train(all_data, model_path=None, max_epoches=max_epoches, n_jobs=8)
 
     show_details(detail, cols=4)
-    show_details(detail, cols=4, true_cost=True)
+    show_details(detail, cols=4, backgroud_true_cost=True)
     sns.relplot(data=brief, kind="line", col="type", col_wrap=4, hue="gene_name", x="epoch", y="cost", legend = 'brief')
-    sns.relplot(data=brief, kind="line", col="type", col_wrap=4, hue="gene_name", x="epoch", y="true_cost", legend = 'brief')
+    sns.relplot(data=brief, kind="line", col="type", col_wrap=4, hue="gene_name", x="epoch", y="backgroud_true_cost", legend = 'brief')
 
     brief.to_csv(os.path.join("../../result/result_pl4", "brief_np.csv"))
     detail.to_csv(os.path.join("../../result/result_pl4", "detail_np.csv"))
@@ -1005,7 +1005,7 @@ if __name__ == "__main__":
     if platform=="local":
         model_dir='model2'
         # epoches=[0,5,10,50,100,200,300,400,500]
-        epoches=[300,400,500]
+        epoches=[10]
         num_jobs=1
         learning_rate=0.1
         cost_version=2 # choose from [1,2]; 1 means cost1; 2 means the combination of cost1&2

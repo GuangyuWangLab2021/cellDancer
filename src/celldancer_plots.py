@@ -93,53 +93,21 @@ def heatmap(data,para,detail,cell_type,g_list):
 # ref: https://github.com/velocyto-team/velocyto-notebooks/blob/master/python/DentateGyrus.ipynb
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
-def sampling_neighbors(embedding,step_i=30,step_j=30):
-    from scipy.stats import norm
-    def gaussian_kernel(X, mu = 0, sigma=1):
-        return np.exp(-(X - mu)**2 / (2*sigma**2)) / np.sqrt(2*np.pi*sigma**2)
-    steps = step_i, step_j
-    grs = []
-    for dim_i in range(embedding.shape[1]-3):
-        m, M = np.min(embedding[:, dim_i]), np.max(embedding[:, dim_i])
-        m = m - 0.025 * np.abs(M - m)
-        M = M + 0.025 * np.abs(M - m)
-        gr = np.linspace(m, M, steps[dim_i])
-        grs.append(gr)
-
-    meshes_tuple = np.meshgrid(*grs)
-    gridpoints_coordinates = np.vstack([i.flat for i in meshes_tuple]).T
-    gridpoints_coordinates = gridpoints_coordinates + norm.rvs(loc=0, scale=0.15, size=gridpoints_coordinates.shape)
-    
-    np.random.seed(10) # set random seed
-    nn = NearestNeighbors()
-    nn.fit(embedding[:,0:2])
-    dist, ixs = nn.kneighbors(gridpoints_coordinates, 20)
-    ix_choice = ixs[:,0].flat[:]
-    ix_choice = np.unique(ix_choice)
-
-    nn = NearestNeighbors()
-    nn.fit(embedding[:,0:2])
-    dist, ixs = nn.kneighbors(embedding[ix_choice, 0:2], 20)
-    density_extimate = gaussian_kernel(dist, mu=0, sigma=0.5).sum(1)
-    bool_density = density_extimate > np.percentile(density_extimate, 25)
-    ix_choice = ix_choice[bool_density]
-    return(embedding[ix_choice,0:4])
+from sampling import sampling_neighbors
 
 def velocity_plot(detail,genelist,detail_i,color_scatter,point_size,alpha_inside,colormap,v_min,v_max,save_path,step_i,step_j):
     plt.figure(None,(6,6))
-    embedding= np.array(detail[detail['gene_name'].isin(genelist)][["u0","s0","u1","s1", 'true_cost']])
-
-
-    sampled_coordinates=sampling_neighbors(embedding,step_i=step_i,step_j=step_j) # Sampling
-
+    embedding= np.array(detail[detail['gene_name'].isin(genelist)][["u0","s0","u1","s1"]])
+    
+    sampling_idx=sampling_neighbors(embedding[:,0:2], step_i=step_i,step_j=step_j) # Sampling
+    embedding_downsampling = embedding[sampling_idx,0:4]
     layer1=plt.scatter(embedding[:, 1], embedding[:, 0],
                 alpha=alpha_inside, s=point_size, edgecolor="none",c=detail[detail['gene_name'].isin(genelist)].alpha_new, cmap=colormap,vmin=v_min,vmax=v_max)
     plt.colorbar(layer1)
-    plt.scatter(sampled_coordinates[:, 1], sampled_coordinates[:, 0],
+    plt.scatter(embedding_downsampling[:, 1], embedding_downsampling[:, 0],
                 color="none",s=point_size, edgecolor="k")
-    
     pcm1 = plt.quiver(
-    sampled_coordinates[:, 1], sampled_coordinates[:, 0], sampled_coordinates[:, 3]-sampled_coordinates[:, 1], sampled_coordinates[:, 2]-sampled_coordinates[:, 0],
+    embedding_downsampling[:, 1], embedding_downsampling[:, 0], embedding_downsampling[:, 3]-embedding_downsampling[:, 1], embedding_downsampling[:, 2]-embedding_downsampling[:, 0],
     angles='xy', clim=(0., 1.))
     plt.title(genelist[0])
     plt.savefig(save_path)
