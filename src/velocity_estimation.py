@@ -136,45 +136,18 @@ class DynamicModule(nn.Module): # deep learning module
             return 1 - cosine_max, cell_idx
         
         def trace_cost(u0, s0, u1, s1, idx,version):
+            '''
+            Guangyu
+            '''
             uv, sv = u1-u0, s1-s0
-            
-            #sv[sv==0] = 1000000 
-            
             tan = torch.where(sv!=1000000, uv/sv, torch.tensor(0.00001))
             atan_theta = torch.atan(tan) + torch.pi/2
-            # print("-------cosin1-------")
-            # print(cosin)
-            atan_theta2=[]
-            for i in range(idx.size()[0]):
-                atan_theta2.append(atan_theta[idx[i]].tolist())
-            atan_theta2=torch.tensor(atan_theta2)
-            # print("-------cosin2-------")
-            # print(tan2)
-
-            atan_theta3=[]
-            # print("-------idx-------")
-            # print(idx)
-            idx_1=list(range(0,idx.size()[0]))
-            # print(idx_1)
-            for i in range(idx.size()[0]):
-                # print("--i--")
-                # print(i)
-                idx_3_temp=idx_1.index(idx[i])
-                # print(idx_3_temp)
-                idx_3=atan_theta[idx_3_temp]
-                # print(idx_3)
-                atan_theta3.append(idx_3.tolist())
-            # print("-------cosin3-------")
-            atan_theta3=torch.tensor(atan_theta3)
-            # print(cosin3)
-
+            atan_theta2=atan_theta[idx]
+            atan_theta3 = atan_theta[idx[idx]]
             if version=="v1":
                 cost = atan_theta2/atan_theta+atan_theta3/atan_theta2
             elif version=="v2":
                 cost=torch.where(atan_theta<atan_theta2, 1, 0)+torch.where(atan_theta2<atan_theta3, 1, 0) 
-                
-            # print("---cost02---")
-            # print(cost)
             return(cost)
 
         if cost_version==1:
@@ -433,9 +406,10 @@ class ltmodule(pl.LightningModule):
         ###############################################
         #########       add embedding         #########
         ###############################################
+        print('-----------training_step------------')
         u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs, embedding1s, embedding2s = batch
         u0, s0, u1t, s1t, true_alpha, true_beta, true_gamma, gene_name, type, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
-        print('-----------training_step------------')
+        
 
         umax = u0max
         smax = s0max
@@ -479,9 +453,10 @@ class ltmodule(pl.LightningModule):
         ###############################################
         #########       add embedding         #########
         ###############################################
+        print('-----------validation_step------------')
         u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs, embedding1s, embedding2s = batch
         u0, s0, u1t, s1t, true_alpha, true_beta, true_gamma, gene_name, type, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
-        print('-----------validation_step------------')
+        
         umax = u0max
         smax = s0max
         alpha0 = np.float32(umax*2)
@@ -523,9 +498,10 @@ class ltmodule(pl.LightningModule):
         ###############################################
         #########       add embedding         #########
         ###############################################
+        print('-----------test_step------------')
         u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs, embedding1s, embedding2s = batch
         u0, s0, u1t, s1t, true_alpha, true_beta, true_gamma, gene_name, type, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
-        print('-----------test_step------------')
+        
         umax = u0max
         smax = s0max
         alpha0 = np.float32(umax*2)
@@ -661,6 +637,8 @@ def _train_thread(datamodule,
     torch.manual_seed(seed)
     random.seed(seed)
     np.random.seed(seed)
+    
+    
 
     backbone = DynamicModule(L2Module(100, 100), n_neighbors)    # iniate network (L2Module) and loss function (DynamicModule)
     model = ltmodule(backbone=backbone, 
@@ -681,7 +659,7 @@ def _train_thread(datamodule,
         checkpoint_callback = False,
         check_val_every_n_epoch = check_n_epoch,
         weights_summary=None)   # iniate trainer
-
+    
     print("indices", data_indices)
     selected_data = datamodule.subset(data_indices)  # IMPORTANT: 这个subset对应realdata.py里的每一个get_item块，
     #因为从前如果不用subset，就会训练出一个网络，对应不同gene的不同alpha，beta，gamma；
@@ -936,8 +914,8 @@ def downsampling(data_df, gene_choice, downsampling_ixs):
 
         # plt.scatter(data_df_one_gene['embedding1'], data_df_one_gene['embedding2'])
         # plt.scatter(data_df_one_gene.iloc[downsampling_ixs]['embedding1'], data_df_one_gene.iloc[downsampling_ixs]['embedding2'])
-        # plt.scatter(embedding_downsampling.iloc[0]['embedding1'], embedding_downsampling.iloc[0]['embedding2'])
         # plt.scatter(embedding_downsampling.iloc[neighbor_ixs[0,:]]['embedding1'], embedding_downsampling.iloc[neighbor_ixs[0,:]]['embedding2'])
+        # plt.scatter(embedding_downsampling.iloc[0]['embedding1'], embedding_downsampling.iloc[0]['embedding2'])
         # plt.show()
     return(data_df_downsampled)
 
@@ -1026,11 +1004,11 @@ if __name__ == "__main__":
     #############################################
     if platform=="local":
         model_dir='model2'
-        epoches=[0,5,10,50,100,200,300,400,500]
-        # epoches=[0,10]
+        # epoches=[0,5,10,50,100,200,300,400,500]
+        epoches=[300,400,500]
         num_jobs=1
         learning_rate=0.1
-        cost_version=1 # choose from [1,2]; 1 means cost1; 2 means the combination of cost1&2
+        cost_version=2 # choose from [1,2]; 1 means cost1; 2 means the combination of cost1&2
         cost1_ratio=0.8 ####### The sum of cost1 and cost2 is 1
         cost2_cutoff=0.3 
         downsample_method= "neighbors" # choose from ["neighbors","inverse","circle"]
@@ -1115,19 +1093,21 @@ if __name__ == "__main__":
         #############################################
         ###########  Fitting and Predict ############
         #############################################
-
-        # epoch = epoches[1]
+        print('-------epoch----------------')
+        print(epoch)
+        # epoch = epoches[0]
 
         brief, detail = train(feed_data,
                                 model_path=model_dir, 
                                 max_epoches=epoch, 
-                                n_jobs=1,
+                                n_jobs=8,
                                 learning_rate=learning_rate,
-                                cost_version=cost_version,
+                                cost_version=2,
                                 cost2_cutoff=cost2_cutoff,
                                 n_neighbors=n_neighbors,
                                 cost1_ratio=cost1_ratio,
                                 optimizer=optimizer)
+    
 
         # plt.scatter(gene_downsampling['embedding1'],gene_downsampling['embedding2'])
 
