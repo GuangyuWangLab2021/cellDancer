@@ -14,14 +14,17 @@ def sampling_neighbors(gene_u0_s0,step_i=30,step_j=30): # current version will o
     def gaussian_kernel(X, mu = 0, sigma=1):
         return np.exp(-(X - mu)**2 / (2*sigma**2)) / np.sqrt(2*np.pi*sigma**2)
     steps = step_i, step_j
+    # print(steps)
     grs = []
+    # print(gene_u0_s0.shape[1])
     for dim_i in range(gene_u0_s0.shape[1]):
         m, M = np.min(gene_u0_s0[:, dim_i]), np.max(gene_u0_s0[:, dim_i])
+        # print(m, M)
         m = m - 0.025 * np.abs(M - m)
         M = M + 0.025 * np.abs(M - m)
         gr = np.linspace(m, M, steps[dim_i])
         grs.append(gr)
-
+    # print(grs)
     meshes_tuple = np.meshgrid(*grs)
     gridpoints_coordinates = np.vstack([i.flat for i in meshes_tuple]).T
     gridpoints_coordinates = gridpoints_coordinates + norm.rvs(loc=0, scale=0.15, size=gridpoints_coordinates.shape)
@@ -40,6 +43,7 @@ def sampling_neighbors(gene_u0_s0,step_i=30,step_j=30): # current version will o
     bool_density = density_extimate > np.percentile(density_extimate, 25)
     ix_choice = ix_choice[bool_density]
     return(ix_choice)
+
 
 def sampling_inverse(gene_u0_s0,target_amount=500):
     u0 = gene_u0_s0[:,0]
@@ -124,47 +128,57 @@ def adata_to_detail(data, para, gene):
     return(detail)
 
 
-# ####################################### 
-# # dateset2 (figure3): for XXXXX data #
-# #######################################
+def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors):
+    '''
+    Guangyu
+    sampling cells by embedding
+    return: sampled embedding, the indexs of sampled cells, and the neighbors of sampled cells
+    '''
+
+    gene = data_df['gene_list'].drop_duplicates().iloc[0]
+    embedding = data_df.loc[data_df['gene_list']==gene][['embedding1','embedding2']]
+    idx_downSampling_embedding = sampling_embedding(embedding,
+                para=para,
+                target_amount=target_amount,
+                step_i=step_i,
+                step_j=step_j
+                )
+    embedding_downsampling = embedding.iloc[idx_downSampling_embedding][['embedding1','embedding2']]
+    nn = NearestNeighbors(n_neighbors=n_neighbors + 1)
+    nn.fit(embedding_downsampling)  # NOTE should support knn in high dimensions
+    embedding_knn = nn.kneighbors_graph(mode="connectivity")
+    # neighbor_ixs = embedding_knn.indices.reshape((-1, n_neighbors + 1))
+    return(embedding_downsampling, idx_downSampling_embedding, embedding_knn)
+
+def downsampling(data_df, gene_choice, downsampling_ixs):
+    '''
+    Guangyu
+    '''
+    data_df_downsampled=pd.DataFrame()
+    for gene in gene_choice:
+        data_df_one_gene=data_df[data_df['gene_list']==gene]
+        data_df_one_gene_downsampled = data_df_one_gene.iloc[downsampling_ixs]
+        data_df_downsampled=data_df_downsampled.append(data_df_one_gene_downsampled)
+
+        # plt.scatter(data_df_one_gene['embedding1'], data_df_one_gene['embedding2'])
+        # plt.scatter(data_df_one_gene.iloc[downsampling_ixs]['embedding1'], data_df_one_gene.iloc[downsampling_ixs]['embedding2'])
+        # plt.scatter(embedding_downsampling.iloc[neighbor_ixs[0,:]]['embedding1'], embedding_downsampling.iloc[neighbor_ixs[0,:]]['embedding2'])
+        # plt.scatter(embedding_downsampling.iloc[0]['embedding1'], embedding_downsampling.iloc[0]['embedding2'])
+        # plt.show()
+    return(data_df_downsampled)
 
 
-# # preprocess data
-# adata = scv.datasets.pancreas()
-# scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=2000)
-# find_neighbors(adata, n_pcs=30, n_neighbors=30)
-# moments(adata)
+# old version
+# def downsampling(data_df,gene_choice,para,target_amount,step_i,step_j):
+#     data_df_downsampled=pd.DataFrame()
+#     for gene in gene_choice:
+#         data_df_one_gene=data_df[data_df['gene_list']==gene]
+#         idx = sampling_adata(data_df_one_gene, 
+#                                 para=para,
+#                                 target_amount=target_amount,
+#                                 step_i=step_i,
+#                                 step_j=step_j)
+#         data_df_one_gene_downsampled = data_df_one_gene[data_df_one_gene.index.isin(idx)]
+#         data_df_downsampled=data_df_downsampled.append(data_df_one_gene_downsampled)
+#     return(data_df_downsampled)
 
-# # training model
-# detail2 = adata_to_detail(adata, para=['Mu', 'Ms'], gene='Tmem163')
-# idx = sampling_adata(detail2, para='neighbors')   # optional ['neighbors','inverse','circle']
-# detail_down_sampling  = detail2[detail2.index.isin(idx)]
-# model1 = nn_model(layer = 3, note = [4,5,6])
-# brief, velocity = train(model1, max_epoches=1000)
-# cell_velocity = cell_velo(velocity)
-# # plot figures
-# plot_heatmap(velocity, gene_list)
-# plot_scanter(velocity, gene_list)
-
-
-
-# ####################################### 
-# # dateset2 (figure3): for XXXXX data #
-# #######################################
-
-# # preprocess data
-# adata = scv.datasets.pancreas()
-# scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=2000)
-# find_neighbors(adata, n_pcs=30, n_neighbors=30)
-# moments(adata)
-
-# # training model
-# detail2 = adata_to_detail(adata, para=['Mu', 'Ms'], gene='Tmem163')
-# idx = sampling_adata(detail2, para='neighbors')   # optional
-# detail_down_sampling  = detail2[detail2.index.isin(idx)]
-# model1 = nn_model(layer = 3, note = [4,5,6])
-# brief, velocity = train(model1, max_epoches=1000)
-# cell_velocity = cell_velo(velocity)
-# # plot figures
-# plot_heatmap(velocity, gene_list)
-# plot_scanter(velocity, gene_list)
