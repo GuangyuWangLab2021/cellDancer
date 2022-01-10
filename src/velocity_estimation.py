@@ -955,7 +955,34 @@ def vaildation_plot(gene,validation_result,save_path_validation):
     plt.title(gene)
     plt.savefig(save_path_validation)
 
+def select_initial_net(gene, gene_downsampling, data_df):
+    '''
+    Guangyu
+    check if right top conner has cells
+    model1 is the model for single kinetic
+    model2 is multiple kinetic
+    '''
+    # gene = 'Rbfox3'
+    gene_u_s = gene_downsampling[gene_downsampling.gene_list==gene]
+    gene_u_s_full = data_df[data_df.gene_list==gene]
+    
+    s_max=np.max(gene_u_s.s0)
+    u_max = np.max(gene_u_s.u0)
+    s_max_90per = 0.9*s_max
+    u_max_90per = 0.9*u_max
+    
+    gene_u_s_full['color'] = 'blue'
+    gene_u_s_full.loc[(gene_u_s_full.s0>s_max_90per) & (gene_u_s_full.u0>u_max_90per), 'color'] = 'red'
 
+    # plt.scatter(gene_u_s_full.s0, gene_u_s_full.u0, c = gene_u_s_full['color'])
+    # plt.title(gene)
+    # plt.show()
+
+    if gene_u_s_full.loc[gene_u_s_full['color']=='red'].shape[0]>0.001*gene_u_s_full.shape[0]:
+        model = 'model1'
+    else:
+        model = 'model2'
+    return(model)
 
 
 
