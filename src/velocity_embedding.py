@@ -63,6 +63,21 @@ def velocity_projection(cell_matrix, velocity_matrix, embedding, knn_embedding):
     velocity_embedding = velocity_embedding.T
     return velocity_embedding
 
+def data_reshape(load_cellDancer):
+    '''
+    load detail file
+    return expression matrix and velocity
+    '''
+    gene_names = load_cellDancer['gene_name'].drop_duplicates().to_list()
+    cell_number = load_cellDancer[load_cellDancer['gene_name']==gene_names[0]].shape[0]
+    load_cellDancer['index'] = np.tile(range(cell_number),len(gene_names))
+    s0_reshape = load_cellDancer.pivot(index='gene_name', values='s0', columns='index')
+    s1_reshape = load_cellDancer.pivot(index='gene_name', values='s1', columns='index')
+    dMatrix = s1_reshape-s0_reshape
+    np_s0_reshape = np.array(s0_reshape)
+    np_dMatrix = np.array(dMatrix)
+    np_dMatrix2 = np.sqrt(np.abs(np_dMatrix) + psc) * np.sign(np_dMatrix) # (2159, 18140)
+    return(np_s0_reshape, np_dMatrix2)
 
 
 config = pd.read_csv('/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/neighbor/config/inverse_SGD_costV2.csv', sep=';',header=None)
@@ -90,34 +105,41 @@ data_df=load_raw_data[['gene_list', 'u0','s0','cellID','embedding1','embedding2'
 embedding_downsampling, sampling_ixs, knn_embedding = downsampling_embedding(data_df,
                     para=downsample_method,
                     target_amount=downsample_target_amount,
-                    step_i=25,
-                    step_j=25,
-                    n_neighbors=15)
+                    step_i=60,
+                    step_j=60,
+                    n_neighbors=100)
 
 
 
 
 embedding = np.loadtxt(open("/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/loom/OneDrive_1_12-27-2021/vlm_embedding.csv", "rb"), delimiter=",")
+
+############################
+### velocyto predict  ######
+############################
 hi_dim = np.loadtxt(open("/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/loom/OneDrive_1_12-27-2021/vlm_Sx_sz.csv", "rb"), delimiter=",")
 delta_S = np.loadtxt(open("/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/loom/OneDrive_1_12-27-2021/vlm_delta_S.csv", "rb"), delimiter=",")
 delta_embedding = np.loadtxt(open("/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/loom/OneDrive_1_12-27-2021/vlm_delta_embedding.csv", "rb"), delimiter=",")
 delta_embedding_random = np.loadtxt(open("/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/loom/OneDrive_1_12-27-2021/vlm_delta_embedding_random.csv", "rb"), delimiter=",")
 used_delta_t = float(0.5)
 psc = 1
-
 hi_dim_t = hi_dim + used_delta_t * delta_S  # [:, :ndims] [:, :ndims]
 delta_hi_dim = hi_dim_t - hi_dim # (2159, 18140)
 dmatrix = np.sqrt(np.abs(delta_hi_dim) + psc) * np.sign(delta_hi_dim) # (2159, 18140)
 
-embedding_downsampling, sampling_ixs, knn_embedding = downsampling_embedding(data_df,
-                    para=downsample_method,
-                    target_amount=downsample_target_amount,
-                    step_i=20,
-                    step_j=20,
-                    n_neighbors=10)
 A = hi_dim[:, sampling_ixs]
 B = dmatrix[:, sampling_ixs]
 velocity_embedding = velocity_projection(A, B, embedding[sampling_ixs,:], knn_embedding)
+
+############################
+### cellDancer predict  ####
+############################
+
+load_cellDancer=pd.read_csv('/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/detail_file/detail_e200.csv')
+load_cellDancer = load_cellDancer[load_cellDancer['gene_name'].isin(['Dcx','Elavl4'])]
+
+np_s0, np_dMatrix = data_reshape(load_cellDancer)
+velocity_embedding = velocity_projection(np_s0[:,sampling_ixs], np_dMatrix[:,sampling_ixs], embedding[sampling_ixs,:], knn_embedding)
 
 plt.scatter(embedding[sampling_ixs, 0], embedding[sampling_ixs, 1])
 plt.quiver(embedding[sampling_ixs, 0], embedding[sampling_ixs, 1],
