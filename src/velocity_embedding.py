@@ -10,6 +10,8 @@ def corr_coeff(ematrix, vmatrix, i):
     Calculate the correlation between the predict velocity (velocity_matrix[:,i])
     and the difference between a cell and every other (cell_matrix - cell_matrix[:, i])
     '''
+    # ematrix = cell_matrix
+    # vmatrix = velocity_matrix
     ematrix = ematrix.T
     vmatrix = vmatrix.T
     ematrix = ematrix - ematrix[i, :]
@@ -49,7 +51,11 @@ def velocity_projection(cell_matrix, velocity_matrix, embedding, knn_embedding):
         gene expression matrix
     velocity_matrix: np.ndarray (ngenes, ncells)
     '''
+    # cell_matrix = np_s0[:,sampling_ixs]
+    # velocity_matrix = np_dMatrix[:,sampling_ixs]
     sigma_corr = 0.05
+    cell_matrix[np.isnan(cell_matrix)]=0
+    velocity_matrix[np.isnan(velocity_matrix)]=0
     corrcoef = velocity_correlation(cell_matrix, velocity_matrix)
     probability_matrix = np.exp(corrcoef / sigma_corr)*knn_embedding.A
     probability_matrix /= probability_matrix.sum(1)[:, None]
@@ -68,9 +74,13 @@ def data_reshape(load_cellDancer):
     load detail file
     return expression matrix and velocity
     '''
+    psc = 1
     gene_names = load_cellDancer['gene_name'].drop_duplicates().to_list()
-    cell_number = load_cellDancer[load_cellDancer['gene_name']==gene_names[0]].shape[0]
-    load_cellDancer['index'] = np.tile(range(cell_number),len(gene_names))
+    # cell_number = load_cellDancer[load_cellDancer['gene_name']==gene_names[0]].shape[0]
+    # load_cellDancer['index'] = np.tile(range(cell_number),len(gene_names))
+    load_cellDancer['index'] = 0
+    for g in gene_names:
+        load_cellDancer.loc[load_cellDancer['gene_name']==g, 'index'] = range(load_cellDancer[load_cellDancer['gene_name']==g].shape[0])
     s0_reshape = load_cellDancer.pivot(index='gene_name', values='s0', columns='index')
     s1_reshape = load_cellDancer.pivot(index='gene_name', values='s1', columns='index')
     dMatrix = s1_reshape-s0_reshape
@@ -113,20 +123,19 @@ embedding_downsampling, sampling_ixs, knn_embedding = downsampling_embedding(dat
 
 
 embedding = np.loadtxt(open("/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/loom/OneDrive_1_12-27-2021/vlm_embedding.csv", "rb"), delimiter=",")
-
-############################
-### velocyto predict  ######
-############################
 hi_dim = np.loadtxt(open("/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/loom/OneDrive_1_12-27-2021/vlm_Sx_sz.csv", "rb"), delimiter=",")
 delta_S = np.loadtxt(open("/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/loom/OneDrive_1_12-27-2021/vlm_delta_S.csv", "rb"), delimiter=",")
 delta_embedding = np.loadtxt(open("/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/loom/OneDrive_1_12-27-2021/vlm_delta_embedding.csv", "rb"), delimiter=",")
 delta_embedding_random = np.loadtxt(open("/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/loom/OneDrive_1_12-27-2021/vlm_delta_embedding_random.csv", "rb"), delimiter=",")
 used_delta_t = float(0.5)
 psc = 1
+
 hi_dim_t = hi_dim + used_delta_t * delta_S  # [:, :ndims] [:, :ndims]
 delta_hi_dim = hi_dim_t - hi_dim # (2159, 18140)
 dmatrix = np.sqrt(np.abs(delta_hi_dim) + psc) * np.sign(delta_hi_dim) # (2159, 18140)
-
+############################
+### velocyto predict  ######
+############################
 A = hi_dim[:, sampling_ixs]
 B = dmatrix[:, sampling_ixs]
 velocity_embedding = velocity_projection(A, B, embedding[sampling_ixs,:], knn_embedding)
@@ -135,22 +144,28 @@ velocity_embedding = velocity_projection(A, B, embedding[sampling_ixs,:], knn_em
 ### cellDancer predict  ####
 ############################
 
-load_cellDancer=pd.read_csv('/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/detail_file/detail_e200.csv')
-load_cellDancer = load_cellDancer[load_cellDancer['gene_name'].isin(['Dcx','Elavl4'])]
+load_cellDancer=pd.read_csv('/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/detail_file/detail_e302.csv')
+# load_cellDancer2 = load_cellDancer[load_cellDancer['gene_name'].isin(['1190002N15Rik','Atp1b1'])]
+# load_cellDancer = load_cellDancer[load_cellDancer['gene_name'].isin(['Dcx','Elavl4'])]
 
 np_s0, np_dMatrix = data_reshape(load_cellDancer)
 velocity_embedding = velocity_projection(np_s0[:,sampling_ixs], np_dMatrix[:,sampling_ixs], embedding[sampling_ixs,:], knn_embedding)
 
-plt.scatter(embedding[sampling_ixs, 0], embedding[sampling_ixs, 1])
+# load_cellDancer['u1'].isnull().values.any()
+
+plt.scatter(embedding[sampling_ixs, 0], embedding[sampling_ixs, 1],s=0.5)
 plt.quiver(embedding[sampling_ixs, 0], embedding[sampling_ixs, 1],
            velocity_embedding[:, 0], velocity_embedding[:, 1] ,color='red')
+plt.savefig('figure/test2_302.pdf')
+
+
 
 delta_embedding2 = np.loadtxt(open("/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/loom/OneDrive_1_12-27-2021/vlm_delta_embedding.csv", "rb"), delimiter=",")
 
-plt.scatter(embedding[sampling_ixs, 0], embedding[sampling_ixs, 1])
+plt.scatter(embedding[sampling_ixs, 0], embedding[sampling_ixs, 1],s=0.5)
 plt.quiver(embedding[sampling_ixs, 0], embedding[sampling_ixs, 1],
            delta_embedding2[sampling_ixs, 0], delta_embedding2[sampling_ixs, 1] ,color='red')
-
+plt.savefig('figure/test2_velocyto.pdf')
 
 
 
