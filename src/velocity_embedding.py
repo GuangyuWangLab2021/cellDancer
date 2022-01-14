@@ -72,7 +72,7 @@ def velocity_projection(cell_matrix, velocity_matrix, embedding, knn_embedding):
 def data_reshape(load_cellDancer):
     '''
     load detail file
-    return expression matrix and velocity
+    return expression matrix and velocity (ngenes, ncells)
     '''
     psc = 1
     gene_names = load_cellDancer['gene_name'].drop_duplicates().to_list()
