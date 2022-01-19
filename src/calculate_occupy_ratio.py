@@ -197,22 +197,24 @@ if __name__ == "__main__":
     #################################
     ## Calculate gene occupy ratio ##
     #################################
+    # generate occupy csv file for each gene
+    
+    # hpc - build csv
     gene_occupy_ratio = calculate_occupy_ratio(gene_choice, raw_data2, 30, 30)
     gene_occupy_ratio.sort_values(by = ['ratio'])
     gene_occupy_ratio.to_csv(output_path+'gene_occupy_ratio('+str(full_start)+','+str(full_end)+').csv')
 
-    # generate occupy csv file for each gene
     load_raw_data=pd.read_csv(raw_data_path,names=['gene_list', 'u0','s0',"clusters",'cellID','embedding1','embedding2'])
     raw_data2 = load_raw_data[load_raw_data.gene_list.isin(gene_choice)][['gene_list', 'u0','s0']]
 
-    # build csv - The first gene to keep header in the csv
+    # local
+    # local - build csv - The first gene to keep header in the csv
     g=gene_choice[0]
     i=i+1
     print("processing:"+str(i)+"th")
     gene_occupy_ratio = calculate_occupy_ratio([g], raw_data2, 30, 30)
     gene_occupy_ratio.to_csv('output/gene_occupy_ratio/denGyr/gene_occupy_ratio.csv',mode='a',header=True,index=False)
-
-    # build csv - The genes below to append
+    # local - build csv - The genes below to append
     for g in gene_choice[1:]:
         i=i+1
         print("processing:"+str(i)+"th")
