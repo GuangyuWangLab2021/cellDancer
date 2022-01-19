@@ -2,26 +2,13 @@
 # output header: gene_choice,ratio
 
 import time
-import pytorch_lightning as pl
 import os
-from scipy.integrate._ivp.radau import P
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import numpy as np
-from sklearn.neighbors import NearestNeighbors
 import pandas as pd
-from pytorch_lightning.loggers import TensorBoardLogger
 import matplotlib.pyplot as plt
 from torch.utils.data import *
-from sklearn.cluster import KMeans
 import seaborn as sns
 import sys
-from joblib import Parallel, delayed
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-from pytorch_lightning.callbacks import ModelCheckpoint
-
-
 
 def identify_in_grid(u, s, onegene_u0_s0):
     select_cell =onegene_u0_s0[(onegene_u0_s0[:,0]>u[0]) & (onegene_u0_s0[:,0]<u[1]) & (onegene_u0_s0[:,1]>s[0]) & (onegene_u0_s0[:,1]<s[1]), :]
@@ -71,9 +58,7 @@ if __name__ == "__main__":
     import warnings
     import os
     import sys
-    import argparse
     warnings.filterwarnings("ignore")
-    from analysis import show_details, show_details2, show_details_simplify
     from celldancer_plots import *
     from sampling import *
 
@@ -202,34 +187,48 @@ if __name__ == "__main__":
 
     load_raw_data=pd.read_csv(raw_data_path,names=['gene_list', 'u0','s0',"clusters",'cellID','embedding1','embedding2'])
     if use_all_gene: 
-        # use the full_start and full_end to set the range of genes to be run
-        gene_choice=list(set(load_raw_data.gene_list))[full_start: full_end]
+        # weather to use the full_start and full_end to set the range of genes to be run
+        # gene_choice=list(set(load_raw_data.gene_list))[full_start: full_end]
+        gene_choice=list(set(load_raw_data.gene_list))
 
-    gene_choice=list(set(load_raw_data.gene_list)).sort()
+    gene_choice.sort()
     raw_data2 = load_raw_data[load_raw_data.gene_list.isin(gene_choice)][['gene_list', 'u0','s0']]
-    ratio = calculate_occupy_ratio(gene_choice, raw_data2, 30, 30)
-    ratio.sort_values(by = ['ratio'])
-    ratio.to_csv(output_path+'gene_occupy_ratio('+str(full_start)+','+str(full_end)+').csv')
+    
+    #################################
+    ## Calculate gene occupy ratio ##
+    #################################
+    gene_occupy_ratio = calculate_occupy_ratio(gene_choice, raw_data2, 30, 30)
+    gene_occupy_ratio.sort_values(by = ['ratio'])
+    gene_occupy_ratio.to_csv(output_path+'gene_occupy_ratio('+str(full_start)+','+str(full_end)+').csv')
 
     # generate occupy csv file for each gene
     load_raw_data=pd.read_csv(raw_data_path,names=['gene_list', 'u0','s0',"clusters",'cellID','embedding1','embedding2'])
     raw_data2 = load_raw_data[load_raw_data.gene_list.isin(gene_choice)][['gene_list', 'u0','s0']]
 
-    # The first gene to keep header in the csv
+    # build csv - The first gene to keep header in the csv
     g=gene_choice[0]
     i=i+1
-    print("processing:"+str(i)+"/"+"2000")
-    ratio = calculate_occupy_ratio([g], raw_data2, 30, 30)
-    ratio.to_csv('data/gene_occupy_ratio/denGyr/gene_occupy_ratio.csv',mode='a',header=True,index=False)
+    print("processing:"+str(i)+"th")
+    gene_occupy_ratio = calculate_occupy_ratio([g], raw_data2, 30, 30)
+    gene_occupy_ratio.to_csv('output/gene_occupy_ratio/denGyr/gene_occupy_ratio.csv',mode='a',header=True,index=False)
 
-    # The genes below to append
+    # build csv - The genes below to append
     for g in gene_choice[1:]:
         i=i+1
-        print("processing:"+str(i)+"/"+"2000")
-        ratio = calculate_occupy_ratio([g], raw_data2, 30, 30)
-        ratio.to_csv('output/gene_occupy_ratio/denGyr/gene_occupy_ratio.csv',mode='a',header=False,index=False)
+        print("processing:"+str(i)+"th")
+        gene_occupy_ratio = calculate_occupy_ratio([g], raw_data2, 30, 30)
+        gene_occupy_ratio.to_csv('output/gene_occupy_ratio/denGyr/gene_occupy_ratio.csv',mode='a',header=False,index=False)
 
+    #########################################
+    ## Dendisty plot for gene occupy ratio ##
+    #########################################
+    gene_occupy_ratio=pd.read_csv('/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/gene_occupy_ratio/denGyr/gene_occupy_ratio.csv')
 
+    # plot the density for ratio of each gene
+    import seaborn as sns
+    sns.distplot(gene_occupy_ratio['ratio'],hist=False,color='black')
+    plt.title('occupy ratio')
+    plt.savefig('/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/gene_occupy_ratio/denGyr/dist_gene_occupy_ratio.pdf')
 
     time_end=time.time()
     print('time spent: ',(time_end-time_start)/60,' min')   
