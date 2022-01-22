@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.core.fromnumeric import size
 from sklearn.neighbors import NearestNeighbors
 import scipy
 import pandas as pd
@@ -72,6 +73,11 @@ def sampling_circle(gene_u0_s0,target_amount=500):
     idx_choice = r.rvs(size=target_amount)
     return(idx_choice)
 
+def sampling_random(gene_u0_s0, target_amount=500):
+    idx = np.random.choice(gene_u0_s0.shape[0], size = target_amount, replace=False)
+    return(idx)
+    
+
 def sampling_adata(detail, 
                     para,
                     target_amount=500,
@@ -86,6 +92,9 @@ def sampling_adata(detail,
     elif para == 'circle':
         data_U_S= np.array(detail[["u0","s0"]])
         idx = sampling_circle(data_U_S,target_amount)
+    elif para == 'random':
+        data_U_S= np.array(detail[["u0","s0"]])
+        idx = sampling_random(data_U_S,target_amount)
     else:
         print('para is neighbors or inverse or circle')
     return(idx)
@@ -103,11 +112,16 @@ def sampling_embedding(detail,
         data_U_S= np.array(detail[["embedding1","embedding2"]])
         idx = sampling_neighbors(data_U_S,step_i,step_j)
     elif para == 'inverse':
+        print('inverse')
         data_U_S= np.array(detail[["embedding1","embedding2"]])
         idx = sampling_inverse(data_U_S,target_amount)
     elif para == 'circle':
         data_U_S= np.array(detail[["embedding1","embedding2"]])
         idx = sampling_circle(data_U_S,target_amount)
+    elif para == 'random':
+        # print('random')
+        data_U_S= np.array(detail[["embedding1","embedding2"]])
+        idx = sampling_random(data_U_S,target_amount)
     else:
         print('para is neighbors or inverse or circle')
     return(idx)
@@ -137,6 +151,7 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
 
     gene = data_df['gene_list'].drop_duplicates().iloc[0]
     embedding = data_df.loc[data_df['gene_list']==gene][['embedding1','embedding2']]
+    print(para)
     idx_downSampling_embedding = sampling_embedding(embedding,
                 para=para,
                 target_amount=target_amount,
@@ -181,4 +196,3 @@ def downsampling(data_df, gene_choice, downsampling_ixs):
 #         data_df_one_gene_downsampled = data_df_one_gene[data_df_one_gene.index.isin(idx)]
 #         data_df_downsampled=data_df_downsampled.append(data_df_one_gene_downsampled)
 #     return(data_df_downsampled)
-

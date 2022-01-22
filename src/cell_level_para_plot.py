@@ -7,6 +7,8 @@ from matplotlib import cm
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 
 embedding = np.loadtxt(open("velocyto/vlm_variables/vlm_embedding.csv", "rb"), delimiter=",")
+
+
 # embedding
 # embedding.shape # (18140, 2)
 # plt.scatter(embedding[:,0],embedding[:,1])
@@ -14,7 +16,8 @@ embedding = np.loadtxt(open("velocyto/vlm_variables/vlm_embedding.csv", "rb"), d
 #detail = pd.read_csv("/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/detailcsv/denGyrLr0.1Costv2C1r0.8C2cf0.3Downneighbors0_200_200Ratio0.125N30OSGD/detail_e500.csv")
 
 detail = pd.read_csv("/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/detailcsv/denGyrLr1e-05Costv3C1r0.5C2cf0.3Downneighbors0_200_200Ratio0.125N30OAdam/detail_e2000.csv")
-
+detail = pd.read_csv("/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/detailcsv/denGyrLr0.001Costv3C1r0.5C2cf0.3Downneighbors0_200_200Ratio0.125N30OAdam/detail_e200.csv")
+detail = pd.read_csv("/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/detailcsv/denGyrLr0.001Costv3C1r0.5C2cf0.3Downneighbors0_200_200Ratio0.125N30OAdam/detail_e200.csv")
 gene_choice=['Ank','Btbd17','Cdk1','Cpe','Gnao1',
             'Gng12','Map1b','Mapre3','Nnat','Ntrk2',
             'Pak3','Pcsk2','Ppp3ca','Rap1b','Rbfox3',
@@ -25,9 +28,12 @@ gene_choice=['Ank','Btbd17','Cdk1','Cpe','Gnao1',
 
 gene_choice=['Gnao1']
 
+gene_choice=['Elavl4','Dcx']
+gene_choice=['Ntrk2']
+
 cmap1 = LinearSegmentedColormap.from_list("mycmap", zissou2)
 color_map1=cmap1
-cmap1 = LinearSegmentedColormap.from_list("mycmap", whiteRed)
+cmap1 = LinearSegmentedColormap.from_list("mycmap", beach)
 color_map2=cmap1
 cmap1 = LinearSegmentedColormap.from_list("mycmap", purpleOrange)
 color_map3=cmap1
@@ -47,7 +53,7 @@ for para,color_map in zip(para_list,color_map_list):
         layer=plt.scatter(embedding[:,0],embedding[:,1],s=0.2,c=one_gene[para],cmap=color_map)
         plt.title(gene_name+" "+para)
         plt.colorbar(layer)
-        plt.savefig(('/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/cell_level_para/'+gene_name+'_test2000'+para+'.png'),dpi=300)
+        plt.savefig(('/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/cell_level_para/dengyr/'+gene_name+'_'+para+'.png'),dpi=300)
         plt.show()
 
 # np.corrcoef(detail[detail.gene_name=='Nnat'].alpha, detail[detail.gene_name=='Nnat'].u0) # 0.5
@@ -71,4 +77,42 @@ for para,color_map in zip(para_list,color_map_list):
 # plt.scatter(embedding[:,0],embedding[:,1],c = detail[detail.gene_name=='Ank'].u0,s=0.5)
 # plt.scatter(embedding[:,0],embedding[:,1],c = detail[detail.gene_name=='Ank'].beta,s=0.5)
 # plt.scatter(embedding[:,0],embedding[:,1],c = detail[detail.gene_name=='Ank'].s0,s=0.5)
+
+
+
+
+# Cell level Range plot
+
+gene='Elavl4'
+u_range_1=0.4
+u_range_2=0.5
+s_range_1=0.5
+s_range_2=1.0
+
+raw_data_path="/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/veloNN-main_github/src/velonn/data/denGyr_full.csv" #["data/denGyr.csv","data/scv_data.csv"]
+load_raw_data=pd.read_csv(raw_data_path,names=['gene_list', 'u0','s0',"clusters",'cellID','embedding1','embedding2'])
+onegene=load_raw_data[load_raw_data.gene_list==gene]
+onegene['u_range']='red'
+onegene['s_range']='red'
+onegene.loc[onegene.u0<u_range_1, 'u_range'] = 'blue'
+onegene.loc[onegene.u0>u_range_2, 'u_range'] = 'blue'
+
+onegene.loc[onegene.s0<s_range_1, 's_range'] = 'blue'
+onegene.loc[onegene.s0>s_range_2, 's_range'] = 'blue'
+
+plt.scatter(onegene.embedding1,onegene.embedding2, c=onegene.u_range,s=0.3)
+plt.title(gene+' u_range('+str(u_range_1)+","+str(u_range_2)+')')
+plt.savefig(('/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/cell_level_para_range/dengyr/'+gene+'_u_range('+str(u_range_1)+","+str(u_range_2)+')''.pdf'))
+
+plt.scatter(onegene.embedding1,onegene.embedding2, c=onegene.s_range,s=0.3)
+plt.title(gene+' s_range('+str(s_range_1)+","+str(s_range_2)+')')
+plt.savefig(('/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/cell_level_para_range/dengyr/'+gene+'_s_range('+str(s_range_1)+","+str(s_range_2)+')''.pdf'))
+
+onegene
+
+for cls,color in zip(set(onegene.clusters),ironMan_2):
+
+#for cls,color in zip(['ImmAstro','nIPC'],['blue','red']):
+    print(cls)
+    plt.scatter(onegene[onegene.clusters==cls].s0,onegene[onegene.clusters==cls].u0,c=color,s=2,label=color)
 

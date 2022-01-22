@@ -213,7 +213,7 @@ if __name__ == "__main__":
     i=i+1
     print("processing:"+str(i)+"th")
     gene_occupy_ratio = calculate_occupy_ratio([g], raw_data2, 30, 30)
-    gene_occupy_ratio.to_csv('output/gene_occupy_ratio/denGyr/gene_occupy_ratio.csv',mode='a',header=True,index=False)
+    gene_occupy_ratio.to_csv('output/gene_occupy_ratio/denGyr/gene_occupy_ratio.csv',header=True,index=False)
     # local - build csv - The genes below to append
     for g in gene_choice[1:]:
         i=i+1

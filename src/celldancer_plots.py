@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import scvelo as scv
 import numpy as np
 
-#### backup of gene, celltype ####
+### backup of gene, celltype ####
 # gene_plot_l_28_alphabet=['Abcc8', 'Actn4', 'Adk', 'Ank', 'Anxa4', 
 #                     'Btbd17', 'Cdk1', 'Cpe', 'Dcdc2a', 'Gnao1', 
 #                     'Gng12', 'Map1b', 'Mapre3', 'Nfib', 'Nnat', 
@@ -39,6 +39,7 @@ import numpy as np
 #             "Beta",
 #             "Delta",
 #             "Epsilon"]
+# colorlist=['Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'BuGn', 'BuGn_r', 'BuPu', 'BuPu_r', 'CMRmap', 'CMRmap_r', 'Dark2', 'Dark2_r', 'GnBu', 'GnBu_r', 'Greens', 'Greens_r', 'Greys', 'Greys_r', 'OrRd', 'OrRd_r', 'Oranges', 'Oranges_r', 'PRGn', 'PRGn_r', 'Paired', 'Paired_r', 'Pastel1', 'Pastel1_r', 'Pastel2', 'Pastel2_r', 'PiYG', 'PiYG_r', 'PuBu', 'PuBuGn', 'PuBuGn_r', 'PuBu_r', 'PuOr', 'PuOr_r', 'PuRd', 'PuRd_r', 'Purples', 'Purples_r', 'RdBu', 'RdBu_r', 'RdGy', 'RdGy_r', 'RdPu', 'RdPu_r', 'RdYlBu', 'RdYlBu_r', 'RdYlGn', 'RdYlGn_r', 'Reds', 'Reds_r', 'Set1', 'Set1_r', 'Set2', 'Set2_r', 'Set3', 'Set3_r', 'Spectral', 'Spectral_r', 'Wistia', 'Wistia_r', 'YlGn', 'YlGnBu', 'YlGnBu_r', 'YlGn_r', 'YlOrBr', 'YlOrBr_r', 'YlOrRd', 'YlOrRd_r', 'afmhot', 'afmhot_r', 'autumn', 'autumn_r', 'binary', 'binary_r', 'bone', 'bone_r', 'brg', 'brg_r', 'bwr', 'bwr_r', 'cividis', 'cividis_r', 'cool', 'cool_r', 'coolwarm', 'coolwarm_r', 'copper', 'copper_r', 'crest', 'crest_r', 'cubehelix', 'cubehelix_r', 'flag', 'flag_r', 'flare', 'flare_r', 'gist_earth', 'gist_earth_r', 'gist_gray', 'gist_gray_r', 'gist_heat', 'gist_heat_r', 'gist_ncar', 'gist_ncar_r', 'gist_rainbow', 'gist_rainbow_r', 'gist_stern', 'gist_stern_r', 'gist_yarg', 'gist_yarg_r', 'gnuplot', 'gnuplot2', 'gnuplot2_r', 'gnuplot_r', 'gray', 'gray_r', 'hot', 'hot_r', 'hsv', 'hsv_r', 'icefire', 'icefire_r', 'inferno', 'inferno_r', 'jet', 'jet_r', 'magma', 'magma_r', 'mako', 'mako_r', 'nipy_spectral', 'nipy_spectral_r', 'ocean', 'ocean_r', 'pink', 'pink_r', 'plasma', 'plasma_r', 'prism', 'prism_r', 'rainbow', 'rainbow_r', 'rocket', 'rocket_r', 'seismic', 'seismic_r', 'spring', 'spring_r', 'summer', 'summer_r', 'tab10', 'tab10_r', 'tab20', 'tab20_r', 'tab20b', 'tab20b_r', 'tab20c', 'tab20c_r', 'terrain', 'terrain_r', 'turbo', 'turbo_r', 'twilight', 'twilight_r', 'twilight_shifted', 'twilight_shifted_r', 'viridis', 'viridis_r', 'vlag', 'vlag_r', 'winter', 'winter_r']
 # epoches=[0,5,10,50,100,200,210,225,250,275,300,400,500,1000]
 # epoches=[0,5,10,50,100,500]
 # epoches=[200]
@@ -101,16 +102,60 @@ def velocity_plot(detail,genelist,detail_i,color_scatter,point_size,alpha_inside
     
     sampling_idx=sampling_neighbors(embedding[:,0:2], step_i=step_i,step_j=step_j) # Sampling
     embedding_downsampling = embedding[sampling_idx,0:4]
+    # layer1=plt.scatter(embedding[:, 1], embedding[:, 0],
+    #             alpha=alpha_inside, s=point_size, edgecolor="none",c=detail[detail['gene_name'].isin(genelist)].alpha_new, cmap=colormap,vmin=v_min,vmax=v_max)
     layer1=plt.scatter(embedding[:, 1], embedding[:, 0],
-                alpha=alpha_inside, s=point_size, edgecolor="none",c=detail[detail['gene_name'].isin(genelist)].alpha_new, cmap=colormap,vmin=v_min,vmax=v_max)
+                alpha=alpha_inside, s=point_size, edgecolor="none",c=detail[detail['gene_name'].isin(genelist)].alpha_new, cmap=colormap)
+ 
+    #layer1=plt.scatter(embedding[:, 1], embedding[:, 0],
+    #            alpha=alpha_inside, s=point_size, edgecolor="none",color=color_scatter,vmin=v_min,vmax=v_max)
+    
     plt.colorbar(layer1)
-    plt.scatter(embedding_downsampling[:, 1], embedding_downsampling[:, 0],
+    plt.scatter(embedding_downsampling[:, 1], embedding_downsampling[:, 0], # sampled circle
                 color="none",s=point_size, edgecolor="k")
     pcm1 = plt.quiver(
     embedding_downsampling[:, 1], embedding_downsampling[:, 0], embedding_downsampling[:, 3]-embedding_downsampling[:, 1], embedding_downsampling[:, 2]-embedding_downsampling[:, 0],
     angles='xy', clim=(0., 1.))
     plt.title(genelist[0])
     plt.savefig(save_path)
+
+# epoches=[10]
+# epoches=[0,5,10,50,100,200,210,225,250,275,300,400,500,1000]
+
+pointsize=120
+pointsize=50
+color_scatter="#95D9EF" #blue
+alpha_inside=0.3
+
+#color_scatter="#DAC9E7" #light purple
+#color_scatter="#8D71B3" #deep purple
+alpha_inside=0.2
+gene_choice=['Ntrk2']
+
+#for colormap in colorlist:
+# for e_num in epoches:
+#     file_path="output/detailcsv/adj_e/detail_e"+str(e_num)+".csv"
+#     detail = pd.read_csv (file_path,index_col=False)
+#     detail["alpha_new"]=detail["alpha"]/detail["beta"]
+#     detail["beta_new"]=detail["beta"]/detail["beta"]
+#     detail["gamma_new"]=detail["gamma"]/detail["beta"]
+#     detailfinfo="e"+str(e_num)
+
+#     #color_map="Spectral"
+#     #color_map="PiYG"
+#     #color_map="RdBu"
+#     color_map='blue'
+#     color_map=cmap1
+#     # color_map="bwr"
+#     alpha_inside=0.3
+#     #alpha_inside=1
+#     vmin=0
+#     vmax=5
+#     step_i=20
+#     step_j=20
+#     for i in gene_choice:
+#         save_path="output/detailcsv/adj_e/"+i+"_"+"e"+str(e_num)+".pdf"# notice: changed
+#         velocity_plot(detail, [i],detailfinfo,color_scatter,pointsize,alpha_inside,color_map,vmin,vmax,save_path,step_i,step_j) # from cell dancer
 
 
 # epoches=[500]
@@ -150,30 +195,30 @@ def velocity_plot(detail,genelist,detail_i,color_scatter,point_size,alpha_inside
 
 
 #### Box Plot for alpha_new, u0, s0 ####
-def box_attribute(gene,log,ylim,ymin,ymax,att,save_path,detail):
-    greyset=['grey']*8
-    detail["alpha_new"]=detail["alpha"]/detail["beta"]
-    detail["beta_new"]=detail["beta"]/detail["beta"]
-    detail["gamma_new"]=detail["gamma"]/detail["beta"]
-    g_list=set(detail["gene_name"])
-    celllist_rep=pd.concat([adata.obs.clusters]*len(g_list), ignore_index=True) # match cell type
-    detail = pd.concat([detail, celllist_rep], axis=1)
+# def box_attribute(gene,log,ylim,ymin,ymax,att,save_path,detail):
+#     greyset=['grey']*8
+#     detail["alpha_new"]=detail["alpha"]/detail["beta"]
+#     detail["beta_new"]=detail["beta"]/detail["beta"]
+#     detail["gamma_new"]=detail["gamma"]/detail["beta"]
+#     g_list=set(detail["gene_name"])
+#     celllist_rep=pd.concat([adata.obs.clusters]*len(g_list), ignore_index=True) # match cell type
+#     detail = pd.concat([detail, celllist_rep], axis=1)
 
-    boxlist=detail[detail.gene_name==gene]
-    data=pd.DataFrame()
-    for ct in cell_type:
-        data=pd.concat([data,pd.DataFrame({'col':boxlist[boxlist.clusters==ct][att]})],axis=1,ignore_index=True)
+#     boxlist=detail[detail.gene_name==gene]
+#     data=pd.DataFrame()
+#     for ct in cell_type:
+#         data=pd.concat([data,pd.DataFrame({'col':boxlist[boxlist.clusters==ct][att]})],axis=1,ignore_index=True)
 
-    plt.figure()
-    if ylim=="ylim":plt.ylim(ymin, ymax)
-    if log=="log":data=np.log10(data)
-    for i,d in enumerate(data):
-        y = data[d]
-        x = np.random.normal(i+1, 0.04, len(y))
-        ax = plt.plot(x, y, mfc = greyset[i], mec='k', ms=3, marker="o", linestyle="None",alpha=0.2,markeredgewidth=0.0)
-    data.boxplot(showfliers=False,grid=False,color=dict(boxes='black', whiskers='black', medians='black', caps='black')).set(title=gene)
-    plt.savefig(save_path)
-    return(data)
+#     plt.figure()
+#     if ylim=="ylim":plt.ylim(ymin, ymax)
+#     if log=="log":data=np.log10(data)
+#     for i,d in enumerate(data):
+#         y = data[d]
+#         x = np.random.normal(i+1, 0.04, len(y))
+#         ax = plt.plot(x, y, mfc = greyset[i], mec='k', ms=3, marker="o", linestyle="None",alpha=0.2,markeredgewidth=0.0)
+#     data.boxplot(showfliers=False,grid=False,color=dict(boxes='black', whiskers='black', medians='black', caps='black')).set(title=gene)
+#     plt.savefig(save_path)
+#     return(data)
 
 # epoches=[500]
 # gene_plot_l=gene_plot_l_28
@@ -197,36 +242,36 @@ def box_attribute(gene,log,ylim,ymin,ymax,att,save_path,detail):
 
 
 #### Violin Plot for alpha_new, u0, s0 ####
-def violin_alpha(gene,log,ylim,ymin,ymax,save_path,detail):
-    detail["alpha_new"]=detail["alpha"]/detail["beta"]
-    detail["beta_new"]=detail["beta"]/detail["beta"]
-    detail["gamma_new"]=detail["gamma"]/detail["beta"]
-    g_list=set(detail["gene_name"])
-    celllist_rep=pd.concat([adata.obs.clusters]*len(g_list), ignore_index=True)
-    detail = pd.concat([detail, celllist_rep], axis=1)
+# def violin_alpha(gene,log,ylim,ymin,ymax,save_path,detail):
+#     detail["alpha_new"]=detail["alpha"]/detail["beta"]
+#     detail["beta_new"]=detail["beta"]/detail["beta"]
+#     detail["gamma_new"]=detail["gamma"]/detail["beta"]
+#     g_list=set(detail["gene_name"])
+#     celllist_rep=pd.concat([adata.obs.clusters]*len(g_list), ignore_index=True)
+#     detail = pd.concat([detail, celllist_rep], axis=1)
 
-    #### violin plot
-    sns.set_style('white', {'axes.linewidth': 0.5})
-    plt.rcParams['xtick.bottom'] = True
-    plt.rcParams['ytick.left'] = True
-    sns.set_context("talk", font_scale=1.1)
-    plt.figure(figsize=(4.5,3))
-    plt.figure(figsize=(6,4))
+#     #### violin plot
+#     sns.set_style('white', {'axes.linewidth': 0.5})
+#     plt.rcParams['xtick.bottom'] = True
+#     plt.rcParams['ytick.left'] = True
+#     sns.set_context("talk", font_scale=1.1)
+#     plt.figure(figsize=(4.5,3))
+#     plt.figure(figsize=(6,4))
 
-    if ylim=="ylim":plt.ylim(ymin, ymax)#plt.ylim(-0.6, 2)
-    v_data=detail[detail.gene_name==gene]
-    np.random.seed(10) # set random seed
-    if log=="log":v_data.alpha_new=np.log10(v_data.alpha_new)
-    sns.stripplot(y="alpha_new", 
-                x="clusters", 
-                data=v_data,
-            color="black", edgecolor="gray",s=1,alpha=0.5,order=cell_type)
+#     if ylim=="ylim":plt.ylim(ymin, ymax)#plt.ylim(-0.6, 2)
+#     v_data=detail[detail.gene_name==gene]
+#     np.random.seed(10) # set random seed
+#     if log=="log":v_data.alpha_new=np.log10(v_data.alpha_new)
+#     sns.stripplot(y="alpha_new", 
+#                 x="clusters", 
+#                 data=v_data,
+#             color="black", edgecolor="gray",s=1,alpha=0.5,order=cell_type)
     
-    sns.violinplot(y="alpha_new", 
-                x="clusters", 
-                data=v_data,order=cell_type,color="white", width=1 ,inewidth=0.1, inner=None)
-    plt.savefig(save_path)
-    return(v_data)
+#     sns.violinplot(y="alpha_new", 
+#                 x="clusters", 
+#                 data=v_data,order=cell_type,color="white", width=1 ,inewidth=0.1, inner=None)
+#     plt.savefig(save_path)
+#     return(v_data)
 
 # e_num=[500]
 # gene_plot_l=gene_plot_l_28

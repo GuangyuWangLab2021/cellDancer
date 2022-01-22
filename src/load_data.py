@@ -122,7 +122,7 @@ class realDataset(Dataset):
     def __getitem__(self, idx):# name cannot be changed
         gene_name = self.gene_list[idx]
         data_pred=self.data_predict[self.data_predict.gene_list==gene_name] # u0 & s0 for cells for one gene
-
+        #print('gene_name: '+gene_name)
         #print(data_pred)
         # ASK: 在random sampling前还是后,max 决定alpha0，beta0，and gamma0；所以1个gene最好用统一alpha0，beta0，and gamma0
         # 未来可能存在的问题：训练cell，和predict cell的u0和s0重大，不match，若不match？（当前predict cell 里是包含训练cell的，所以暂定用predict的u0max和s0max，如果不包含怎么办？还是在外面算好再传参？）
