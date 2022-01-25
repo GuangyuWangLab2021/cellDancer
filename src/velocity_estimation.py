@@ -752,8 +752,7 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
     sampling cells by embedding
     return: sampled embedding, the indexs of sampled cells, and the neighbors of sampled cells
     '''
-    print("===data_df===")
-    print(data_df)
+
     gene = data_df['gene_list'].drop_duplicates().iloc[0]
     embedding = data_df.loc[data_df['gene_list']==gene][['embedding1','embedding2']]
     idx_downSampling_embedding = sampling_embedding(embedding,
