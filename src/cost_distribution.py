@@ -36,10 +36,11 @@ gene_cost.sort_values("cost")
 gene_cost.to_csv('output/gene_cost/denGyr/gene_cost.csv',header=True,index=False)
 
 ############################
-## Dendisty plot for cost ##
+## Denisty plot for cost ##
 ############################
 gene_cost=pd.read_csv('/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/gene_cost/denGyr/gene_cost.csv')
 gene_cost=gene_cost.sort_values("cost").reset_index()
+gene_cost['idx_cost']=range(1, len(gene_cost) + 1)
 
 import seaborn as sns
 sns.distplot(gene_cost[gene_cost.cost<0.1]['cost'],hist=False,color='black')
@@ -49,18 +50,24 @@ plt.savefig('/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/
 #########################################
 ## gene velocity plot filtered by cost ##
 #########################################
+
+#color_map="coolwarm"
+#alpha_inside=1
+#pointsize=50
 pointsize=120
-pointsize=50
 color_scatter="#95D9EF" #blue
-color_map="coolwarm"
-alpha_inside=1
+color_map=None
+alpha_inside=0.3
 vmin=0
 vmax=5
 step_i=20
 step_j=20
 detailfinfo='e301-e311'
-output_path='/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/detailcsv/20220117_adjusted_gene_choice_order/gene_velocity_by_cost'
+show_arrow=False
+#output_path='/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/detailcsv/20220117_adjusted_gene_choice_order/gene_velocity_by_cost'
 
+output_path='/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/detailcsv/20220117_adjusted_gene_choice_order/gene_velocity_by_cost/selected'
+output_path='/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/detailcsv/20220117_adjusted_gene_choice_order/gene_velocity_by_cost/selected/not_good'
 gene_choice=gene_cost.gene_choice[0:n_gene]
 gene_choice=gene_cost.gene_choice[160:(n_gene+160)]
 gene_choice=gene_cost.gene_choice[2138:(n_gene+2138)]
@@ -68,22 +75,16 @@ gene_choice=gene_cost.gene_choice[100:(n_gene+110)]
 
 gene_choice=gene_cost[gene_cost.cost<0.03][gene_cost.cost>0.02]['gene_choice'] #659
 
+gene_choice_good_shape=['Rimbp2','Dctn3','Psd3','Dcx']
+
 rank=335
 gene_choice=gene_cost.gene_choice[rank:rank+21]
-rank=675
-gene_choice=gene_cost.gene_choice[rank:rank+21]
-rank=994-21
-gene_choice=gene_cost.gene_choice[rank:994]
-rank=59
-gene_choice=gene_cost.gene_choice[rank:rank+21]
-rank=80
-gene_choice=gene_cost.gene_choice[rank:280]
 for i in gene_choice:
     cost_this_gene=gene_cost[gene_cost.gene_choice==i]['cost'].iloc[0]
     corelation=np.corrcoef(load_detail_data[load_detail_data.gene_name==i].u0,load_detail_data[load_detail_data.gene_name==i].s0)[0,1]
-    save_path=output_path+'/rank_'+str(rank)+'_'+str(i)+'_cost'+str(cost_this_gene)[0:5]+'_cor'+str(corelation)[0:5]+'.pdf'
-    velocity_plot(load_detail_data, [i],detailfinfo,color_scatter,pointsize,alpha_inside,color_map,vmin,vmax,save_path,step_i=step_i,step_j=step_j)
-    rank=rank+1
+    this_gene_rank=gene_cost[gene_cost.gene_choice==i].idx_cost.item()
+    save_path=output_path+'/rank_'+str(this_gene_rank)+'_'+str(i)+'_cost'+str(cost_this_gene)[0:5]+'_cor'+str(corelation)[0:5]+'.pdf'
+    velocity_plot(load_detail_data, [i],detailfinfo,color_scatter,pointsize,alpha_inside,color_map,vmin,vmax,save_path,step_i=step_i,step_j=step_j,show_arrow=show_arrow)
     # save_path_validation=output_path+'/lowcost/validation_'+i+'+'+str(cost_this_gene)[0:5]+'.pdf'
     # vaildation_plot(gene=i,validation_result=brief[brief["gene_name"]==i],save_path_validation=save_path_validation)
 gene_cost.to_csv('/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/data/velocyto/neuro/gene/gene_cost.csv',header=True,index=False)

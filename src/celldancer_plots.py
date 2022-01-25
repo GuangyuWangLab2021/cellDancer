@@ -96,27 +96,43 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from sampling import sampling_neighbors
 
-def velocity_plot(detail,genelist,detail_i,color_scatter,point_size,alpha_inside,colormap,v_min,v_max,save_path,step_i,step_j):
+def velocity_plot(detail,gene,detail_i,color_scatter,point_size,alpha_inside,colormap,v_min,v_max,save_path,step_i,step_j,show_arrow=True):
+    print(gene)
     plt.figure(None,(6,6))
-    embedding= np.array(detail[detail['gene_name'].isin(genelist)][["u0","s0","u1","s1"]])
-    
-    sampling_idx=sampling_neighbors(embedding[:,0:2], step_i=step_i,step_j=step_j) # Sampling
-    embedding_downsampling = embedding[sampling_idx,0:4]
+    u_s= np.array(detail[detail['gene_name'].isin(gene)][["u0","s0","u1","s1"]]) # u_s
+
+    max_u_s=np.max(u_s, axis = 0)
+    u0_max=max_u_s[0]
+    s0_max=max_u_s[1]
+    y_max=1.25*u0_max
+    x_max=1.25*s0_max
+    print(y_max)
+    print(x_max)
+    sampling_idx=sampling_neighbors(u_s[:,0:2], step_i=step_i,step_j=step_j) # Sampling
+    u_s_downsample = u_s[sampling_idx,0:4]
     # layer1=plt.scatter(embedding[:, 1], embedding[:, 0],
     #             alpha=alpha_inside, s=point_size, edgecolor="none",c=detail[detail['gene_name'].isin(genelist)].alpha_new, cmap=colormap,vmin=v_min,vmax=v_max)
-    layer1=plt.scatter(embedding[:, 1], embedding[:, 0],
-                alpha=alpha_inside, s=point_size, edgecolor="none",c=detail[detail['gene_name'].isin(genelist)].alpha_new, cmap=colormap)
- 
-    #layer1=plt.scatter(embedding[:, 1], embedding[:, 0],
-    #            alpha=alpha_inside, s=point_size, edgecolor="none",color=color_scatter,vmin=v_min,vmax=v_max)
-    
-    plt.colorbar(layer1)
-    plt.scatter(embedding_downsampling[:, 1], embedding_downsampling[:, 0], # sampled circle
-                color="none",s=point_size, edgecolor="k")
-    pcm1 = plt.quiver(
-    embedding_downsampling[:, 1], embedding_downsampling[:, 0], embedding_downsampling[:, 3]-embedding_downsampling[:, 1], embedding_downsampling[:, 2]-embedding_downsampling[:, 0],
-    angles='xy', clim=(0., 1.))
-    plt.title(genelist[0])
+    u_s= np.array(detail[detail['gene_name'].isin(gene)][["u0","s0","u1","s1"]])
+    u_s= np.array(detail[detail['gene_name'].isin(gene)][["u0","s0","u1","s1"]])
+
+    plt.xlim(-0.05*s0_max, x_max) 
+    plt.ylim(-0.05*u0_max, y_max) 
+
+    if colormap is not None:
+        layer1=plt.scatter(u_s[:, 1], u_s[:, 0],
+               alpha=alpha_inside, s=point_size, edgecolor="none",c=detail[detail['gene_name'].isin(gene)].alpha_new, cmap=colormap)
+        plt.colorbar(layer1)
+    if color_scatter is not None:
+        layer1=plt.scatter(u_s[:, 1], u_s[:, 0],
+                alpha=alpha_inside, s=point_size, edgecolor="none",color=color_scatter,vmin=v_min,vmax=v_max)
+
+    if show_arrow:
+        plt.scatter(u_s_downsample[:, 1], u_s_downsample[:, 0], # sampled circle
+                    color="none",s=point_size, edgecolor="k")
+        pcm1 = plt.quiver(
+        u_s_downsample[:, 1], u_s_downsample[:, 0], u_s_downsample[:, 3]-u_s_downsample[:, 1], u_s_downsample[:, 2]-u_s_downsample[:, 0],
+        angles='xy', clim=(0., 1.))
+    plt.title(gene[0])
     plt.savefig(save_path)
 
 # epoches=[10]

@@ -1,7 +1,5 @@
-# organize to model_pl4 or seperate module by module
 
 import scvelo as scv
-from torch._C import TracingState
 from torch.utils.data import *
 from utilities import *
 import random
@@ -105,61 +103,79 @@ def smoothing2(adata, k=500, n_pca_dims=19, diag: float=1):
     adata.layers['Mu'] = convolve_by_sparse_weights(adata.layers['unspliced'].T, knn_smoothing_w).T.todense()
     return adata
 
+class realDataset(Dataset):
+    def __init__(self, adata=None, loom_file="../../data/loom/DentateGyrus.loom", gene_list=None, smoothing=True, k=500, n_pca_dims=19, pooling=False, pooling_method="binning", pooling_scale=2): #point_number=600 for training
+        if adata is not None:
+            self.adata = adata
+        else:
+            self.adata = load_adata(loom_file=loom_file)
 
+        if 'X_pca' not in dict(self.adata.obsm):
+            raise RuntimeError("PCA need to be performed before velocity calculation")
 
-class realDataset(Dataset): # TO DO: Change to a suitable name
-    def __init__(self, data_fit=None, data_predict=None,datastatus="predict_dataset", sampling_ratio=1): #point_number=600 for training
-        self.data_fit=data_fit
-        self.data_predict=data_predict
-        self.datastatus=datastatus
-        self.sampling_ratio=sampling_ratio
-        self.gene_list=list(set(data_fit.gene_list))
+        if gene_list is not None:
+            self.adata = self.adata[:, self.adata.var.index.isin(gene_list)]
 
+        if smoothing:
+            self.adata = smoothing2(self.adata, k=k, n_pca_dims=n_pca_dims)
+
+        self.pooling = pooling
+        self.pooling_method = pooling_method
+        self.pooling_scale = pooling_scale
 
     def __len__(self):# name cannot be changed 
-        return len(self.gene_list) # gene count
+        return len(self.adata.var)
 
-    def __getitem__(self, idx):# name cannot be changed
-        gene_name = self.gene_list[idx]
-        data_pred=self.data_predict[self.data_predict.gene_list==gene_name] # u0 & s0 for cells for one gene
-        #print('gene_name: '+gene_name)
-        #print(data_pred)
-        # ASK: 在random sampling前还是后,max 决定alpha0，beta0，and gamma0；所以1个gene最好用统一alpha0，beta0，and gamma0
-        # 未来可能存在的问题：训练cell，和predict cell的u0和s0重大，不match，若不match？（当前predict cell 里是包含训练cell的，所以暂定用predict的u0max和s0max，如果不包含怎么办？还是在外面算好再传参？）
-        u0max = np.float32(max(data_pred["u0"]))
-        s0max = np.float32(max(data_pred["s0"]))
+    def __getitem__(self, idx):# name cannot be changed 
+        adata = self.adata[:, idx]
+        u0max = np.max(adata.layers['Mu']).copy().astype(np.float32)
+        s0max = np.max(adata.layers['Ms']).copy().astype(np.float32)
 
-        if self.datastatus=="fit_dataset":
-            data_fitting=self.data_fit[self.data_fit.gene_list==gene_name] # u0 & s0 for cells for one gene
-            # random sampling ratio selection
-            if self.sampling_ratio==1:
-                data=data_fitting
-            if self.sampling_ratio>1:
-                print("Please set the ratio to be 1 or less than 1.")
-            if self.sampling_ratio<1:
-                data=data_fitting.sample(frac=self.sampling_ratio)
-        elif self.datastatus=="predict_dataset":
-            data=data_pred
+        u0 = adata.layers['Mu'][:,0].copy().astype(np.float32)
+        s0 = adata.layers['Ms'][:,0].copy().astype(np.float32)
 
-        # set u0 array and s0 array
-        u0 = np.array(data.u0.copy().astype(np.float32))
-        s0 = np.array(data.s0.copy().astype(np.float32))
+        gene_name = adata.var.index[0]
+        
+        if self.pooling:
+            if self.pooling_method == "binning":
+                u0 = np.round(u0/u0max, self.pooling_scale)*u0max
+                s0 = np.round(s0/s0max, self.pooling_scale)*s0max
+                upoints = np.unique(np.array([u0, s0]), axis=1)
+                u0 = upoints[0]
+                s0 = upoints[1]
+            
+            if self.pooling_method == "x^2+y^2=1":
+                values = np.vstack([u0,s0])
+                kernel = scipy.stats.gaussian_kde(values)
+                p = kernel(values)
+                idx = np.arange(values.shape[1])
+                r = scipy.stats.rv_discrete(values=(idx, (1/p)/sum(1/p)), seed=0)
+                pp = r.rvs(size=500)
+                u0 = values[0, pp]
+                s0 = values[1, pp]
 
-        # below will be deprecated later since this is for the use of realdata
+            if self.pooling_method == "y=1/x":
+                values = np.vstack([u0,s0])
+                kernel = scipy.stats.gaussian_kde(values)
+                p = kernel(values)
+                idx = np.arange(values.shape[1])
+                tmp_p = np.square((1-(p/(max(p)))**2))+0.0001
+                # tmp_p = np.square((1-(((p+0.4*max(p))*4-2*max(p+0.4*max(p)))/(2*max(p+0.4*max(p))))**2))+0.0001
+                p2 = tmp_p/sum(tmp_p)
+                r = scipy.stats.rv_discrete(values=(idx, p2), seed=0)
+                pp = r.rvs(size=500)
+                u0 = values[0, pp]
+                s0 = values[1, pp]
+
         u1 = np.float32(0)
         s1 = np.float32(0)
         alpha = np.float32(0)
         beta = np.float32(0)
         gamma = np.float32(0)
+
         type = "real"
 
-        # add embedding (Guangyu)
-        embedding1 = np.array(data.embedding1.copy().astype(np.float32))
-        embedding2 = np.array(data.embedding2.copy().astype(np.float32))
-        # print(embedding1)
-
-        return u0, s0, u1, s1, alpha, beta, gamma, gene_name, type, u0max, s0max, embedding1, embedding2
-
+        return u0, s0, u1, s1, alpha, beta, gamma, gene_name, type, u0max, s0max
 
 def test_pooling(u0, s0):
     import matplotlib.mlab as mlab
@@ -186,7 +202,7 @@ def test_pooling(u0, s0):
 def test_smoothie():
     gene_list=["Abcc8"]
     for k in [1, 30, 100, 1000]:
-        data = realDataset(data = adata_scv_pancreas(), k=k, gene_list=gene_list)
+        data = realDataset(adata = adata_scv_pancreas(), k=k, gene_list=gene_list)
         for i in range(len(gene_list)):
             u0, s0, u1, s1, alpha, beta, gamma, gene_name, type1, u0max, s0max = data.__getitem__(i)
             print(u0, s0)
@@ -196,7 +212,7 @@ def test_smoothie():
 
     gene_list=["Abcc8", "Rbfox3", "Sulf2", "Wfdc15b"]
     for k in [1]:
-        data = realDataset(data = adata_scv_pancreas(), k=k, gene_list=gene_list)
+        data = realDataset(adata = adata_scv_pancreas(), k=k, gene_list=gene_list)
         for i in range(len(gene_list)):
             u0, s0, u1, s1, alpha, beta, gamma, gene_name, type1, u0max, s0max = data.__getitem__(i)
             print(u0, s0)
@@ -207,7 +223,7 @@ def test_smoothie():
 def test_sampling():
     gene_list=["Rbfox3"]
     for pooling_method in ["binning", "x^2+y^2=1", "y=1/x"]:
-        data = realDataset(data = adata_scv_pancreas(), k=100, pooling=True, pooling_method=pooling_method, gene_list=gene_list)
+        data = realDataset(adata = adata_scv_pancreas(), k=100, pooling=True, pooling_method=pooling_method, gene_list=gene_list)
         for i in range(len(gene_list)):
             u0, s0, u1, s1, alpha, beta, gamma, gene_name, type1, u0max, s0max = data.__getitem__(i)
             print(u0, s0)
@@ -221,20 +237,12 @@ if __name__ == "__main__":
     from utilities import set_rcParams
     set_rcParams()
 
-    #data= realDataset(data_fit = data_df_downsampled, data_predict=data_df,datastatus="fit_dataset", sampling_ratio=1)
-
-    #u0, s0, u1, s1, alpha, beta, gamma, gene_name, type1, u0max, s0max = data.__getitem__(0)
-    #plt.scatter(s0, u0, s=1)
-    #plt.show()
-
-
-
     gene_list = ["Pdgfra", "Igfbpl1", "Ntrk2", "Syngr1"]
     #adata0 = load_adata(loom_file="../../data/loom/DentateGyrus.loom")
     #adata = init_adata(adata0)
     #adata.write_loom(filename="../../data/loom/DentateGyrus_pca.loom", write_obsm_varm=True)
-    data = load_adata(loom_file="../../data/loom/DentateGyrus_pca.loom")
-    data = realDataset(adata = data, k=500, gene_list=gene_list)
+    adata = load_adata(loom_file="../../data/loom/DentateGyrus_pca.loom")
+    data = realDataset(adata = adata, k=500, gene_list=gene_list)
     #data = realDataset(loom_file="../../data/loom/DentateGyrus_pca.loom", k=1000, gene_list=gene_list)
     for i in range(len(gene_list)):
         u0, s0, u1, s1, alpha, beta, gamma, gene_name, type1, u0max, s0max = data.__getitem__(i)

@@ -15,9 +15,12 @@ embedding = np.loadtxt(open("velocyto/vlm_variables/vlm_embedding.csv", "rb"), d
 
 #detail = pd.read_csv("/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/detailcsv/denGyrLr0.1Costv2C1r0.8C2cf0.3Downneighbors0_200_200Ratio0.125N30OSGD/detail_e500.csv")
 
-detail = pd.read_csv("/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/detailcsv/denGyrLr1e-05Costv3C1r0.5C2cf0.3Downneighbors0_200_200Ratio0.125N30OAdam/detail_e2000.csv")
-detail = pd.read_csv("/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/detailcsv/denGyrLr0.001Costv3C1r0.5C2cf0.3Downneighbors0_200_200Ratio0.125N30OAdam/detail_e200.csv")
-detail = pd.read_csv("/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/detailcsv/denGyrLr0.001Costv3C1r0.5C2cf0.3Downneighbors0_200_200Ratio0.125N30OAdam/detail_e200.csv")
+# detail = pd.read_csv("/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/detailcsv/denGyrLr1e-05Costv3C1r0.5C2cf0.3Downneighbors0_200_200Ratio0.125N30OAdam/detail_e2000.csv")
+# detail = pd.read_csv("/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/detailcsv/denGyrLr0.001Costv3C1r0.5C2cf0.3Downneighbors0_200_200Ratio0.125N30OAdam/detail_e200.csv")
+
+# detail = pd.read_csv("/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/detailcsv/denGyrLr0.001Costv3C1r0.5C2cf0.3Downneighbors0_200_200Ratio0.125N30OAdam/detail_e200.csv")
+detail = pd.read_csv("/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/detailcsv/denGyrLr0.001Costv1C1r0.5C2cf0.3Downneighbors0_200_200Ratio0.125N30OAdam/detail_e200.csv")
+
 gene_choice=['Ank','Btbd17','Cdk1','Cpe','Gnao1',
             'Gng12','Map1b','Mapre3','Nnat','Ntrk2',
             'Pak3','Pcsk2','Ppp3ca','Rap1b','Rbfox3',
@@ -41,10 +44,11 @@ cmap1 = LinearSegmentedColormap.from_list("mycmap", fireworks3)
 color_map4=cmap1
 
 
-color_map_list=[color_map1,color_map2,color_map3,color_map4,color_map4]
+color_map_list=[color_map1,color_map1,color_map1,color_map4,color_map4]
 para_list=['alpha','beta','gamma','s0','u0']
 # color_map_list=[color_map4]
 # para_list=['u0']
+
 
 for para,color_map in zip(para_list,color_map_list):
     for gene_name in gene_choice:
@@ -53,7 +57,8 @@ for para,color_map in zip(para_list,color_map_list):
         layer=plt.scatter(embedding[:,0],embedding[:,1],s=0.2,c=one_gene[para],cmap=color_map)
         plt.title(gene_name+" "+para)
         plt.colorbar(layer)
-        plt.savefig(('/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/cell_level_para/dengyr/'+gene_name+'_'+para+'.png'),dpi=300)
+        #plt.savefig(('/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/output/cell_level_para/dengyr/'+gene_name+'_'+para+'.png'),dpi=300)
+        plt.savefig(('/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/data/velocyto/neuro/cell_level_para/20220124_costv1/'+gene_name+'_'+para+'.png'),dpi=300)
         plt.show()
 
 # np.corrcoef(detail[detail.gene_name=='Nnat'].alpha, detail[detail.gene_name=='Nnat'].u0) # 0.5
