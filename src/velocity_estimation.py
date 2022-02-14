@@ -3,6 +3,7 @@
 #
 import pytorch_lightning as pl
 import os
+from scipy.integrate._ivp.radau import P
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -16,15 +17,18 @@ from sklearn.cluster import KMeans
 import seaborn as sns
 import sys
 from joblib import Parallel, delayed
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from pytorch_lightning.callbacks import ModelCheckpoint
 
-if __name__ == "__main__":# developer test
+if __name__ == "__main__":
     sys.path.append('.')
-    from simulation_cnn import *
-    from load_data import *
-else: # make to library
-    from .simulation_cnn import * 
-    from .load_data import *
-
+    from sampling import *
+else:
+    try:
+        from .sampling import *
+    except ImportError:
+        from sampling import *
+        
 class L2Module(nn.Module): #can change name #set the shape of the net
     '''
     network structure
@@ -43,17 +47,38 @@ class L2Module(nn.Module): #can change name #set the shape of the net
         x = F.leaky_relu(x)
         x = self.l3(x)
         output = F.sigmoid(x)
-        beta = torch.mean(output[:,0])
-        gamma = torch.mean(output[:,1])
+        # beta = torch.mean(output[:,0])   # mean of beta Guangyu
+        # gamma = torch.mean(output[:,1])   # mean of gama Guangyu
+        beta = output[:,0]   # mean of beta Guangyu
+        gamma = output[:,1]   # mean of gama Guangyu
         alphas = output[:,2]
 
         alphas = alphas * alpha0
         beta =  beta * beta0
         gamma = gamma * gamma0
 
+        def corrcoef_cost(alphas, u0, beta, s0):
+            # print('epoch'+str(epoch_num))
+            corrcoef1 = torch.corrcoef(torch.tensor([alphas.detach().numpy(),u0.detach().numpy()]))[1,0]
+            #print("corrcoef1: "+str(corrcoef1))
+            corrcoef2 = torch.corrcoef(torch.tensor([beta.detach().numpy(), s0.detach().numpy()]))[1,0]
+            #print("corrcoef2: "+str(corrcoef2))
+            corrcoef = corrcoef1 + corrcoef2
+            #print("corrcoef: "+str(corrcoef))
+            cost=torch.where(corrcoef>=torch.tensor(0.0), torch.tensor(0.0), torch.tensor(-corrcoef))
+            # cost_corrcoef1=torch.where(corrcoef1>=torch.tensor(0.0), torch.tensor(0.0), torch.tensor(-corrcoef1))
+            # cost_corrcoef2=torch.where(corrcoef2>=torch.tensor(0.0), torch.tensor(0.0), torch.tensor(-corrcoef2))
+            # cost=(cost_corrcoef1+cost_corrcoef2)/2
+            # if epoch_num>100: 
+            #print("cost: "+str(cost))
+            print('----------cost 3 is running')
+            return(cost)
+
         u1 = u0 + (alphas - beta*u0)*dt
         s1 = s0 + (beta*u0 - gamma*s0)*dt
-        return u1, s1, alphas, beta, gamma
+
+        cost = corrcoef_cost(alphas, u0, beta, s0)
+        return u1, s1, alphas, beta, gamma, cost
 
     def save(self, model_path):
         torch.save({
@@ -79,13 +104,28 @@ class stochasticModule(nn.Module): # deep learning module
         self.module = module
         self.n_neighbors = n_neighbors
 
-    def velocity_calculate(self, u0, s0, alpha0, beta0, gamma0,embedding1,embedding2, barcode = None, dt = 0.5,cost_version=1,cost2_cutoff=0.3,cost1_ratio=0.8):
+
+    def velocity_calculate(self, 
+                           u0, 
+                           s0, 
+                           alpha0, 
+                           beta0, 
+                           gamma0,
+                           embedding1,
+                           embedding2, 
+                           epoch_num, 
+                           barcode = None, 
+                           dt = 0.5,
+                           cost2_cutoff=None,
+                           trace_cost_ratio=None,
+                           corrcoef_cost_ratio=None):
         '''
         add embedding (Guangyu)
         for real dataset
         calculate loss function
         predict u1 s1 from network 
         '''
+        # print('epoch'+str(epoch_num))
 
         #generate neighbour indices and expr dataframe
         #print(u0, s0)
@@ -101,7 +141,8 @@ class stochasticModule(nn.Module): # deep learning module
         u0 = torch.tensor(expr['u0'])
         s0 = torch.tensor(expr['s0'])
         indices = torch.tensor(indices)
-        u1, s1, alphas, beta, gamma = self.module(u0, s0, alpha0, beta0, gamma0, dt)
+        u1, s1, alphas, beta, gamma, cost3 = self.module(u0, s0, alpha0, beta0, gamma0, dt)
+        # print(beta)
         def cosine_similarity(u0, s0, u1, s1, indices):
             """Cost function
             Return:
@@ -134,25 +175,96 @@ class stochasticModule(nn.Module): # deep learning module
                 cost=torch.where(atan_theta<atan_theta2, 1, 0)+torch.where(atan_theta2<atan_theta3, 1, 0) 
             return(cost)
 
-        if cost_version==1:
+        def corrcoef_cost(alphas, u0, beta, s0):
+            # print('epoch'+str(epoch_num))
+            corrcoef1 = torch.corrcoef(torch.tensor([alphas.detach().numpy(),u0.detach().numpy()]))[1,0]
+            # if epoch_num>100: 
+            #print(corrcoef1)
+            corrcoef2 = torch.corrcoef(torch.tensor([beta.detach().numpy(), s0.detach().numpy()]))[1,0]
+            # if epoch_num>100
+            #print(corrcoef2)
+            corrcoef = corrcoef1 + corrcoef2
+            # if epoch_num>100
+            #print(corrcoef)
+            cost=torch.where(corrcoef>=torch.tensor(0.0), torch.tensor(0.0), torch.tensor(-corrcoef))
+            # if epoch_num>100: 
+            #print(cost)
+            return(cost)
+
+        # cosin_cost_ratio=0.5
+        # trace_cost_ratio=0.2
+        # corrcoef_cost_ratio=0.3
+        
+        if trace_cost_ratio==0 and corrcoef_cost_ratio==0:
+            # print('------running - just cosin cost, trace_cost_ratio==0 and corrcoef_cost_ratio==0')
             cost1 = cosine_similarity(u0, s0, u1, s1, indices)[0]
             cost_fin=torch.mean(cost1)
-        elif cost_version==2:
+        else:
+            # print('trace_cost_ratio!=0 or corrcoef_cost_ratio!=0')
+
+            # cosin cost
             cost1,idx = cosine_similarity(u0, s0, u1, s1, indices)
-            cost2 = trace_cost(u0, s0, u1, s1, idx,"v2")
-
             cost1_normalize=(cost1-torch.min(cost1))/torch.max(cost1)
-            cost2_normalize=(cost2-torch.min(cost2))/torch.max(cost2)
-
             cost1_mean = torch.mean(cost1_normalize)
-            cost2_mean = torch.mean(cost2_normalize)
-            if cost2_mean<cost2_cutoff:           
-                cost_mean_v2 = cost1_mean
-            else:
-                cost_mean_v2 = cost1_ratio*cost1_mean + (1-cost1_ratio)*(cost2_mean-cost2_cutoff) # relu activate
-            cost_fin=cost_mean_v2
 
+            # trace cost
+            if trace_cost_ratio>0:
+                # print('------running - trace cost')
+                cost2 = trace_cost(u0, s0, u1, s1, idx,"v2")
+                cost2_normalize=(cost2-torch.min(cost2))/torch.max(cost2)
+                cost2_mean = torch.mean(cost2_normalize)
+                cost2_relu=(max((cost2_mean-cost2_cutoff), 0))
+
+            # corrcoef cost
+            if corrcoef_cost_ratio>0:
+                # print('------running - corrcoef_cost')
+                cost3=cost3
+
+            # sum cost
+            cosin_cost_ratio=1-trace_cost_ratio-corrcoef_cost_ratio
+            cost_fin = cosin_cost_ratio*cost1_mean + \
+                       trace_cost_ratio*cost2_relu + \
+                       corrcoef_cost_ratio*cost3
+            
+
+        # if cost_version==1:
+        #     cost1 = cosine_similarity(u0, s0, u1, s1, indices)[0]
+        #     cost_fin=torch.mean(cost1)
+
+        # elif cost_version==2:
+        #     cost1,idx = cosine_similarity(u0, s0, u1, s1, indices)
+        #     cost2 = trace_cost(u0, s0, u1, s1, idx,"v2")
+
+        #     cost1_normalize=(cost1-torch.min(cost1))/torch.max(cost1)
+        #     cost2_normalize=(cost2-torch.min(cost2))/torch.max(cost2)
+
+        #     cost1_mean = torch.mean(cost1_normalize)
+        #     cost2_mean = torch.mean(cost2_normalize)
+        #     if cost2_mean<cost2_cutoff:           
+        #         cost_mean_v2 = cost1_mean
+        #     else:
+        #         cost_mean_v2 = cost1_ratio*cost1_mean + (1-cost1_ratio)*(cost2_mean-cost2_cutoff) # relu activate
+        #     cost_fin=cost_mean_v2
+        # elif cost_version==3:
+        #     cost1,idx = cosine_similarity(u0, s0, u1, s1, indices)
+        #     cost2 = trace_cost(u0, s0, u1, s1, idx,"v2")
+            
+            
+        #     cost1_normalize=(cost1-torch.min(cost1))/torch.max(cost1)
+        #     cost2_normalize=(cost2-torch.min(cost2))/torch.max(cost2)
+        #     # print(cost1_normalize[0:10])
+        #     # print(cost2_normalize[0:10])
+        #     # print(cost3)
+
+        #     cost1_mean = torch.mean(cost1_normalize)
+        #     cost2_mean = torch.mean(cost2_normalize)
+
+        #     ratio2 = 0.3
+        #     cost_mean_v2 = cost1_ratio*cost1_mean + (1-cost1_ratio-ratio2)*(max((cost2_mean-cost2_cutoff), 0)) + ratio2*cost3
+            
+        #     cost_fin=cost_mean_v2
         return cost_fin, u1, s1, alphas, beta, gamma # to do
+
 
     def velocity_calculate_test(self, u0, s0, alpha0, beta0, gamma0,embedding1,embedding2, barcode = None, dt = 0.5):
         '''
@@ -163,7 +275,6 @@ class stochasticModule(nn.Module): # deep learning module
         '''
 
         #generate neighbour indices and expr dataframe
-        #print(u0, s0)
         points = np.array([embedding1.numpy(), embedding2.numpy()]).transpose()
         nbrs = NearestNeighbors(n_neighbors=self.n_neighbors, algorithm='ball_tree').fit(points)
         distances, indices = nbrs.kneighbors(points) # indices: raw is individe cell, col is nearby cells, value is the index of cells, the fist col is the index of row
@@ -174,14 +285,7 @@ class stochasticModule(nn.Module): # deep learning module
             
         u0 = torch.tensor(expr['u0'])
         s0 = torch.tensor(expr['s0'])
-        # print('--------indices0--------')
-        # print(indices)
-        #np.savetxt("output/indices.csv", indices, delimiter=",")
-
         indices = torch.tensor(indices)
-        # print('--------indices1--------')
-        # print(indices)
-
         u1, s1, alphas, beta, gamma = self.module(u0, s0, alpha0, beta0, gamma0, dt)
 
         def cosine_similarity(u0, s0, u1, s1, indices):
@@ -200,63 +304,11 @@ class stochasticModule(nn.Module): # deep learning module
             cosine_max = torch.max(cosine, 0)[0]
             cosine_max_idx = torch.argmax(cosine, 0)
             cell_idx = torch.diag(indices[:, cosine_max_idx+1])
-            # print("------cosine------")
-            # print(u0.shape)
-            # print(s0.shape)
-            # print(u1.shape)
-            # print(s1.shape)
-            # print(cosine.shape)
-            # print(cosine)
-            # print(cosine_max.shape)
-            # print(cosine_max)
-            # print(cosine_max_idx)
-            # print(indices)
-            # print(cell_idx)
             return 1 - cosine_max, cell_idx
-        
-        
-
-        # def trace_cost(u0, s0, u1, s1, idx):
-        #     uv, sv = u1-u0, s1-s0 
-        #     cosin = uv/sv
-        #     print("-------cosin1-------")
-        #     print(cosin)
-        #     cosin2=[]
-        #     for i in range(idx.size()[0]):
-        #         cosin2.append(cosin[idx[i]].tolist())
-        #     cosin2=torch.tensor(cosin2)
-        #     print("-------cosin2-------")
-        #     print(cosin2)
-
-        #     cosin3=[]
-        #     print("-------idx-------")
-        #     print(idx)
-        #     idx_1=list(range(0,idx.size()[0]))
-        #     print(idx_1)
-        #     for i in range(idx.size()[0]):
-        #         # print("--i--")
-        #         # print(i)
-        #         idx_3_temp=idx_1.index(idx[i])
-        #         # print(idx_3_temp)
-        #         idx_3=cosin[idx_3_temp]
-        #         # print(idx_3)
-        #         cosin3.append(idx_3.tolist())
-        #     print("-------cosin3-------")
-        #     cosin3=torch.tensor(cosin3)
-        #     print(cosin3)
-
-        #     cost=cosin2/cosin+cosin3/cosin2
-        #     print("---cost02---")
-        #     print(cost)
-        #     return(cost)
-
-
         cost1,idx = cosine_similarity(u0, s0, u1, s1, indices)
 
-        # cost1 = cosine_similarity(u0, s0, u1, s1, indices)[0]
-        # idx = cosine_similarity(u0, s0, u1, s1, indices)[1]
-        #cost2 = trace_cost(u0, s0, u1, s1, idx)
         cost=cost1+0
+        print("cost for velocity_calculate_test:"+str(cost))
 
         return cost, u1, s1, alphas, beta, gamma
 
@@ -264,7 +316,7 @@ class stochasticModule(nn.Module): # deep learning module
     def velocity_calculate2(self, u0, s0, u1t, s1t, alpha0, beta0, gamma0, barcode = None, dt = 0.001):
         u0 = torch.tensor(u0)
         s0 = torch.tensor(s0)
-        u1, s1, alphas, beta, gamma = self.module(u0, s0, alpha0, beta0, gamma0, dt)
+        u1, s1, alphas, beta, gamma, _ = self.module(u0, s0, alpha0, beta0, gamma0, dt)
 
         def cosine(u0, s0, u1, s1, u1t, s1t):
             """Cost function
@@ -281,59 +333,27 @@ class stochasticModule(nn.Module): # deep learning module
             cosine = torch.where(den!=-1, (utv*uv + stv*sv) / den, torch.tensor(1.))
             return 1 - cosine   
         cost = cosine(u0, s0, u1, s1, u1t, s1t)
+        #print("cost for velocity_calculate2:"+str(cost))
+
         return cost, u1, s1, alphas, beta, gamma
 
-    def summary_para(self, u0, s0, u1, s1, alphas, beta, gamma, cost, cost_mean, backgroud_true_cost, backgroud_true_cost_mean, figure=False): # before got detail; build df
-        barcode = None
+
+    def summary_para_validation(self, cost_mean): # before got detail; build df
+        brief = pd.DataFrame({'cost': cost_mean}, index=[0])
+        return(brief)
+
+
+
+    def summary_para(self, u0, s0, u1, s1, alphas, beta, gamma, cost): # before got detail; build df
         detail = pd.merge(pd.DataFrame(s0, columns=['s0']), pd.DataFrame(u0, columns=['u0']), left_index=True, right_index=True) 
-        detail['u1'] = u1
         detail['s1'] = s1
+        detail['u1'] = u1
         detail['alpha'] = alphas
         detail['beta'] = beta
         detail['gamma'] = gamma
         detail['cost'] = cost
-        detail['backgroud_true_cost'] = backgroud_true_cost
-        if barcode is not None:
-            detail.index = barcode
+        return detail
 
-        cluster_number = 2
-        kmeans = KMeans(n_clusters=cluster_number)
-        if np.any(np.isposinf(alphas)) or np.any(np.isneginf(alphas)) or np.any(np.isnan(alphas)):
-            alpha_label = 0
-        else:
-            alpha_label = kmeans.fit_predict(alphas.reshape(-1,1))
-        detail['alpha_label'] = alpha_label
-
-        alpha1 = np.median(detail.alpha[detail.alpha_label==0])
-        alpha2 = np.median(detail.alpha[detail.alpha_label==1])
-        if alpha1 < alpha2:
-            alpha1, alpha2 = alpha2, alpha1
-        beta = detail.beta[0]
-        gamma = detail.gamma[0]
-        brief = pd.DataFrame({
-            'alpha1': alpha1,
-            'alpha2': alpha2,
-            'beta': beta,
-            'gamma': gamma,
-            'cost': cost_mean,
-            'backgroud_true_cost': backgroud_true_cost_mean}, index=[0])
-
-        if figure:
-            self.summary(detail)
-        return detail, brief
-
-    def summary(self, detail): #display fig for detail (need?)
-        cols, rows = 2, 1
-        axs = plt.figure(figsize=(cols*4,rows*4), constrained_layout=True).subplots(rows, cols)
-        pcm0 = sns.scatterplot(data=detail, x='s0', y='u0', hue='alpha', s=5, style='alpha_label', ax=axs[0]) 
-        norm = plt.Normalize(detail['alpha'].min(), detail['alpha'].max())
-        sm = plt.cm.ScalarMappable(cmap="rocket_r", norm=norm)
-        sm.set_array([])
-        pcm0.get_legend().remove()
-        pcm0.figure.colorbar(sm, ax=axs[0])
-        pcm1 = axs[1].quiver(detail['s0'], detail['u0'], detail['s1']-detail['s0'], detail['u1']-detail['u0'], detail['cost']**(1/10), angles='xy', cmap=plt.cm.jet, clim=(0., 1.))
-        plt.colorbar(pcm1, cmap=plt.cm.jet, ax=axs[1])
-        plt.show()
 
 class ltModule(pl.LightningModule):
     '''
@@ -342,13 +362,13 @@ class ltModule(pl.LightningModule):
     def __init__(self, 
                 backbone, 
                 pretrain=False, 
-                initial_zoom=1, 
-                initial_strech=1,
-                learning_rate=0.01,
-                cost_version=1,
-                cost2_cutoff=0.3,
-                cost1_ratio=0.8,
-                optimizer="SGD"):
+                initial_zoom=None, 
+                initial_strech=None,
+                learning_rate=None,
+                cost2_cutoff=None,
+                optimizer=None,
+                trace_cost_ratio=None,
+                corrcoef_cost_ratio=None):
         super().__init__()
         self.backbone = backbone   # load network; caculate loss function; predict u1 s1 ("DynamicModule")
         self.pretrain = pretrain   # 
@@ -358,10 +378,11 @@ class ltModule(pl.LightningModule):
         self.initial_zoom = initial_zoom
         self.initial_strech = initial_strech
         self.learning_rate=learning_rate
-        self.cost_version=cost_version
         self.cost2_cutoff=cost2_cutoff
-        self.cost1_ratio=cost1_ratio
         self.optimizer=optimizer
+        self.trace_cost_ratio=trace_cost_ratio
+        self.corrcoef_cost_ratio=corrcoef_cost_ratio
+        self.save_hyperparameters()
 
     def save(self, model_path):
         self.backbone.module.save(model_path)    # save network
@@ -373,7 +394,9 @@ class ltModule(pl.LightningModule):
         if self.optimizer=="SGD":
             optimizer = torch.optim.SGD(self.parameters(), lr=self.learning_rate, momentum=0.8)
         elif self.optimizer=="Adam":
-            optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, betas=(0.9, 0.99))
+            # optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, betas=(0.9, 0.99))
+            optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, betas=(0.9, 0.999),eps=10**(-8),weight_decay=0.004,amsgrad=False)
+
         # https://blog.csdn.net/BVL10101111/article/details/72615621
         return optimizer
 
@@ -386,7 +409,7 @@ class ltModule(pl.LightningModule):
         ###############################################
         #########       add embedding         #########
         ###############################################
-        # print('-----------training_step------------')
+        print('-----------training_step------------')
         u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs, embedding1s, embedding2s = batch
         u0, s0, u1t, s1t, _, _, _, _, _, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
         
@@ -397,23 +420,27 @@ class ltModule(pl.LightningModule):
         gamma0 = np.float32(umax/smax*self.initial_strech)
 
         if self.pretrain:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate2(u0, s0, u1t, s1t, alpha0, beta0, gamma0) # for simulation
+            #cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate2(u0, s0, u1t, s1t, alpha0, beta0, gamma0) # for simulation
+            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost_version=self.cost_version,cost2_cutoff=self.cost2_cutoff,cost1_ratio=self.cost1_ratio) 
         else:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2,cost_version=self.cost_version,cost2_cutoff=self.cost2_cutoff,cost1_ratio=self.cost1_ratio) # for real dataset, u0: np.array(u0 for cells selected by __getitem__) to a tensor in pytorch, s0 the same as u0
+            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio) # for real dataset, u0: np.array(u0 for cells selected by __getitem__) to a tensor in pytorch, s0 the same as u0
+        # print("cost for training_step: "+str(cost))
         cost_mean=cost
         # cost_mean = torch.mean(cost)    # cost: a list of cost of each cell for a given gene
         self.log("loss", cost_mean) # used for early stop. controled by log_every_n_steps(default 50) 
 
         return {
             "loss": cost_mean,
-            "beta": beta,
-            "gamma": gamma
+            "beta": beta.detach(),
+            "gamma": gamma.detach()
         } 
 
     def training_epoch_end(self, outputs):# name cannot be changed 
         '''
-        not used yet; steps after finished each epoch
+        steps after finished each epoch
         '''
+        # print("training_epoch_end")
+
         loss = torch.stack([x["loss"] for x in outputs]).mean()
         beta = torch.stack([x["beta"] for x in outputs]).mean()
         gamma = torch.stack([x["gamma"] for x in outputs]).mean()
@@ -422,7 +449,7 @@ class ltModule(pl.LightningModule):
         #self.logger.experiment.add_scalar("beta", beta.data, self.current_epoch)
         #self.logger.experiment.add_scalar("gamma", gamma.data, self.current_epoch)
         #for name,params in self.backbone.module.named_parameters():
-        #    self.logger.experiment.add_histogram(name,params,self.current_epoch)
+        #self.logger.experiment.add_histogram(name,params,self.current_epoch)
 
     def validation_step(self, batch, batch_idx):# name cannot be changed 
         '''
@@ -432,38 +459,26 @@ class ltModule(pl.LightningModule):
         ###############################################
         #########       add embedding         #########
         ###############################################
-        # print('-----------validation_step------------')
+        print('-----------validation_step------------')
         u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs, embedding1s, embedding2s = batch
         u0, s0, u1t, s1t, _, _, _, gene_name, type, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
         
         umax = u0max
         smax = s0max
-        alpha0 = np.float32(umax*2)
+        alpha0 = np.float32(umax)
         beta0 = np.float32(1.0)
         gamma0 = np.float32(umax/smax)
 
         if self.pretrain:
             cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
         else:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2)
-            backgroud_true_cost, _, _, _, _, _ = self.backbone.velocity_calculate2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
+            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio)
+            # print("cost for validation_step: "+str(cost))
         cost_mean = torch.mean(cost)
-        backgroud_true_cost_mean = torch.mean(backgroud_true_cost)
-        detail, brief = self.backbone.summary_para(
-            u0, s0, u1.data.numpy(), s1.data.numpy(), 
-            alphas.data.numpy(), beta.data.numpy(), gamma.data.numpy(), 
-            cost.data.numpy(), cost_mean.data.numpy(),
-            backgroud_true_cost.data.numpy(), backgroud_true_cost_mean.data.numpy())
-        
-        ## For single figure debug
-        #print(self.current_epoch, "alpha0, beta0, gamma0")
-        #print(alpha0, beta0, gamma0)
-        #print(brief)
-        #self.backbone.summary(detail)
-
+        # print("cost_mean: "+str(cost_mean))
+        brief = self.backbone.summary_para_validation(cost_mean.data.numpy())
         brief.insert(0, "gene_name", gene_name)
-        brief.insert(1, "type", type)
-        brief.insert(2, "epoch", self.current_epoch)
+        brief.insert(1, "epoch", self.current_epoch)
 
         if self.validation_brief.empty:
             self.validation_brief = brief
@@ -490,46 +505,70 @@ class ltModule(pl.LightningModule):
         if self.pretrain:
             cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
         else:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate_test(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2)
-            backgroud_true_cost, _, _, _, _, _ = self.backbone.velocity_calculate2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
-        cost_mean = torch.mean(cost)
-        backgroud_true_cost_mean = torch.mean(backgroud_true_cost)
-        self.test_detail, self.test_brief = self.backbone.summary_para(
+            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio)
+
+        self.test_detail= self.backbone.summary_para(
             u0, s0, u1.data.numpy(), s1.data.numpy(), 
             alphas.data.numpy(), beta.data.numpy(), gamma.data.numpy(), 
-            cost.data.numpy(), cost_mean.data.numpy(),
-            backgroud_true_cost.data.numpy(), backgroud_true_cost_mean.data.numpy())
+            cost.data.numpy())
         
         self.test_detail.insert(0, "gene_name", gene_name)
-        self.test_detail.insert(1, "type", type)
-        self.test_brief.insert(0, "gene_name", gene_name)
-        self.test_brief.insert(1, "type", type)
 
-    def summary_test(self):
-        return self.backbone.summary(self.test_result)
 
-class dataModule(pl.LightningDataModule): # data module for simulation data
-    def __init__(self, data_path: str="./", type: str="all", index=None, point_number=600):
-        super().__init__()
-        self.training_dir = data_path
-        self.training_dataset = SimuDataset(data_path=data_path, type=type, index=index, point_number=point_number)
-        self.test_dataset = SimuDataset(data_path=data_path, type=type, index=index)
-    
-    def subset(self, indices):
-        import copy
-        temp = copy.copy(self)
-        temp.training_dataset = Subset(self.training_dataset, indices)
-        temp.test_dataset = Subset(self.test_dataset, indices)
-        return temp
+class getItem(Dataset): # TO DO: Change to a suitable name
+    def __init__(self, data_fit=None, data_predict=None,datastatus="predict_dataset", sampling_ratio=1): #point_number=600 for training
+        self.data_fit=data_fit
+        self.data_predict=data_predict
+        self.datastatus=datastatus
+        self.sampling_ratio=sampling_ratio
+        self.gene_list=list(set(data_fit.gene_list))
 
-    def train_dataloader(self):# name cannot be changed 
-        return DataLoader(self.training_dataset)
 
-    def val_dataloader(self):# name cannot be changed 
-        return DataLoader(self.test_dataset)
+    def __len__(self):# name cannot be changed 
+        return len(self.gene_list) # gene count
 
-    def test_dataloader(self):# name cannot be changed 
-        return DataLoader(self.test_dataset)
+    def __getitem__(self, idx):# name cannot be changed
+        gene_name = self.gene_list[idx]
+        data_pred=self.data_predict[self.data_predict.gene_list==gene_name] # u0 & s0 for cells for one gene
+        #print('gene_name: '+gene_name)
+        #print(data_pred)
+        # ASK: 在random sampling前还是后,max 决定alpha0，beta0，and gamma0；所以1个gene最好用统一alpha0，beta0，and gamma0
+        # 未来可能存在的问题：训练cell，和predict cell的u0和s0重大，不match，若不match？（当前predict cell 里是包含训练cell的，所以暂定用predict的u0max和s0max，如果不包含怎么办？还是在外面算好再传参？）
+        u0max = np.float32(max(data_pred["u0"]))
+        s0max = np.float32(max(data_pred["s0"]))
+
+        if self.datastatus=="fit_dataset":
+            data_fitting=self.data_fit[self.data_fit.gene_list==gene_name] # u0 & s0 for cells for one gene
+            # random sampling ratio selection
+            if self.sampling_ratio==1:
+                data=data_fitting
+            if self.sampling_ratio>1:
+                print("Please set the ratio to be 1 or less than 1.")
+            if self.sampling_ratio<1:
+                data=data_fitting.sample(frac=self.sampling_ratio)
+        elif self.datastatus=="predict_dataset":
+            data=data_pred
+
+        # set u0 array and s0 array
+        u0 = np.array(data.u0.copy().astype(np.float32))
+        s0 = np.array(data.s0.copy().astype(np.float32))
+
+        # below will be deprecated later since this is for the use of realdata
+        u1 = np.float32(0)
+        s1 = np.float32(0)
+        alpha = np.float32(0)
+        beta = np.float32(0)
+        gamma = np.float32(0)
+        type = "real"
+
+        # add embedding (Guangyu)
+        embedding1 = np.array(data.embedding1.copy().astype(np.float32))
+        embedding2 = np.array(data.embedding2.copy().astype(np.float32))
+        # print(embedding1)
+
+        return u0, s0, u1, s1, alpha, beta, gamma, gene_name, type, u0max, s0max, embedding1, embedding2
+
+
 
 class feedData(pl.LightningDataModule): #change name to feedData
     '''
@@ -539,10 +578,10 @@ class feedData(pl.LightningDataModule): #change name to feedData
         super().__init__()
 
         #change name to fit
-        self.training_dataset = realDataset(data_fit=data_fit, data_predict=data_predict,datastatus="fit_dataset", sampling_ratio=sampling_ratio)
+        self.training_dataset = getItem(data_fit=data_fit, data_predict=data_predict,datastatus="fit_dataset", sampling_ratio=sampling_ratio)
         
         #change name to predict
-        self.test_dataset = realDataset(data_fit=data_fit, data_predict=data_predict,datastatus="predict_dataset", sampling_ratio=sampling_ratio)
+        self.test_dataset = getItem(data_fit=data_fit, data_predict=data_predict,datastatus="predict_dataset", sampling_ratio=sampling_ratio)
 
     def subset(self, indices):
         import copy
@@ -558,59 +597,23 @@ class feedData(pl.LightningDataModule): #change name to feedData
     def test_dataloader(self):# name cannot be changed 
         return DataLoader(self.test_dataset)
 
-def _pretrain_thread(model_name, model_path, n_neighbors, data_path, data_type, data_index, max_epoches=500, check_n_epoch=10, initial_zoom=1, initial_strech=1, model_save_path=None, simulation=True):
-    import random
-    seed = 0
-    torch.manual_seed(seed)
-    random.seed(seed)
-    np.random.seed(seed)
-
-    if simulation == True:
-        selected_data = dataModule(data_path=data_path, type=data_type, index = data_index)
-    else:
-        selected_data = feedData(index = data_index)
-    backbone = stochasticModule(L2Module(100, 100), n_neighbors) # 100，100 2层
-    model = ltModule(backbone=backbone, pretrain=False, initial_zoom=initial_zoom, initial_strech=initial_strech)
-    if model_path != None:
-        model_path = os.path.join(model_path, model_name)
-        model.load(model_path)
-    trainer = pl.Trainer(
-        max_epochs=max_epoches, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1, 
-        logger = False,
-        checkpoint_callback = False,
-        check_val_every_n_epoch = check_n_epoch,
-        weights_summary=None)
-    trainer.fit(model, selected_data)
-    trainer.test(model, selected_data)
-
-    if(model_save_path != None):
-        model.save(model_save_path)
-
-    brief = model.validation_brief
-    brief.insert(0, "model", model_name)
-    detail = model.test_detail
-    detail.insert(0, "model", model_name)
-    return brief, detail
-
 def _train_thread(datamodule, 
                     data_indices, 
-                    model_name, 
-                    model_path, 
-                    n_neighbors=30, 
-                    max_epoches=500, 
-                    check_n_epoch=10, 
-                    initial_zoom=1, 
-                    initial_strech=1, 
+                    result_path=None,
+                    n_neighbors=None, 
+                    max_epoches=None, 
+                    check_n_epoch=5, 
+                    initial_zoom=None, 
+                    initial_strech=None, 
                     model_save_path=None,
-                    learning_rate=0.01,
-                    cost_version=1,
-                    cost2_cutoff=0.3,
-                    cost1_ratio=0.8,
-                    optimizer="SGD"):
-    '''
-    real data
-    '''
-    
+                    learning_rate=None,
+                    cost2_cutoff=None,
+                    optimizer=None,
+                    filepath_brief=None,
+                    filepath_detail=None,
+                    trace_cost_ratio=None,
+                    corrcoef_cost_ratio=None):
+    print("train thread---------")
     import random
     seed = 0
     torch.manual_seed(seed)
@@ -623,120 +626,101 @@ def _train_thread(datamodule,
                     initial_zoom=initial_zoom, 
                     initial_strech=initial_strech,
                     learning_rate=learning_rate,
-                    cost_version=cost_version,
                     cost2_cutoff=cost2_cutoff,
-                    cost1_ratio=cost1_ratio,
-                    optimizer=optimizer)
-    if model_path != None:
-        model_path = os.path.join(model_path, model_name)
-        model.load(model_path)
-    trainer = pl.Trainer(
-        max_epochs=max_epoches, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1, 
-        logger = False,
-        checkpoint_callback = False,
-        check_val_every_n_epoch = check_n_epoch,
-        weights_summary=None)   # iniate trainer
-    
+                    optimizer=optimizer,
+                    trace_cost_ratio=trace_cost_ratio,
+                    corrcoef_cost_ratio=corrcoef_cost_ratio)
+
+
     print("indices", data_indices)
     selected_data = datamodule.subset(data_indices)  # IMPORTANT: 这个subset对应realdata.py里的每一个get_item块，
     #因为从前如果不用subset，就会训练出一个网络，对应不同gene的不同alpha，beta，gamma；
     #但是，如果使用subset，就分块训练每个基因不同网络，效果变好
 
+    u0, s0, u1, s1, alpha, beta, gamma, this_gene_name, type, u0max, s0max, embedding1, embedding2=selected_data.training_dataset.__getitem__(0)
+    
+    # data_df=load_raw_data[['gene_list', 'u0','s0','cellID','embedding1','embedding2']][load_raw_data.gene_list.isin(gene_choice)]
+    data_df=pd.DataFrame({'u0':u0,'s0':s0,'embedding1':embedding1,'embedding2':embedding2})
+    data_df['gene_list']=this_gene_name
+    print(data_df)
+
+    _, sampling_ixs_select_model, _ = downsampling_embedding(data_df,
+                        para='neighbors',
+                        target_amount=0,
+                        step_i=20,
+                        step_j=20,
+                        n_neighbors=n_neighbors)
+    gene_downsampling=downsampling(data_df=data_df, gene_choice=[this_gene_name], downsampling_ixs=sampling_ixs_select_model)
+    model_path=select_initial_net(this_gene_name, gene_downsampling, data_df)
+    model.load(model_path)
+
+    early_stop_callback = EarlyStopping(monitor="loss", min_delta=0.0, patience=3,mode='min')
+    checkpoint_callback = ModelCheckpoint(monitor="loss",
+                                          dirpath='output/callback_checkpoint/',
+                                          save_top_k=1,
+                                          mode='min',
+                                          auto_insert_metric_name=True
+                                          )
+
+    trainer = pl.Trainer(
+        max_epochs=max_epoches, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1, 
+        logger = False,
+        checkpoint_callback = False,
+        check_val_every_n_epoch = check_n_epoch,
+        weights_summary=None,
+        callbacks=[early_stop_callback]
+        #callbacks=[early_stop_callback,checkpoint_callback]
+        )
+    '''   by Lingqun
+    trainer = pl.Trainer(
+    max_epochs=500, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1,
+    logger=logger,
+    logger = False,
+    checkpoint_callback = False,
+    check_val_every_n_epoch = 10,
+    log_every_n_steps=50,
+    weights_summary=None)#,
+    callbacks=[EarlyStopping(monitor="loss", min_delta=0.0, patience=200)])
+    '''
+
     if max_epoches > 0:
         trainer.fit(model, selected_data)   # start and finish traning network
-    trainer.test(model, selected_data)    # predict using model
 
+    trainer.test(model, selected_data)    # predict using model
+    
     if(model_save_path != None):
         model.save(model_save_path)
 
     brief = model.validation_brief
-    brief.insert(0, "model", model_name)
     detail = model.test_detail
-    detail.insert(0, "model", model_name)
-    return brief, detail
 
-# def pretrain(
-#     model_path = None, 
-#     model_number = 1, 
-#     type="all", 
-#     index = None,
-#     n_neighbors= 30, 
-#     initial_zoom=2, 
-#     initial_strech=1, 
-#     model_save_path = None,
-#     data_path = "../../data/simulation/training.hdf5", 
-#     result_path = None,
-#     max_epoches=1000, 
-#     simulation = True,
-#     n_jobs=8):
-#     '''when model_path is defined, model_number wont be used'''
+    if (os.path.exists(filepath_brief)) :header_brief=False
+    # else:header_brief=['model','gene_name','type','epoch','alpha1','alpha2','beta','gamma','cost','backgroud_true_cost']
+    else:header_brief=['gene_name','epoch','cost']
 
-#     if not os.path.isfile(data_path):
-#         print("Error: No such file:", data_path)
-#         return
 
-#     brief = pd.DataFrame()
-#     detail = pd.DataFrame()
-#     if simulation:
-#         all_data = dataModule(data_path=data_path, type=type, index=index)
-#     else:
-#         all_data = feedData()
-#     data_len = all_data.test_dataset.__len__()
+    if (os.path.exists(filepath_detail)) :header_detail=False
+    else:header_detail=['gene_name','s0','u0','s1','u1','alpha','beta','gamma','cost']
+    brief.to_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv')),mode='a',header=header_brief)
+    detail.to_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv')),mode='a',header=header_detail)
 
-#     if model_path != None:
-#         model_names = os.listdir(model_path)
-#         model_number = len(model_names)
-#     else:
-#         model_names = list(map(lambda x: "m"+str(x), range(model_number)))
+    return None
 
-#     if index == None:
-#         data_indices = range(data_len)
-#     else:
-#         data_indices = [index]
-
-#     for model_index in range(model_number):
-#         model_name = model_names[model_index]
-#         result = Parallel(n_jobs=n_jobs, backend="loky")(
-#             delayed(_pretrain_thread)(
-#                 model_name=model_name,
-#                 model_path=model_path, 
-#                 n_neighbors = n_neighbors,
-#                 data_path=data_path, 
-#                 data_type=type,
-#                 data_index=data_index, 
-#                 max_epoches=max_epoches,
-#                 initial_zoom=initial_zoom, initial_strech=initial_strech,
-#                 model_save_path=model_save_path,
-#                 simulation=simulation)
-#             for data_index in data_indices)
-
-#         for i in range(len(result)):
-#             temp_brief, temp_detail = result[i]
-#             brief = brief.append(temp_brief)
-#             detail = detail.append(temp_detail)
-
-#     save_path = result_path
-#     if save_path != None:
-#         brief.to_csv(os.path.join(save_path, "brief.csv"))
-#         detail.to_csv(os.path.join(save_path, "detail.csv"))
-#     return brief, detail
 
 def train( # use train_thread # change name to velocity estiminate
     datamodule,
-    model_path = None, 
-    model_number = 1, 
     initial_zoom=2, 
     initial_strech=1, 
     model_save_path = None,
     result_path = None,
-    max_epoches=1000, 
-    n_jobs=8,
-    learning_rate=0.01,
-    cost_version=1,
+    max_epoches=200, 
+    n_jobs=os.cpu_count(),
+    learning_rate=0.001,
     cost2_cutoff=0.3,
     n_neighbors=30,
-    cost1_ratio=0.8,
-    optimizer="SGD"):
+    optimizer="Adam",
+    trace_cost_ratio=0,
+    corrcoef_cost_ratio=0):
     '''
     multple jobs
     when model_path is defined, model_number wont be used
@@ -744,117 +728,35 @@ def train( # use train_thread # change name to velocity estiminate
 
     all_data = datamodule
     data_len = all_data.test_dataset.__len__()
-
     brief = pd.DataFrame()
     detail = pd.DataFrame()
+    filepath_brief= os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv'))
+    filepath_detail=os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv'))
+    if (os.path.exists(filepath_brief)) :os.remove(filepath_brief)
+    if (os.path.exists(filepath_detail)) :os.remove(filepath_detail)
 
-    if model_path != None:
-        model_names = os.listdir(model_path)
-        model_number = len(model_names)
-    else:
-        model_names = list(map(lambda x: "m"+str(x), range(model_number)))
+    result = Parallel(n_jobs=n_jobs, backend="loky")(
+        delayed(_train_thread)(
+            datamodule = datamodule,
+            data_indices=[data_index], 
+            result_path=result_path,
+            max_epoches=max_epoches,
+            initial_zoom=initial_zoom, initial_strech=initial_strech,
+            model_save_path=model_save_path,
+            learning_rate=learning_rate,
+            cost2_cutoff=cost2_cutoff,
+            n_neighbors=n_neighbors,
+            optimizer=optimizer,
+            filepath_brief=filepath_brief,
+            filepath_detail=filepath_detail,
+            trace_cost_ratio=trace_cost_ratio,
+            corrcoef_cost_ratio=corrcoef_cost_ratio)
+        for data_index in range(data_len)) #for 循环里执行train_thread
+        
+    brief=pd.read_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv')))
+    detail=pd.read_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv')))
 
-    for model_index in range(model_number):
-        model_name = model_names[model_index]
-        result = Parallel(n_jobs=n_jobs, backend="loky")(
-            delayed(_train_thread)(
-                datamodule = datamodule,
-                data_indices=[data_index], 
-                model_name=model_name,
-                model_path=model_path, 
-                max_epoches=max_epoches,
-                initial_zoom=initial_zoom, initial_strech=initial_strech,
-                model_save_path=model_save_path,
-                learning_rate=learning_rate,
-                cost_version=cost_version,
-                cost2_cutoff=cost2_cutoff,
-                n_neighbors=n_neighbors,
-                cost1_ratio=cost1_ratio,
-                optimizer=optimizer
-                )
-            for data_index in range(data_len)) #for 循环里执行train_thread
-
-        for i in range(len(result)):
-            temp_brief, temp_detail = result[i]
-            brief = brief.append(temp_brief)
-            detail = detail.append(temp_detail)
-
-    save_path = result_path
-    if save_path != None:
-        brief.to_csv(os.path.join(save_path, "brief.csv"))
-        detail.to_csv(os.path.join(save_path, "detail.csv"))
     return brief, detail
-
-# def pretrain_pipeline():
-#     '''pretrain pipeline left unchanged. but train function should be used instead here in the next version'''
-#     brief, detail = pretrain(type="normal", max_epoches=200, index=2, n_jobs=1, model_save_path = '../../data/model2/normal.pt')
-
-#     show_details(detail, cols=4)
-#     show_details(detail, cols=4, backgroud_true_cost=True)
-
-#     sns.relplot(data=brief, kind="line", col="type", col_wrap=4, hue="gene_name", x="epoch", y="cost", legend = False)
-#     sns.relplot(data=brief, kind="line", col="type", col_wrap=4, hue="gene_name", x="epoch", y="backgroud_true_cost", legend = False)
-
-def train_simudata_pipeline1():
-    from utilities import set_rcParams
-    set_rcParams()
-    import warnings
-    warnings.filterwarnings("ignore")
-    from analysis import show_details
-
-    data_path = "../../data/simulation/training.hdf5"
-    type = "all"
-    index = None
-    all_data = dataModule(data_path=data_path, type=type, index=index)
-
-    model_path='../../data/model2'
-    max_epoches=1000
-    brief, detail = train(all_data, model_path=model_path, max_epoches=max_epoches, n_jobs=8)
-
-    show_details(detail, cols=10)
-    show_details(detail, cols=10, backgroud_true_cost=True)
-    sns.relplot(data=brief, kind="line", col="type", col_wrap=4, hue="gene_name", x="epoch", y="cost", legend = False)
-    sns.relplot(data=brief, kind="line", col="type", col_wrap=4, hue="gene_name", x="epoch", y="backgroud_true_cost", legend = False)
-
-    brief.to_csv(os.path.join("../../result/result_pl4", "brief_p.csv"))
-    detail.to_csv(os.path.join("../../result/result_pl4", "detail_p.csv"))
-
-def train_simudata_pipeline2():
-    from utilities import set_rcParams
-    set_rcParams()
-    import warnings
-    warnings.filterwarnings("ignore")
-    from analysis import show_details
-
-    data_path = "../../data/simulation/small.hdf5"
-    type = "all"
-    all_data = dataModule(data_path=data_path, type=type, index=None)
-
-    max_epoches=500
-    brief, detail = train(all_data, model_path=None, max_epoches=max_epoches, n_jobs=8)
-
-    show_details(detail, cols=4)
-    show_details(detail, cols=4, backgroud_true_cost=True)
-    sns.relplot(data=brief, kind="line", col="type", col_wrap=4, hue="gene_name", x="epoch", y="cost", legend = 'brief')
-    sns.relplot(data=brief, kind="line", col="type", col_wrap=4, hue="gene_name", x="epoch", y="backgroud_true_cost", legend = 'brief')
-
-    brief.to_csv(os.path.join("../../result/result_pl4", "brief_np.csv"))
-    detail.to_csv(os.path.join("../../result/result_pl4", "detail_np.csv"))
-
-
-# old version
-# def downsampling(data_df,gene_choice,para,target_amount,step_i,step_j):
-#     data_df_downsampled=pd.DataFrame()
-#     for gene in gene_choice:
-#         data_df_one_gene=data_df[data_df['gene_list']==gene]
-#         idx = sampling_adata(data_df_one_gene, 
-#                                 para=para,
-#                                 target_amount=target_amount,
-#                                 step_i=step_i,
-#                                 step_j=step_j)
-#         data_df_one_gene_downsampled = data_df_one_gene[data_df_one_gene.index.isin(idx)]
-#         data_df_downsampled=data_df_downsampled.append(data_df_one_gene_downsampled)
-#     return(data_df_downsampled)
 
 
 def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors):
@@ -901,184 +803,36 @@ def vaildation_plot(gene,validation_result,save_path_validation):
     plt.scatter(validation_result.epoch, validation_result.cost)
     plt.title(gene)
     plt.savefig(save_path_validation)
+    
+def select_initial_net(gene, gene_downsampling, data_df):
+    '''
+    Guangyu
+    check if right top conner has cells
+    model1 is the model for single kinetic
+    model2 is multiple kinetic
+    '''
+    # gene = 'Rbfox3'
+    gene_u_s = gene_downsampling[gene_downsampling.gene_list==gene]
+    gene_u_s_full = data_df[data_df.gene_list==gene]
+    
+    s_max=np.max(gene_u_s.s0)
+    u_max = np.max(gene_u_s.u0)
+    s_max_90per = 0.9*s_max
+    u_max_90per = 0.9*u_max
+    
+    gene_u_s_full['color'] = 'blue'
+    gene_u_s_full.loc[(gene_u_s_full.s0>s_max_90per) & (gene_u_s_full.u0>u_max_90per), 'color'] = 'red'
 
+    # plt.scatter(gene_u_s_full.s0, gene_u_s_full.u0, c = gene_u_s_full['color'])
+    # plt.scatter(gene_u_s.s0, gene_u_s.u0)
+    # plt.title(gene)
+    # plt.show()
 
+    if gene_u_s_full.loc[gene_u_s_full['color']=='red'].shape[0]>0.001*gene_u_s_full.shape[0]:
+        model = 'Sulf2'
+        model_path='/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/bin/cellDancer-development_20220125/src/model/Sulf2/Sulf2.pt'
+    else:
+        model = 'Ntrk2_e500'
+        model_path='/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/bin/cellDancer-development_20220125/src/model/Ntrk2_e500/Ntrk2_e500.pt'
+    return(model_path)
 
-
-
-
-
-
-if __name__ == "__main__":
-    from utilities import set_rcParams
-    #from utilities import *
-    set_rcParams()
-    import warnings
-    import os
-    import sys
-    import argparse
-    warnings.filterwarnings("ignore")
-    from analysis import show_details, show_details2, show_details_simplify
-    from celldancer_plots import *
-    from sampling import *
-
-    print('\nvelocity_estimate.py version 1.0.0')
-    print('python velocity_estimate.py')
-    print('')
-
-    use_all_gene=False
-    plot_trigger=True
-    platform = 'local'
-    if platform == "local":
-        model_dir='model2'
-        config = pd.read_csv('/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/neighbor/config/inverse_SGD_costV2.csv', sep=';',header=None)
-        data_source = config.iloc[0][0]
-        platform = config.iloc[0][1]
-        epoches=[int(config.iloc[0][2])]
-        num_jobs=int(config.iloc[0][3])
-        learning_rate=float(config.iloc[0][4])
-        cost_version=int(config.iloc[0][5])
-        cost1_ratio=float(config.iloc[0][6])
-        cost2_cutoff=float(config.iloc[0][7])
-        downsample_method=config.iloc[0][8]
-        downsample_target_amount=int(config.iloc[0][9])
-        step_i=int(config.iloc[0][10])
-        step_j=int(config.iloc[0][11])
-        sampling_ratio=float(config.iloc[0][12])
-        n_neighbors=int(config.iloc[0][13])
-        optimizer=config.iloc[0][14] #["SGD","Adam"]
-    elif platform == 'HPC':
-        model_dir="/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/model2"
-        print("---Parameters---")
-        for i in sys.argv:
-            print(i)
-        print("----------------")
-        data_source=sys.argv[1]
-        platform=sys.argv[2]
-        epoches=[int(sys.argv[3])]
-        num_jobs=int(sys.argv[4])
-        learning_rate=float(sys.argv[5])
-        cost_version=int(sys.argv[6])
-        cost1_ratio=float(sys.argv[7])
-        cost2_cutoff=float(sys.argv[8])
-        downsample_method=sys.argv[9]
-        downsample_target_amount=int(sys.argv[10])
-        step_i=int(sys.argv[11])
-        step_j=int(sys.argv[12])
-        sampling_ratio=float(sys.argv[13])
-        n_neighbors=int(sys.argv[14])
-        optimizer=sys.argv[15] #["SGD","Adam"]
-
-    # set data_source
-    if data_source=="scv":
-        if platform=="local":
-            raw_data_path="/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/neighbor/scv_data.csv" #["velocyto/data/denGyr.csv","data/scv_data.csv"]
-        elif platform=="hpc":
-            raw_data_path_hpc='/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/scv_data.csv'        #["/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/velocyto/data/denGyr.csv","/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/data/scv_data.csv"]
-            raw_data_path=raw_data_path_hpc
-        gene_choice=["Ank","Abcc8","Tcp11","Nfib","Ppp3ca",
-                "Rbfox3","Cdk1","Gng12","Map1b","Cpe",
-                "Gnao1","Pcsk2","Tmem163","Pak3","Wfdc15b",
-                "Nnat","Anxa4","Actn4","Btbd17","Dcdc2a",
-                "Adk","Smoc1","Mapre3","Pim2","Tspan7",
-                "Top2a","Rap1b","Sulf2"]
-        gene_choice=["Sulf2","Top2a","Abcc8"]
-
-    elif data_source=="denGyr":
-        if platform=="local":
-            raw_data_path="/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/neighbor/denGyr_test_2.csv" #["data/denGyr.csv","data/scv_data.csv"]
-        elif platform=="hpc":
-            raw_data_path_hpc="/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/denGyr.csv"         #["/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/velocyto/data/denGyr.csv","/condo/wanglab/tmhsxl98/Velocity/cell_dancer/data/data/scv_data.csv"]
-            raw_data_path=raw_data_path_hpc
-        gene_choice=['Ank','Btbd17','Cdk1','Cpe','Gnao1',
-                    'Gng12','Map1b','Mapre3','Nnat','Ntrk2',
-                    'Pak3','Pcsk2','Ppp3ca','Rap1b','Rbfox3',
-                    'Smoc1','Sulf2','Tmem163','Top2a','Tspan7',
-                    "Pdgfra","Igfbpl1"]
-        gene_choice=["Ntrk2","Tmem163"]
-
-    #### mkdir for output_path with parameters(naming)
-    folder_name=(data_source+
-        "Lr"+str(learning_rate)+
-        "Costv"+str(cost_version)+
-        "C1r"+str(cost1_ratio)+
-        "C2cf"+str(cost2_cutoff)+
-        "Down"+downsample_method+str(downsample_target_amount)+"_"+str(step_i)+"_"+str(step_j)+
-        "Ratio"+str(sampling_ratio)+
-        "N"+str(n_neighbors)+
-        "O"+optimizer)
-    if platform=="local":
-        output_path=("/Users/guangyuwang/OneDrive - Houston Methodist/Work/cellDancer/data/neighbor/output/detailcsv/"+folder_name+"/")
-        if os.path.isdir(output_path):pass
-        else:os.mkdir(output_path)
-    elif platform=="hpc":
-        output_path=("/condo/wanglab/tmhsxl98/Velocity/cell_dancer/output/detailcsv/adj_e/"+folder_name+"/")
-        if os.path.isdir(output_path):pass
-        else:os.mkdir(output_path)
-
-    ######################################################
-    ############             Guangyu          ############
-    ######################################################
-    load_raw_data=pd.read_csv(raw_data_path,names=['gene_list', 'u0','s0',"clusters",'cellID','embedding1','embedding2'])
-    if use_all_gene: gene_choice=list(set(load_raw_data.gene_list))
-    data_df=load_raw_data[['gene_list', 'u0','s0','cellID','embedding1','embedding2']][load_raw_data.gene_list.isin(gene_choice)]
-    embedding_downsampling, sampling_ixs, neighbor_ixs = downsampling_embedding(data_df,
-                        para=downsample_method,
-                        target_amount=downsample_target_amount,
-                        step_i=250,
-                        step_j=250,
-                        n_neighbors=n_neighbors)
-    gene_downsampling = downsampling(data_df=data_df, gene_choice=gene_choice, downsampling_ixs=sampling_ixs)
-
-    # set fitting data, data to be predicted, and sampling ratio in fitting data
-    feed_data = feedData(data_fit = gene_downsampling, data_predict=data_df, sampling_ratio=sampling_ratio) # default sampling_ratio=0.5
-
-    for epoch in epoches:
-        #############################################
-        ###########  Fitting and Predict ############
-        #############################################
-        print('-------epoch----------------')
-        print(epoch)
-        # epoch = epoches[0]
-        brief, detail = train(feed_data,
-                                model_path=model_dir, 
-                                max_epoches=epoch, 
-                                n_jobs=num_jobs,
-                                learning_rate=learning_rate,
-                                cost_version=cost_version,
-                                cost2_cutoff=cost2_cutoff,
-                                n_neighbors=n_neighbors,
-                                cost1_ratio=cost1_ratio,
-                                optimizer=optimizer)
-
-        detail.to_csv(output_path+"detail_e"+str(epoch)+".csv")
-        brief.to_csv(output_path+"brief_e"+str(epoch)+".csv")
-        detail["alpha_new"]=detail["alpha"]/detail["beta"]
-        detail["beta_new"]=detail["beta"]/detail["beta"]
-        detail["gamma_new"]=detail["gamma"]/detail["beta"]
-        detailfinfo="e"+str(epoch)
-        ##########################################
-        ###########       Plot        ############
-        ##########################################
-        if plot_trigger:
-            pointsize=120
-            pointsize=50
-            color_scatter="#95D9EF" #blue
-            alpha_inside=0.3
-            #color_scatter="#DAC9E7" #light purple
-            color_scatter="#8D71B3" #deep purple
-            alpha_inside=0.2
-            color_map="coolwarm"
-            alpha_inside=0.3
-            alpha_inside=1
-            vmin=0
-            vmax=5
-            step_i=20
-            step_j=20
-
-            for i in gene_choice:
-                save_path=output_path+i+"_"+"e"+str(epoch)+".pdf"# notice: changed
-                velocity_plot(detail, [i],detailfinfo,color_scatter,pointsize,alpha_inside,color_map,vmin,vmax,save_path,step_i=step_i,step_j=step_j) # from cell dancer
-                save_path_validation=output_path+i+"_validation_"+"e"+str(epoch)+".pdf"
-                if epoch>0:vaildation_plot(gene=i,validation_result=brief[brief["gene_name"]==i],save_path_validation=save_path_validation)
-                
