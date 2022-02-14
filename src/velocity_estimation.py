@@ -435,22 +435,6 @@ class ltModule(pl.LightningModule):
             "gamma": gamma.detach()
         } 
 
-    def training_epoch_end(self, outputs):# name cannot be changed 
-        '''
-        steps after finished each epoch
-        '''
-        # print("training_epoch_end")
-
-        loss = torch.stack([x["loss"] for x in outputs]).mean()
-        beta = torch.stack([x["beta"] for x in outputs]).mean()
-        gamma = torch.stack([x["gamma"] for x in outputs]).mean()
-
-        #self.logger.experiment.add_scalar("loss", loss, self.current_epoch) #override loss in log
-        #self.logger.experiment.add_scalar("beta", beta.data, self.current_epoch)
-        #self.logger.experiment.add_scalar("gamma", gamma.data, self.current_epoch)
-        #for name,params in self.backbone.module.named_parameters():
-        #self.logger.experiment.add_histogram(name,params,self.current_epoch)
-
     def validation_step(self, batch, batch_idx):# name cannot be changed 
         '''
         predict u1, s1 on the training dataset 
