@@ -33,11 +33,12 @@ class L2Module(nn.Module): #can change name #set the shape of the net
     '''
     network structure
     '''
-    def __init__(self, h1, h2):#all init cannot change name
+    def __init__(self, h1, h2, ratio):#all init cannot change name
         super().__init__()
         self.l1 = nn.Linear(2, h1)
         self.l2 = nn.Linear(h1, h2)
         self.l3 = nn.Linear(h2, 3)
+        self.ratio = ratio
 
     def forward(self, u0, s0, alpha0, beta0, gamma0, dt):#better not change name
         input = torch.tensor(np.array([np.array(u0), np.array(s0)]).T)
@@ -76,8 +77,10 @@ class L2Module(nn.Module): #can change name #set the shape of the net
 
         u1 = u0 + (alphas - beta*u0)*dt
         s1 = s0 + (beta*u0 - gamma*s0)*dt
-
-        cost = corrcoef_cost(alphas, u0, beta, s0)
+        if self.ratio ==0:
+            cost = 0
+        else:
+            cost = corrcoef_cost(alphas, u0, beta, s0)
         return u1, s1, alphas, beta, gamma, cost
 
     def save(self, model_path):
@@ -266,78 +269,6 @@ class stochasticModule(nn.Module): # deep learning module
         return cost_fin, u1, s1, alphas, beta, gamma # to do
 
 
-    def velocity_calculate_test(self, u0, s0, alpha0, beta0, gamma0,embedding1,embedding2, barcode = None, dt = 0.5):
-        '''
-        add embedding (Guangyu)
-        for real dataset
-        calculate loss function
-        predict u1 s1 from network 
-        '''
-
-        #generate neighbour indices and expr dataframe
-        points = np.array([embedding1.numpy(), embedding2.numpy()]).transpose()
-        nbrs = NearestNeighbors(n_neighbors=self.n_neighbors, algorithm='ball_tree').fit(points)
-        distances, indices = nbrs.kneighbors(points) # indices: raw is individe cell, col is nearby cells, value is the index of cells, the fist col is the index of row
-
-        expr = pd.merge(pd.DataFrame(s0, columns=['s0']), pd.DataFrame(u0, columns=['u0']), left_index=True, right_index=True)
-        if barcode is not None:
-            expr.index = barcode
-            
-        u0 = torch.tensor(expr['u0'])
-        s0 = torch.tensor(expr['s0'])
-        indices = torch.tensor(indices)
-        u1, s1, alphas, beta, gamma = self.module(u0, s0, alpha0, beta0, gamma0, dt)
-
-        def cosine_similarity(u0, s0, u1, s1, indices):
-            """Cost function
-            Return:
-                list of cosine distance and a list of the index of the next cell
-            """
-            # Velocity from (u0, s0) to (u1, s1)
-            uv, sv = u1-u0, s1-s0 
-            # Velocity from (u0, s0) to its neighbors
-            unv, snv = u0[indices.T[1:]] - u0, s0[indices.T[1:]] - s0 
-
-            den = torch.sqrt(unv**2 + snv**2) * torch.sqrt(uv**2+sv**2)
-            den[den==0] = -1 # den==0 will cause nan in training 
-            cosine = torch.where(den!=-1, (unv*uv + snv*sv) / den, torch.tensor(1.)) # cosine: col is individuel cell (cellI), row is nearby cells of cellI, value is the cosine between col and row cells
-            cosine_max = torch.max(cosine, 0)[0]
-            cosine_max_idx = torch.argmax(cosine, 0)
-            cell_idx = torch.diag(indices[:, cosine_max_idx+1])
-            return 1 - cosine_max, cell_idx
-        cost1,idx = cosine_similarity(u0, s0, u1, s1, indices)
-
-        cost=cost1+0
-        print("cost for velocity_calculate_test:"+str(cost))
-
-        return cost, u1, s1, alphas, beta, gamma
-
-    #train with true u1, s1
-    def velocity_calculate2(self, u0, s0, u1t, s1t, alpha0, beta0, gamma0, barcode = None, dt = 0.001):
-        u0 = torch.tensor(u0)
-        s0 = torch.tensor(s0)
-        u1, s1, alphas, beta, gamma, _ = self.module(u0, s0, alpha0, beta0, gamma0, dt)
-
-        def cosine(u0, s0, u1, s1, u1t, s1t):
-            """Cost function
-            Return:
-                list of cosine distance
-            """
-            # Velocity from (u0, s0) to (u1, s1)
-            uv, sv = u1-u0, s1-s0 
-            # Velocity from (u0, s0) to (u1t, s1t)
-            utv, stv = u1t-u0, s1t-s0
-
-            den = torch.sqrt(utv**2 + stv**2) * torch.sqrt(uv**2+sv**2)
-            den[den==0] = -1 # den==0 will cause nan in training 
-            cosine = torch.where(den!=-1, (utv*uv + stv*sv) / den, torch.tensor(1.))
-            return 1 - cosine   
-        cost = cosine(u0, s0, u1, s1, u1t, s1t)
-        #print("cost for velocity_calculate2:"+str(cost))
-
-        return cost, u1, s1, alphas, beta, gamma
-
-
     def summary_para_validation(self, cost_mean): # before got detail; build df
         brief = pd.DataFrame({'cost': cost_mean}, index=[0])
         return(brief)
@@ -383,6 +314,7 @@ class ltModule(pl.LightningModule):
         self.trace_cost_ratio=trace_cost_ratio
         self.corrcoef_cost_ratio=corrcoef_cost_ratio
         self.save_hyperparameters()
+        self.get_loss=1000
 
     def save(self, model_path):
         self.backbone.module.save(model_path)    # save network
@@ -419,55 +351,58 @@ class ltModule(pl.LightningModule):
         beta0 = np.float32(1.0)
         gamma0 = np.float32(umax/smax*self.initial_strech)
 
-        if self.pretrain:
-            #cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate2(u0, s0, u1t, s1t, alpha0, beta0, gamma0) # for simulation
-            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost_version=self.cost_version,cost2_cutoff=self.cost2_cutoff,cost1_ratio=self.cost1_ratio) 
-        else:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio) # for real dataset, u0: np.array(u0 for cells selected by __getitem__) to a tensor in pytorch, s0 the same as u0
+
+        cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio) # for real dataset, u0: np.array(u0 for cells selected by __getitem__) to a tensor in pytorch, s0 the same as u0
         # print("cost for training_step: "+str(cost))
         cost_mean=cost
         # cost_mean = torch.mean(cost)    # cost: a list of cost of each cell for a given gene
         self.log("loss", cost_mean) # used for early stop. controled by log_every_n_steps(default 50) 
-
+        self.get_loss = cost_mean
         return {
             "loss": cost_mean,
             "beta": beta.detach(),
             "gamma": gamma.detach()
         } 
 
+    def training_epoch_end(self, outputs):# name cannot be changed 
+        '''
+        steps after finished each epoch
+        '''
+        # print("training_epoch_end")
+
+        loss = torch.stack([x["loss"] for x in outputs]).mean()
+        beta = torch.stack([x["beta"] for x in outputs]).mean()
+        gamma = torch.stack([x["gamma"] for x in outputs]).mean()
+
+        #self.logger.experiment.add_scalar("loss", loss, self.current_epoch) #override loss in log
+        #self.logger.experiment.add_scalar("beta", beta.data, self.current_epoch)
+        #self.logger.experiment.add_scalar("gamma", gamma.data, self.current_epoch)
+        #for name,params in self.backbone.module.named_parameters():
+        #self.logger.experiment.add_histogram(name,params,self.current_epoch)
+
     def validation_step(self, batch, batch_idx):# name cannot be changed 
         '''
         predict u1, s1 on the training dataset 
         caculate every 10 times taining
         '''
+        
+        print(self.get_loss)
         ###############################################
         #########       add embedding         #########
         ###############################################
         print('-----------validation_step------------')
         u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs, embedding1s, embedding2s = batch
         u0, s0, u1t, s1t, _, _, _, gene_name, type, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
-        
-        umax = u0max
-        smax = s0max
-        alpha0 = np.float32(umax)
-        beta0 = np.float32(1.0)
-        gamma0 = np.float32(umax/smax)
-
-        if self.pretrain:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
-        else:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio)
-            # print("cost for validation_step: "+str(cost))
-        cost_mean = torch.mean(cost)
-        # print("cost_mean: "+str(cost_mean))
-        brief = self.backbone.summary_para_validation(cost_mean.data.numpy())
-        brief.insert(0, "gene_name", gene_name)
-        brief.insert(1, "epoch", self.current_epoch)
-
-        if self.validation_brief.empty:
-            self.validation_brief = brief
-        else:
-            self.validation_brief = self.validation_brief.append(brief)
+        if self.current_epoch!=0:
+            cost = self.get_loss.data.numpy()
+            # print("cost_mean: "+str(cost_mean))
+            brief = self.backbone.summary_para_validation(cost)
+            brief.insert(0, "gene_name", gene_name)
+            brief.insert(1, "epoch", self.current_epoch)
+            if self.validation_brief.empty:
+                self.validation_brief = brief
+            else:
+                self.validation_brief = self.validation_brief.append(brief)
 
     def test_step(self, batch, batch_idx):# name cannot be changed 
         '''
@@ -479,18 +414,12 @@ class ltModule(pl.LightningModule):
         print('-----------test_step------------')
         u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs, embedding1s, embedding2s = batch
         u0, s0, u1t, s1t, _, _, _, gene_name, type, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
-        
         umax = u0max
         smax = s0max
         alpha0 = np.float32(umax*2)
         beta0 = np.float32(1.0)
         gamma0 = np.float32(umax/smax)
-
-        if self.pretrain:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate2(u0, s0, u1t, s1t, alpha0, beta0, gamma0)
-        else:
-            cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio)
-
+        cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio)
         self.test_detail= self.backbone.summary_para(
             u0, s0, u1.data.numpy(), s1.data.numpy(), 
             alphas.data.numpy(), beta.data.numpy(), gamma.data.numpy(), 
@@ -603,8 +532,7 @@ def _train_thread(datamodule,
     torch.manual_seed(seed)
     random.seed(seed)
     np.random.seed(seed)
-    
-    backbone = stochasticModule(L2Module(100, 100), n_neighbors)    # iniate network (L2Module) and loss function (DynamicModule)
+    backbone = stochasticModule(L2Module(100, 100, corrcoef_cost_ratio), n_neighbors)    # iniate network (L2Module) and loss function (DynamicModule)
     model = ltModule(backbone=backbone, 
                     pretrain=False, 
                     initial_zoom=initial_zoom, 
