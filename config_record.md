@@ -33,15 +33,15 @@ alpha2_list=np.random.uniform(low=45, high=55, size=(genn_amt,)).
 
 ### celldancer
 check_n_epoch = 5.  
-ratio0.2.  
-Lr0.001.  
-traceR0.  
-corrcoefR0.  
-C2cf0.3.  
-Downneighbors0_200_200.  
-Ratio0.125.  
-N30.  
-OAdam.  
+ratio=0.2.  
+Lr=0.001.  
+trace=R0.  
+corrcoef=R0.  
+C2cf=0.3.  
+Down=neighbors0_200_200.  
+Ratio=0.125.  
+N=30.  
+O=Adam.  
 
 ## wingpath
 ### simulation
@@ -61,16 +61,16 @@ path1_pct_list=np.random.uniform(low=90, high=95, size=(genn_amt,)).
 path2_pct_list=np.random.uniform(low=50, high=70, size=(genn_amt,)).  
 
 ### celldancer
-epoch200.  
-check_nNone.  
-Lr0.001.  
-C2cf0.3.  
-Downneighbors0_200_200.  
-Ratio0.125.  
-N30.  
-OAdam.  
-traceR0.0.  
-corrcoefR0.0.  
+epoch=200.  
+check_n=None.  
+Lr=0.001.  
+C2cf=0.3.  
+Down=neighbors0_200_200.  
+Ratio=0.125.  
+N=30.  
+O=Adam.  
+traceR=0.0.  
+corrcoefR=0.0.  
 
 ## backpath
 ### simulation
