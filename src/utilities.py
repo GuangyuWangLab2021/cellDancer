@@ -5,6 +5,61 @@ import numpy as np
 from scipy.sparse import csr_matrix
 import pandas as pd
 
+
+def adata_to_raw_with_embed(adata,save_path,gene_list=None):
+    '''convert adata to raw data format with embedding info
+    data:
+    save_path:
+    gene_list (optional):
+
+    return: panda dataframe with gene_list,u0,s0,cellID,clusters,embedding1,embedding2
+    
+    run: test=adata_to_raw(adata,'/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/bin/cellDancer-development_20220128/src/output/test.csv',gene_list=genelist_all)
+    ref: mel - loom_to_celldancer_raw.py
+    '''
+    def adata_to_raw_one_gene(data, para, gene):
+        '''
+        convert adata to raw data format (one gene)
+        data: an anndata
+        para: the varable name of u0, s0, and gene name
+        para = ['Mu', 'Ms']
+        '''
+        data2 = data[:, data.var.index.isin([gene])].copy()
+        u0 = data2.layers[para[0]][:,0].copy().astype(np.float32)
+        s0 = data2.layers[para[1]][:,0].copy().astype(np.float32)
+        raw_data = pd.DataFrame({'gene_list':gene, 'u0':u0, 's0':s0})
+        return(raw_data)
+
+    if gene_list is None: gene_list=adata.var.index
+
+    for i,gene in enumerate(gene_list):
+        print("processing:"+str(i)+"/"+str(len(adata.var_names)))
+        data_onegene = adata_to_raw_one_gene(adata, para=['Mu', 'Ms'], gene=gene)
+        if i==0:
+            data_onegene.to_csv(save_path,header=True,index=False)
+        else:
+            data_onegene.to_csv(save_path,mode='a',header=False,index=False)
+    
+    # cell info
+    gene_num=len(gene_list)
+    cellID=pd.DataFrame({'cellID':adata.obs.index})
+    celltype_meta=adata.obs['celltype'].reset_index(drop=True)
+    celltype=pd.DataFrame({'clusters':celltype_meta})#
+    embed_map=pd.DataFrame({'embedding1':adata.obsm['X_umap'][:,0],'embedding2':adata.obsm['X_umap'][:,1]})
+    # embed_info_df = pd.concat([embed_info]*gene_num)
+    embed_info=pd.concat([cellID,celltype,embed_map],axis=1)
+    embed_raw=pd.concat([embed_info]*gene_num)
+    embed_raw=embed_raw.reset_index(drop=True)
+    
+    raw_data=pd.read_csv(save_path)
+    raw_data=pd.concat([raw_data,embed_raw],axis=1)
+    
+    raw_data.to_csv(save_path,header=True,index=False)
+
+    return(raw_data)
+
+
+
 def adata_to_raw(adata,save_path,gene_list=None):
     '''convert adata to raw data format
     data:
@@ -29,6 +84,8 @@ def adata_to_raw(adata,save_path,gene_list=None):
         raw_data = pd.DataFrame({'gene_list':gene, 'u0':u0, 's0':s0})
         raw_data['cellID']=adata.obs.index
         return(raw_data)
+
+    if gene_list is None: gene_list=adata.var.index
 
     for i,gene in enumerate(gene_list):
         print("processing:"+str(i)+"/"+str(len(adata.var_names)))

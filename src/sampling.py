@@ -4,7 +4,6 @@ from sklearn.neighbors import NearestNeighbors
 import scipy
 import pandas as pd
 import matplotlib.pyplot as plt
-import scvelo as scv
 
 
 

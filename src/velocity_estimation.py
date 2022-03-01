@@ -19,7 +19,8 @@ import sys
 from joblib import Parallel, delayed
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
-
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
 if __name__ == "__main__":
     sys.path.append('.')
     from sampling import *
@@ -72,7 +73,7 @@ class L2Module(nn.Module): #can change name #set the shape of the net
             # cost=(cost_corrcoef1+cost_corrcoef2)/2
             # if epoch_num>100: 
             #print("cost: "+str(cost))
-            print('----------cost 3 is running')
+            # print('----------cost 3 is running')
             return(cost)
 
         u1 = u0 + (alphas - beta*u0)*dt
@@ -341,7 +342,7 @@ class ltModule(pl.LightningModule):
         ###############################################
         #########       add embedding         #########
         ###############################################
-        print('-----------training_step------------')
+        # print('-----------training_step------------')
         u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs, embedding1s, embedding2s = batch
         u0, s0, u1t, s1t, _, _, _, _, _, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
         
@@ -386,11 +387,11 @@ class ltModule(pl.LightningModule):
         caculate every 10 times taining
         '''
         
-        print(self.get_loss)
+        # print(self.get_loss)
         ###############################################
         #########       add embedding         #########
         ###############################################
-        print('-----------validation_step------------')
+        # print('-----------validation_step------------')
         u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs, embedding1s, embedding2s = batch
         u0, s0, u1t, s1t, _, _, _, gene_name, type, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
         if self.current_epoch!=0:
@@ -411,7 +412,7 @@ class ltModule(pl.LightningModule):
         ###############################################
         #########       add embedding         #########
         ###############################################
-        print('-----------test_step------------')
+        # print('-----------test_step------------')
         u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs, embedding1s, embedding2s = batch
         u0, s0, u1t, s1t, _, _, _, gene_name, type, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
         umax = u0max
@@ -515,7 +516,7 @@ def _train_thread(datamodule,
                     result_path=None,
                     n_neighbors=None, 
                     max_epoches=None, 
-                    check_n_epoch=5, 
+                    check_n_epoch=None, 
                     initial_zoom=None, 
                     initial_strech=None, 
                     model_save_path=None,
@@ -526,7 +527,7 @@ def _train_thread(datamodule,
                     filepath_detail=None,
                     trace_cost_ratio=None,
                     corrcoef_cost_ratio=None):
-    print("train thread---------")
+    # print("train thread---------")
     import random
     seed = 0
     torch.manual_seed(seed)
@@ -544,7 +545,7 @@ def _train_thread(datamodule,
                     corrcoef_cost_ratio=corrcoef_cost_ratio)
 
 
-    print("indices", data_indices)
+    # print("indices", data_indices)
     selected_data = datamodule.subset(data_indices)  # IMPORTANT: 这个subset对应realdata.py里的每一个get_item块，
     #因为从前如果不用subset，就会训练出一个网络，对应不同gene的不同alpha，beta，gamma；
     #但是，如果使用subset，就分块训练每个基因不同网络，效果变好
@@ -554,7 +555,7 @@ def _train_thread(datamodule,
     # data_df=load_raw_data[['gene_list', 'u0','s0','cellID','embedding1','embedding2']][load_raw_data.gene_list.isin(gene_choice)]
     data_df=pd.DataFrame({'u0':u0,'s0':s0,'embedding1':embedding1,'embedding2':embedding2})
     data_df['gene_list']=this_gene_name
-    print(data_df)
+    print(this_gene_name)
 
     _, sampling_ixs_select_model, _ = downsampling_embedding(data_df,
                         para='neighbors',
@@ -573,16 +574,23 @@ def _train_thread(datamodule,
                                           mode='min',
                                           auto_insert_metric_name=True
                                           )
-
-    trainer = pl.Trainer(
-        max_epochs=max_epoches, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1, 
-        logger = False,
-        checkpoint_callback = False,
-        check_val_every_n_epoch = check_n_epoch,
-        weights_summary=None,
-        callbacks=[early_stop_callback]
-        #callbacks=[early_stop_callback,checkpoint_callback]
-        )
+    if check_n_epoch is None:
+        trainer = pl.Trainer(
+            max_epochs=max_epoches, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1, 
+            logger = False,
+            checkpoint_callback = False,
+            weights_summary=None,
+            )
+    else:
+        trainer = pl.Trainer(
+            max_epochs=max_epoches, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1, 
+            logger = False,
+            checkpoint_callback = False,
+            check_val_every_n_epoch = int(check_n_epoch),
+            weights_summary=None,
+            callbacks=[early_stop_callback]
+            #callbacks=[early_stop_callback,checkpoint_callback]
+            )
     '''   by Lingqun
     trainer = pl.Trainer(
     max_epochs=500, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1,
@@ -625,6 +633,7 @@ def train( # use train_thread # change name to velocity estiminate
     initial_strech=1, 
     model_save_path = None,
     result_path = None,
+    check_n_epoch=5,
     max_epoches=200, 
     n_jobs=os.cpu_count(),
     learning_rate=0.001,
@@ -638,6 +647,7 @@ def train( # use train_thread # change name to velocity estiminate
     when model_path is defined, model_number wont be used
     '''
 
+    if check_n_epoch=='None':check_n_epoch=None
     all_data = datamodule
     data_len = all_data.test_dataset.__len__()
     brief = pd.DataFrame()
@@ -653,6 +663,7 @@ def train( # use train_thread # change name to velocity estiminate
             data_indices=[data_index], 
             result_path=result_path,
             max_epoches=max_epoches,
+            check_n_epoch=check_n_epoch,
             initial_zoom=initial_zoom, initial_strech=initial_strech,
             model_save_path=model_save_path,
             learning_rate=learning_rate,
@@ -716,6 +727,7 @@ def vaildation_plot(gene,validation_result,save_path_validation):
     plt.title(gene)
     plt.savefig(save_path_validation)
     
+    
 def select_initial_net(gene, gene_downsampling, data_df):
     '''
     Guangyu
@@ -742,9 +754,9 @@ def select_initial_net(gene, gene_downsampling, data_df):
 
     if gene_u_s_full.loc[gene_u_s_full['color']=='red'].shape[0]>0.001*gene_u_s_full.shape[0]:
         model = 'Sulf2'
-        model_path='/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/bin/cellDancer-development_20220125/src/model/Sulf2/Sulf2.pt'
+        model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/cellDancer-development_20220128/src/model/Sulf2/Sulf2.pt'
     else:
         model = 'Ntrk2_e500'
-        model_path='/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/bin/cellDancer-development_20220125/src/model/Ntrk2_e500/Ntrk2_e500.pt'
+        model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/cellDancer-development_20220128/src/model/Ntrk2_e500/Ntrk2_e500.pt'
     return(model_path)
 
