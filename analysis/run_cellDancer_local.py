@@ -3,14 +3,13 @@ sys.path.append('../src')
 
 #from utilities import *
 
-import warnings
 import os
 import argparse
-warnings.filterwarnings("ignore")
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
 import time
 
 import pandas as pd
-
 if __name__ == "__main__":
     sys.path.append('.')
     from constant import *
@@ -37,43 +36,52 @@ print('time_start'+str(time_start))
 print('')
 
 use_all_gene=True
-plot_trigger=False
+plot_trigger=True
 
-model_dir = {"Sulf2": '/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development_20220128/src/model/Sulf2/Sulf2.pt', 
-            "Ntrk2_e500": "/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/model/Ntrk2_e500/Ntrk2_e500.pt"}
+# model_dir = {"Sulf2": '/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development_20220128/src/model/Sulf2/Sulf2.pt', 
+#             "Ntrk2_e500": "/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/model/Ntrk2_e500/Ntrk2_e500.pt"}
 # config = pd.read_csv('/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/data/velocyto/neuro/config/config_test20220128.txt', sep=';',header=None)
-config = pd.read_csv('/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/simulation/data/multi_path/multi_path/velocity_result/config.txt', sep=';',header=None)
+# config = pd.read_csv('/Users/wanglab/Documents/ShengyuLi/Velocity/data/config/config_test20220128.txt', sep=';',header=None)
+# config = pd.read_csv('/Users/wanglab/Documents/ShengyuLi/Velocity/data/simulation/data/wing_path/wing_path_20220218/velocity_result/celldancer/config_ratio.txt', sep=';',header=None)
+
+# config = pd.read_csv('/Users/wanglab/Documents/ShengyuLi/Velocity/data/Gastrulation/result_detailcsv/config_sample.txt', sep=';',header=None)
+config = pd.read_csv('/Users/wanglab/Documents/ShengyuLi/Velocity/data/Gastrulation/result_detailcsv/Hba-x/config_sample.txt', sep=';',header=None)
+
+
 task_id=config.iloc[0][0]
 data_source = config.iloc[0][1]
 platform = config.iloc[0][2]
 epoch=int(config.iloc[0][3])
-num_jobs=int(config.iloc[0][4])
-learning_rate=float(config.iloc[0][5])
-cost2_cutoff=float(config.iloc[0][6])
-downsample_method=config.iloc[0][7]
-downsample_target_amount=int(config.iloc[0][8])
-step_i=int(config.iloc[0][9])
-step_j=int(config.iloc[0][10])
-sampling_ratio=float(config.iloc[0][11])
-n_neighbors=int(config.iloc[0][12])
-optimizer=config.iloc[0][13] #["SGD","Adam"]  # set to Adam
-trace_cost_ratio=config.iloc[0][14]
-corrcoef_cost_ratio=config.iloc[0][15]
-raw_path=config.iloc[0][16]
-out_path=config.iloc[0][17]
+check_n_epoch=config.iloc[0][4]
+num_jobs=int(config.iloc[0][5])
+learning_rate=float(config.iloc[0][6])
+cost2_cutoff=float(config.iloc[0][7])
+downsample_method=config.iloc[0][8]
+downsample_target_amount=int(config.iloc[0][9])
+step_i=int(config.iloc[0][10])
+step_j=int(config.iloc[0][11])
+sampling_ratio=float(config.iloc[0][12])
+n_neighbors=int(config.iloc[0][13])
+optimizer=config.iloc[0][14] #["SGD","Adam"]  # set to Adam
+trace_cost_ratio=float(config.iloc[0][15])
+corrcoef_cost_ratio=float(config.iloc[0][16])
+raw_path=config.iloc[0][17]
+out_path=config.iloc[0][18]
 
 
 
 #### mkdir for output_path with parameters(naming)
 folder_name=(data_source+
+    "epoch"+str(epoch)+
+    "check_n"+str(check_n_epoch)+
     "Lr"+str(learning_rate)+
-    "traceR"+str(trace_cost_ratio)+
-    "corrcoefR"+str(corrcoef_cost_ratio)+
     "C2cf"+str(cost2_cutoff)+
     "Down"+downsample_method+str(downsample_target_amount)+"_"+str(step_i)+"_"+str(step_j)+
     "Ratio"+str(sampling_ratio)+
     "N"+str(n_neighbors)+
-    "O"+optimizer)
+    "O"+optimizer+
+    "traceR"+str(trace_cost_ratio)+
+    "corrcoefR"+str(corrcoef_cost_ratio))
 
 output_path=(out_path+folder_name+"/")
 if os.path.isdir(output_path):pass
@@ -94,13 +102,16 @@ if use_all_gene:
     gene_choice=list(set(load_raw_data.gene_list))
     # gene_choice.sort()
     gene_choice=gene_choice
+    # gene_choice=['Hba-x']
+    gene_choice=['H2afv']
+    # gene_choice=['Smim1']
     print('---gene_choice---')
     print(gene_choice)
 else:
     gene_choice = select_gene_set(data_source)
 
 data_df=load_raw_data[['gene_list', 'u0','s0','embedding1','embedding2']][load_raw_data.gene_list.isin(gene_choice)]
-
+data_df.s0=data_df.s0/max(data_df.s0)
 # data_df=load_raw_data[['gene_list', 'u0','s0','cellID','embedding1','embedding2']][load_raw_data.gene_list.isin(gene_choice)]
 
 embedding_downsampling, sampling_ixs, neighbor_ixs = downsampling_embedding(data_df,
@@ -133,7 +144,8 @@ print('-------epoch----------------')
 print(epoch)
 # cost_version=1
 brief, detail = train(feed_data,
-                        max_epoches=epoch, 
+                        max_epoches=epoch,
+                        check_n_epoch=check_n_epoch,
                         model_save_path=model_save_path,
                         result_path=output_path,
                         n_jobs=num_jobs,

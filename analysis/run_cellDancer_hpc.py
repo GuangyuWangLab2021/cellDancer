@@ -21,55 +21,34 @@ print('time_start'+str(time_start))
 print('')
 
 use_all_gene=True
-plot_trigger=True
+plot_trigger=False
 platform = 'hpc'
-if platform == "local":
-    #model_dir='model/model2'
-    #model_dir='model/Ntrk2_e500'
-    model_dir = {"Sulf2": '/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/model/Sulf2/Sulf2.pt', 
-                "Ntrk2_e500": "/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/model/Ntrk2_e500/Ntrk2_e500.pt"}
-    config = pd.read_csv('/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/config/config_test.txt', sep=';',header=None)
-    data_source = config.iloc[0][0]
-    platform = config.iloc[0][1]
-    epoches=[int(config.iloc[0][2])]
-    num_jobs=int(config.iloc[0][3])
-    learning_rate=float(config.iloc[0][4])
-    cost_version=int(config.iloc[0][5])
-    cost1_ratio=float(config.iloc[0][6])
-    cost2_cutoff=float(config.iloc[0][7])
-    downsample_method=config.iloc[0][8]
-    downsample_target_amount=int(config.iloc[0][9])
-    step_i=int(config.iloc[0][10])
-    step_j=int(config.iloc[0][11])
-    sampling_ratio=float(config.iloc[0][12])
-    n_neighbors=int(config.iloc[0][13])
-    optimizer=config.iloc[0][14] #["SGD","Adam"]
-elif platform == 'hpc':
-    model_dir="/condo/wanglab/tmhsxl98/Velocity/cell_dancer/model/model2"
-    #model_dir="/condo/wanglab/tmhsxl98/Velocity/cell_dancer/model/Ntrk2_e500"
-    #model_dir = {'Sulf2': '/condo/wanglab/tmhsxl98/Velocity/cell_dancer/model/Sulf2', 
-    #            'Ntrk2_e500': '/condo/wanglab/tmhsxl98/Velocity/cell_dancer/model/Ntrk2_e500'}
-    print("---Parameters---")
-    for i in sys.argv:
-        print(i)
-    print("----------------")
-    data_source=sys.argv[1]
-    platform=sys.argv[2]
-    epoches=[int(sys.argv[3])]
-    num_jobs=int(sys.argv[4])
-    learning_rate=float(sys.argv[5])
-    cost_version=int(sys.argv[6])
-    cost1_ratio=float(sys.argv[7])
-    cost2_cutoff=float(sys.argv[8])
-    downsample_method=sys.argv[9]
-    downsample_target_amount=int(sys.argv[10])
-    step_i=int(sys.argv[11])
-    step_j=int(sys.argv[12])
-    sampling_ratio=float(sys.argv[13])
-    n_neighbors=int(sys.argv[14])
-    optimizer=sys.argv[15] #["SGD","Adam"] default->adam
-    full_start=int(sys.argv[16])
-    full_end =int(sys.argv[17])
+
+model_dir="/condo/wanglab/tmhsxl98/Velocity/cell_dancer/model/model2"
+#model_dir="/condo/wanglab/tmhsxl98/Velocity/cell_dancer/model/Ntrk2_e500"
+#model_dir = {'Sulf2': '/condo/wanglab/tmhsxl98/Velocity/cell_dancer/model/Sulf2', 
+#            'Ntrk2_e500': '/condo/wanglab/tmhsxl98/Velocity/cell_dancer/model/Ntrk2_e500'}
+print("---Parameters---")
+for i in sys.argv:
+    print(i)
+print("----------------")
+data_source=sys.argv[1]
+platform=sys.argv[2]
+epoches=[int(sys.argv[3])]
+num_jobs=int(sys.argv[4])
+learning_rate=float(sys.argv[5])
+cost_version=int(sys.argv[6])
+cost1_ratio=float(sys.argv[7])
+cost2_cutoff=float(sys.argv[8])
+downsample_method=sys.argv[9]
+downsample_target_amount=int(sys.argv[10])
+step_i=int(sys.argv[11])
+step_j=int(sys.argv[12])
+sampling_ratio=float(sys.argv[13])
+n_neighbors=int(sys.argv[14])
+optimizer=sys.argv[15] #["SGD","Adam"] default->adam
+full_start=int(sys.argv[16])
+full_end =int(sys.argv[17])
 
 # set data_source
 if data_source=="mal":
