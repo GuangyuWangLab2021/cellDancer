@@ -8,12 +8,11 @@ import argparse
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 import time
-
+import warnings
 import pandas as pd
 if __name__ == "__main__":
     sys.path.append('.')
     from constant import *
-    from sampling import *
     from sampling import *
     from velocity_estimation import *
     from utilities import set_rcParams
@@ -36,7 +35,7 @@ print('time_start'+str(time_start))
 print('')
 
 use_all_gene=True
-plot_trigger=True
+plot_trigger=False
 
 # model_dir = {"Sulf2": '/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development_20220128/src/model/Sulf2/Sulf2.pt', 
 #             "Ntrk2_e500": "/Users/shengyuli/OneDrive - Houston Methodist/work/Velocity/veloNN/cellDancer-development/src/model/Ntrk2_e500/Ntrk2_e500.pt"}
@@ -45,7 +44,10 @@ plot_trigger=True
 # config = pd.read_csv('/Users/wanglab/Documents/ShengyuLi/Velocity/data/simulation/data/wing_path/wing_path_20220218/velocity_result/celldancer/config_ratio.txt', sep=';',header=None)
 
 # config = pd.read_csv('/Users/wanglab/Documents/ShengyuLi/Velocity/data/Gastrulation/result_detailcsv/config_sample.txt', sep=';',header=None)
-config = pd.read_csv('/Users/wanglab/Documents/ShengyuLi/Velocity/data/Gastrulation/result_detailcsv/Hba-x/config_sample.txt', sep=';',header=None)
+# config = pd.read_csv('/Users/wanglab/Documents/ShengyuLi/Velocity/data/Gastrulation/velocity_result/result_detailcsv/Hba-x/config_sample.txt', sep=';',header=None)
+# config = pd.read_csv('/Users/wanglab/Documents/ShengyuLi/Velocity/data/Gastrulation/velocity_result/result_detailcsv/Smim1/config_sample.txt', sep=';',header=None)
+# config = pd.read_csv('/Users/wanglab/Documents/ShengyuLi/Velocity/data/Gastrulation/velocity_result/result_detailcsv/test_fun_norm_us/config_sample.txt', sep=';',header=None)
+config = pd.read_csv('/Users/wanglab/Documents/ShengyuLi/Velocity/data/Gastrulation/velocity_result/result_detailcsv/2000_genes/config_sample.txt', sep=';',header=None)
 
 
 task_id=config.iloc[0][0]
@@ -68,7 +70,13 @@ corrcoef_cost_ratio=float(config.iloc[0][16])
 raw_path=config.iloc[0][17]
 out_path=config.iloc[0][18]
 
+# new feature
+n_neighbors_downsample=int(config.iloc[0][19])
+auto_downsample=bool(config.iloc[0][20])
+auto_norm_u_s=bool(config.iloc[0][21])
 
+startpoint=int(config.iloc[0][22])
+endpoint=int(config.iloc[0][23])
 
 #### mkdir for output_path with parameters(naming)
 folder_name=(data_source+
@@ -99,40 +107,19 @@ load_raw_data=pd.read_csv(raw_path)
 
 
 if use_all_gene: 
-    gene_choice=list(set(load_raw_data.gene_list))
+    gene_choice=load_raw_data.gene_list.drop_duplicates()[0:2]
     # gene_choice.sort()
-    gene_choice=gene_choice
+    # gene_choice=gene_choice
     # gene_choice=['Hba-x']
-    gene_choice=['H2afv']
-    # gene_choice=['Smim1']
+    # gene_choice=['H2afv']
+    # gene_choice=['Smim1','Hba-x']
+    gene_choice=['Smim1']
     print('---gene_choice---')
     print(gene_choice)
 else:
     gene_choice = select_gene_set(data_source)
 
-data_df=load_raw_data[['gene_list', 'u0','s0','embedding1','embedding2']][load_raw_data.gene_list.isin(gene_choice)]
-data_df.s0=data_df.s0/max(data_df.s0)
-# data_df=load_raw_data[['gene_list', 'u0','s0','cellID','embedding1','embedding2']][load_raw_data.gene_list.isin(gene_choice)]
-
-embedding_downsampling, sampling_ixs, neighbor_ixs = downsampling_embedding(data_df,
-                    para=downsample_method,
-                    target_amount=downsample_target_amount,
-                    step_i=step_i,
-                    step_j=step_j,
-                    n_neighbors=n_neighbors)
-gene_downsampling = downsampling(data_df=data_df, gene_choice=gene_choice, downsampling_ixs=sampling_ixs)
-
-_, sampling_ixs_select_model, _ = downsampling_embedding(data_df,
-                    para=downsample_method,
-                    target_amount=downsample_target_amount,
-                    step_i=20,
-                    step_j=20,
-                    n_neighbors=n_neighbors)
-gene_downsampling_select_model = downsampling(data_df=data_df, gene_choice=gene_choice, downsampling_ixs=sampling_ixs_select_model)
-
-
-# set fitting data, data to be predicted, and sampling ratio in fitting data
-feed_data = feedData(data_fit = gene_downsampling, data_predict=data_df, sampling_ratio=sampling_ratio) # default sampling_ratio=0.5
+# gene_choice=None
 
 model_save_path=None
 #model_dir=None
@@ -143,7 +130,11 @@ model_save_path=None
 print('-------epoch----------------')
 print(epoch)
 # cost_version=1
-brief, detail = train(feed_data,
+brief, detail = train(load_raw_data,
+                      downsample_method=downsample_method,
+                      n_neighbors_downsample=n_neighbors_downsample,
+                      auto_downsample=auto_downsample,
+                      auto_norm_u_s=auto_norm_u_s,
                         max_epoches=epoch,
                         check_n_epoch=check_n_epoch,
                         model_save_path=model_save_path,
@@ -154,7 +145,8 @@ brief, detail = train(feed_data,
                         n_neighbors=n_neighbors,
                         optimizer=optimizer,
                         trace_cost_ratio=trace_cost_ratio,
-                        corrcoef_cost_ratio=corrcoef_cost_ratio)
+                        corrcoef_cost_ratio=corrcoef_cost_ratio,
+                      gene_choice=gene_choice)
 detailfinfo="e"+str(epoch)
 ##########################################
 ###########       Plot        ############
