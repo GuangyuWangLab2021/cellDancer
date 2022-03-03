@@ -394,7 +394,7 @@ class velocity_plot():
         y_max=1.25*u0_max
         x_max=1.25*s0_max
 
-        sampling_idx=sampling_neighbors(u_s[:,0:2], step_i=step_i,step_j=step_j) # Sampling
+        sampling_idx=sampling_neighbors(u_s[:,0:2], step_i=step_i,step_j=step_j,percentile=15) # Sampling
         u_s_downsample = u_s[sampling_idx,0:4]
         # layer1=plt.scatter(embedding[:, 1], embedding[:, 0],
         #             alpha=alpha_inside, s=point_size, edgecolor="none",c=detail[detail['gene_name'].isin(genelist)].alpha_new, cmap=colormap,vmin=v_min,vmax=v_max)
