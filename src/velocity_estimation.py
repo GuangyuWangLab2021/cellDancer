@@ -48,7 +48,7 @@ class L2Module(nn.Module): #can change name #set the shape of the net
         x = self.l2(x)
         x = F.leaky_relu(x)
         x = self.l3(x)
-        output = F.sigmoid(x)
+        output = torch.sigmoid(x)
         # beta = torch.mean(output[:,0])   # mean of beta Guangyu
         # gamma = torch.mean(output[:,1])   # mean of gama Guangyu
         beta = output[:,0]   # mean of beta Guangyu
@@ -430,12 +430,15 @@ class ltModule(pl.LightningModule):
 
 
 class getItem(Dataset): # TO DO: Change to a suitable name
-    def __init__(self, data_fit=None, data_predict=None,datastatus="predict_dataset", sampling_ratio=1): #point_number=600 for training
+    def __init__(self, data_fit=None, data_predict=None,datastatus="predict_dataset", sampling_ratio=1,auto_norm_u_s=True): #point_number=600 for training
         self.data_fit=data_fit
         self.data_predict=data_predict
         self.datastatus=datastatus
         self.sampling_ratio=sampling_ratio
         self.gene_list=list(set(data_fit.gene_list))
+        self.auto_norm_u_s=auto_norm_u_s
+        self.norm_max_u0=None
+        self.norm_max_s0=None
 
 
     def __len__(self):# name cannot be changed 
@@ -446,7 +449,6 @@ class getItem(Dataset): # TO DO: Change to a suitable name
         data_pred=self.data_predict[self.data_predict.gene_list==gene_name] # u0 & s0 for cells for one gene
         #print('gene_name: '+gene_name)
         #print(data_pred)
-        # ASK: 在random sampling前还是后,max 决定alpha0，beta0，and gamma0；所以1个gene最好用统一alpha0，beta0，and gamma0
         # 未来可能存在的问题：训练cell，和predict cell的u0和s0重大，不match，若不match？（当前predict cell 里是包含训练cell的，所以暂定用predict的u0max和s0max，如果不包含怎么办？还是在外面算好再传参？）
         u0max = np.float32(max(data_pred["u0"]))
         s0max = np.float32(max(data_pred["s0"]))
@@ -466,7 +468,15 @@ class getItem(Dataset): # TO DO: Change to a suitable name
         # set u0 array and s0 array
         u0 = np.array(data.u0.copy().astype(np.float32))
         s0 = np.array(data.s0.copy().astype(np.float32))
-
+        # plt.figure()
+        # plt.title('before norm')
+        # plt.scatter(s0,u0)
+        if self.auto_norm_u_s:
+            u0=u0/u0max
+            s0=s0/s0max
+        # plt.figure()
+        # plt.title('after norm')
+        # plt.scatter(s0,u0)
         # below will be deprecated later since this is for the use of realdata
         u1 = np.float32(0)
         s1 = np.float32(0)
@@ -488,14 +498,14 @@ class feedData(pl.LightningDataModule): #change name to feedData
     '''
     load training and test data
     '''
-    def __init__(self, data_fit=None, data_predict=None,sampling_ratio=1):
+    def __init__(self, data_fit=None, data_predict=None,sampling_ratio=1,auto_norm_u_s=True):
         super().__init__()
 
         #change name to fit
-        self.training_dataset = getItem(data_fit=data_fit, data_predict=data_predict,datastatus="fit_dataset", sampling_ratio=sampling_ratio)
+        self.training_dataset = getItem(data_fit=data_fit, data_predict=data_predict,datastatus="fit_dataset", sampling_ratio=sampling_ratio,auto_norm_u_s=auto_norm_u_s)
         
         #change name to predict
-        self.test_dataset = getItem(data_fit=data_fit, data_predict=data_predict,datastatus="predict_dataset", sampling_ratio=sampling_ratio)
+        self.test_dataset = getItem(data_fit=data_fit, data_predict=data_predict,datastatus="predict_dataset", sampling_ratio=sampling_ratio,auto_norm_u_s=auto_norm_u_s)
 
     def subset(self, indices):
         import copy
@@ -505,11 +515,11 @@ class feedData(pl.LightningDataModule): #change name to feedData
         return temp
 
     def train_dataloader(self):# name cannot be changed 
-        return DataLoader(self.training_dataset)
+        return DataLoader(self.training_dataset,num_workers=0)
     def val_dataloader(self):# name cannot be changed 
-        return DataLoader(self.training_dataset)
+        return DataLoader(self.training_dataset,num_workers=0)
     def test_dataloader(self):# name cannot be changed 
-        return DataLoader(self.test_dataset)
+        return DataLoader(self.test_dataset,num_workers=0)
 
 def _train_thread(datamodule, 
                     data_indices, 
@@ -526,7 +536,8 @@ def _train_thread(datamodule,
                     filepath_brief=None,
                     filepath_detail=None,
                     trace_cost_ratio=None,
-                    corrcoef_cost_ratio=None):
+                    corrcoef_cost_ratio=None,
+                 auto_norm_u_s=None):
     # print("train thread---------")
     import random
     seed = 0
@@ -618,7 +629,14 @@ def _train_thread(datamodule,
     # else:header_brief=['model','gene_name','type','epoch','alpha1','alpha2','beta','gamma','cost','backgroud_true_cost']
     else:header_brief=['gene_name','epoch','cost']
 
-
+    if auto_norm_u_s:
+        detail.s0=detail.s0*s0max
+        detail.u0=detail.u0*u0max
+        detail.s1=detail.s1*s0max
+        detail.u1=detail.u1*u0max
+        detail.beta=detail.beta*u0max
+        detail.gamma=detail.gamma*s0max
+    
     if (os.path.exists(filepath_detail)) :header_detail=False
     else:header_detail=['gene_name','s0','u0','s1','u1','alpha','beta','gamma','cost']
     brief.to_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv')),mode='a',header=header_brief)
@@ -626,9 +644,47 @@ def _train_thread(datamodule,
 
     return None
 
+def downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=None):
+    
+    if gene_choice is None:
+        data_df=load_raw_data[['gene_list', 'u0','s0','embedding1','embedding2']][load_raw_data.gene_list.isin(gene_choice)]
+    else:
+        data_df=load_raw_data[['gene_list', 'u0','s0','embedding1','embedding2']]
+
+    # data_df.s0=data_df.s0/max(data_df.s0)
+    # data_df=load_raw_data[['gene_list', 'u0','s0','cellID','embedding1','embedding2']][load_raw_data.gene_list.isin(gene_choice)]
+    
+    if auto_downsample:
+        _, sampling_ixs, _ = downsampling_embedding(data_df,
+                            para=downsample_method,
+                            target_amount=downsample_target_amount,
+                            step_i=step_i,
+                            step_j=step_j,
+                            n_neighbors=n_neighbors_downsample)
+        gene_downsampling = downsampling(data_df=data_df, gene_choice=gene_choice, downsampling_ixs=sampling_ixs)
+
+
+        feed_data = feedData(data_fit = gene_downsampling, data_predict=data_df, sampling_ratio=sampling_ratio,auto_norm_u_s=auto_norm_u_s) # default 
+    else:
+        feed_data = feedData(data_fit = data_df, data_predict=data_df, sampling_ratio=sampling_ratio,auto_norm_u_s=auto_norm_u_s) # default 
+
+    # set fitting data, data to be predicted, and sampling ratio in fitting data
+    
+
+    return(feed_data)
+
 
 def train( # use train_thread # change name to velocity estiminate
-    datamodule,
+    load_raw_data,
+    gene_choice=None,
+    downsample_method='neighbors',
+    n_neighbors_downsample=30,
+    downsample_target_amount=0,
+    auto_downsample=True,
+    auto_norm_u_s=True,
+    sampling_ratio=0.125,
+    step_i=200,
+    step_j=200,
     initial_zoom=2, 
     initial_strech=1, 
     model_save_path = None,
@@ -646,7 +702,9 @@ def train( # use train_thread # change name to velocity estiminate
     multple jobs
     when model_path is defined, model_number wont be used
     '''
-
+    
+    datamodule=downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=gene_choice)
+    
     if check_n_epoch=='None':check_n_epoch=None
     all_data = datamodule
     data_len = all_data.test_dataset.__len__()
@@ -673,7 +731,8 @@ def train( # use train_thread # change name to velocity estiminate
             filepath_brief=filepath_brief,
             filepath_detail=filepath_detail,
             trace_cost_ratio=trace_cost_ratio,
-            corrcoef_cost_ratio=corrcoef_cost_ratio)
+            corrcoef_cost_ratio=corrcoef_cost_ratio,
+        auto_norm_u_s=auto_norm_u_s)
         for data_index in range(data_len)) #for 循环里执行train_thread
         
     brief=pd.read_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv')))
@@ -751,12 +810,18 @@ def select_initial_net(gene, gene_downsampling, data_df):
     # plt.scatter(gene_u_s.s0, gene_u_s.u0)
     # plt.title(gene)
     # plt.show()
-
+    
+    
+    import pathlib
+    model_path=pathlib.Path(__file__).parent.resolve()
     if gene_u_s_full.loc[gene_u_s_full['color']=='red'].shape[0]>0.001*gene_u_s_full.shape[0]:
         model = 'Sulf2'
-        model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/cellDancer-development_20220128/src/model/Sulf2/Sulf2.pt'
+        
+        model_path=os.path.join(model_path,'model','Sulf2','Sulf2.pt')
+        # model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/cellDancer-development_20220128/src/model/Sulf2/Sulf2.pt'
     else:
         model = 'Ntrk2_e500'
-        model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/cellDancer-development_20220128/src/model/Ntrk2_e500/Ntrk2_e500.pt'
+        model_path=os.path.join(model_path,'model','Ntrk2_e500','Ntrk2_e500.pt')
+        # model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/cellDancer-development_20220128/src/model/Ntrk2_e500/Ntrk2_e500.pt'
     return(model_path)
 

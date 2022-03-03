@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 
 
-def sampling_neighbors(gene_u0_s0,step_i=30,step_j=30): # current version will obtain ~100 cells. e.g. Ntrk2:109; Tmem163:104
+def sampling_neighbors(gene_u0_s0,step_i=30,step_j=30,percentile=25): # current version will obtain ~100 cells. e.g. Ntrk2:109; Tmem163:104
     #step 250 will got 4000 from den data 
     from scipy.stats import norm
     def gaussian_kernel(X, mu = 0, sigma=1):
@@ -40,7 +40,7 @@ def sampling_neighbors(gene_u0_s0,step_i=30,step_j=30): # current version will o
     nn.fit(gene_u0_s0[:,0:2])
     dist, ixs = nn.kneighbors(gene_u0_s0[ix_choice, 0:2], 20)
     density_extimate = gaussian_kernel(dist, mu=0, sigma=0.5).sum(1)
-    bool_density = density_extimate > np.percentile(density_extimate, 25)
+    bool_density = density_extimate > np.percentile(density_extimate, percentile)
     ix_choice = ix_choice[bool_density]
     return(ix_choice)
 
