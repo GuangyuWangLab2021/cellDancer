@@ -458,6 +458,7 @@ class velocity_plot():
         plt.title(title_info)
         if save_path is not None:
             plt.savefig(save_path)
+        plt.show()
 
     def vaildation_plot(gene,validation_result,save_path_validation=None):
         '''gene validation plot
