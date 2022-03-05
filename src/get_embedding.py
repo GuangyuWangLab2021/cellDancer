@@ -6,6 +6,8 @@ import pandas as pd
 import random
 import os
 import sys
+import numpy as np
+
 
 if __name__ == "__main__":
     sys.path.append('.')
@@ -22,8 +24,8 @@ else:
 ####### organize code
 
 
-def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,step=(60,60)):
-
+def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,step=(60,60),mode=None):
+    # mode: [mode='embedding', mode='gene']
     step_i,step_j=step[0],step[1]
 
 
@@ -104,7 +106,8 @@ def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,s
         gene_names = load_cellDancer['gene_name'].drop_duplicates().to_list()
         # cell_number = load_cellDancer[load_cellDancer['gene_name']==gene_names[0]].shape[0]
         # load_cellDancer['index'] = np.tile(range(cell_number),len(gene_names))
-        load_cellDancer['index'] = 0
+        # load_cellDancer['index'] = 0
+        load_cellDancer.loc[:,'index']=0
         for g in gene_names:
             load_cellDancer.loc[load_cellDancer['gene_name'] == g, 'index'] = range(
                 load_cellDancer[load_cellDancer['gene_name'] == g].shape[0])
@@ -133,27 +136,72 @@ def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,s
                                                                                     target_amount=0,
                                                                                     step_i=step_i,
                                                                                     step_j=step_j,
-                                                                                    n_neighbors=n_neighbors)
+                                                                                    n_neighbors=n_neighbors,
+                                                                                mode=mode)
 
-    print(embedding_downsampling)
+    # print(embedding_downsampling)
 
     
-    load_cellDancer = load_cellDancer[load_cellDancer.gene_name.isin(gene_choice)]
+    load_cellDancer_input = load_cellDancer[load_cellDancer.gene_name.isin(gene_choice)]
+    
+    def thread_s0_dmax(load_cellDancer_input,process_gene_amt_each_job=100):
+        from joblib import Parallel, delayed
+        load_cellDancer_input=load_cellDancer
+        gene_list_choice=load_cellDancer_input.gene_name.drop_duplicates()
+        load_cellDancer_input=load_cellDancer_input[load_cellDancer_input.gene_name.isin(gene_list_choice)]
+        
+        gene_amt=len(set(load_cellDancer_input.gene_name))
+        
+        # thread
+        def _s0_matrix_thread(data_index,load_cellDancer_input,process_gene_amt_each_job,gene_list_choice):
+            # data_index:start index of gene in load_cellDancer_input
 
-    np_s0, np_dMatrix = data_reshape(load_cellDancer)  # 2min for 200 genes
-    print(np_s0.shape)
-    print(np_dMatrix.shape)
+            if data_index+process_gene_amt_each_job<gene_amt:
+                load_cellDancer=load_cellDancer_input[load_cellDancer_input.gene_name.isin(gene_list_choice[data_index:(data_index+process_gene_amt_each_job)])]
+            else:
+                load_cellDancer = load_cellDancer_input[load_cellDancer_input.gene_name.isin(gene_list_choice[data_index:,])]
+            np_s0, np_dMatrix = data_reshape(load_cellDancer) 
+            return([np_s0,np_dMatrix])
+
+        # run parallel
+        result = Parallel(n_jobs=os.cpu_count(), backend="loky")(
+            delayed(_s0_matrix_thread)(data_index=data_index,load_cellDancer_input=load_cellDancer_input,process_gene_amt_each_job=process_gene_amt_each_job,gene_list_choice=gene_list_choice)
+            for data_index in range(0,gene_amt,process_gene_amt_each_job))
+        
+        # combine result
+        for i,result_i in enumerate(result):
+            print(i)
+            np_s0=result_i[0]
+            np_dMatrix=result_i[1]
+            if i == 0:
+                np_s0_all = np_s0
+                np_dMatrix_all = np_dMatrix
+            else:
+                np_s0_all = np.vstack((np_s0_all, np_s0))
+                np_dMatrix_all = np.vstack((np_dMatrix_all, np_dMatrix))
+        return(np_s0_all,np_dMatrix_all)
+    
+    
+    np_s0_all,np_dMatrix_all= thread_s0_dmax(load_cellDancer_input)  # 2min for 200 genes
+
+
+    
+    # np_s0, np_dMatrix = data_reshape(load_cellDancer)  # 2min for 200 genes
+    # print(np_s0.shape)
+    # print(np_dMatrix.shape)
     # if i == 301:
-    np_dMatrix_all = np_dMatrix
-    np_s0_all = np_s0
+    # np_dMatrix_all = np_dMatrix
+    # np_s0_all = np_s0
     # else:
     # np_dMatrix_all = np.vstack((np_dMatrix_all, np_dMatrix))
     # np_s0_all = np.vstack((np_s0_all, np_s0))
     print(np_dMatrix_all.shape)
     print(np_s0_all.shape)
 
-    embedding = load_raw_data[load_raw_data.gene_list == list(
-        load_raw_data.gene_list[0])[0]][['embedding1', 'embedding2']].to_numpy()
+    # embedding = load_raw_data[load_raw_data.gene_list == list(
+    #     load_raw_data.gene_list[0])[0]][['embedding1', 'embedding2']].to_numpy()
+    embedding = load_raw_data[load_raw_data.gene_list == 
+        load_raw_data.gene_list[0]][['embedding1', 'embedding2']].to_numpy()
     velocity_embedding = velocity_projection(
         np_s0_all[:, sampling_ixs], np_dMatrix_all[:, sampling_ixs], embedding[sampling_ixs, :], knn_embedding)
 

@@ -14,6 +14,8 @@ else:
         from sampling import *
         from colormap import *
 
+
+        
 class velocity_plot():
     
     '''This class includes all plot functions'''
@@ -30,7 +32,7 @@ class velocity_plot():
         if save_path is not None:
             plt.savefig(save_path)
 
-    def velocity_cell_map(load_raw_data,load_cellDancer, n_neighbors=200,step=(60,60),save_path=None, gene_list=None, custom_xlim=None):
+    def velocity_cell_map(load_raw_data,load_cellDancer, n_neighbors=200,add_amt_gene=2000,step=(60,60),save_path=None,save_csv=None, gene_list=None, custom_xlim=None,colors=None,mode='embedding'):
         from get_embedding import get_embedding
 
         """Cell velocity plot.
@@ -59,25 +61,27 @@ class velocity_plot():
         `matplotlib.Axis` if `show==False`
         """
 
-        embedding, sampling_ixs, velocity_embedding=get_embedding(load_raw_data,load_cellDancer,gene_list=gene_list,n_neighbors=n_neighbors,step=step)
-
-        colors = {'CA': grove2[7],
-                  'CA1-Sub': grove2[9],
-                  'CA2-3-4': grove2[8],
-                  'Granule': grove2[6],
-                  'ImmGranule1': grove2[6],
-                  'ImmGranule2': grove2[6],
-                  'Nbl1': grove2[5],
-                  'Nbl2': grove2[5],
-                  'nIPC': grove2[4],
-                  'RadialGlia': grove2[3],
-                  'RadialGlia2': grove2[3],
-                  'GlialProg': grove2[2],
-                  'OPC': grove2[1],
-                  'ImmAstro': grove2[0]}
+        embedding, sampling_ixs, velocity_embedding=get_embedding(load_raw_data,load_cellDancer,gene_list=gene_list,n_neighbors=n_neighbors,step=step,mode=mode)
+        if colors is not None:
+            colors=colors
+        else:
+            colors = {'CA': grove2[7],
+                    'CA1-Sub': grove2[9],
+                    'CA2-3-4': grove2[8],
+                    'Granule': grove2[6],
+                    'ImmGranule1': grove2[6],
+                    'ImmGranule2': grove2[6],
+                    'Nbl1': grove2[5],
+                    'Nbl2': grove2[5],
+                    'nIPC': grove2[4],
+                    'RadialGlia': grove2[3],
+                    'RadialGlia2': grove2[3],
+                    'GlialProg': grove2[2],
+                    'OPC': grove2[1],
+                    'ImmAstro': grove2[0]}
         pointsize = 5
 
-        one_gene_raw = list(load_raw_data.gene_list[0])[0]
+        one_gene_raw = load_raw_data.gene_list[0]
 
         step_i = 25
         step_j = 25
@@ -107,7 +111,6 @@ class velocity_plot():
                     edgecolor="none")
 
         # arrow all points
-
         plt.quiver(embedding[sampling_ixs, 0],
                     embedding[sampling_ixs, 1],
                     velocity_embedding[:, 0],
@@ -115,21 +118,47 @@ class velocity_plot():
                     # color='black',
                     color=load_raw_data[load_raw_data.gene_list ==
                                         one_gene_raw]['clusters'][sampling_ixs].map(colors),
+                    units='xy',
                     angles='xy',
                     scale=1,
-                    clim=(0., 1.),
-                    width=0.002,
+                    linewidth=0,
+                    width=0.2,
                     alpha=1,
-                    linewidth=.2,
                     )
+        # arrow all points - bkup for nature dataset
+        # plt.quiver(embedding[sampling_ixs, 0],
+        #             embedding[sampling_ixs, 1],
+        #             velocity_embedding[:, 0],
+        #             velocity_embedding[:, 1],
+        #             # color='black',
+        #             color=load_raw_data[load_raw_data.gene_list ==
+        #                                 one_gene_raw]['clusters'][sampling_ixs].map(colors),
+        #             angles='xy',
+        #             scale=1,
+        #             clim=(0., 1.),
+        #             width=0.002,
+        #             alpha=1,
+        #             linewidth=.2,
+        #             )
 
+        
         if custom_xlim is not None:
             plt.xlim(-23, 45)
-        plt.legend(handles=legend_elements, loc='right', prop={'size': 6})
+        plt.legend(handles=legend_elements, bbox_to_anchor=(1.01, 1), loc='upper left')
         if save_path is not None:
-            plt.savefig(save_path)
-
-    def velocity_cell_map_curve(load_raw_data,load_cellDancer, n_neighbors=200,step=(60,60),save_path=None, gene_list=None, custom_xlim=None):
+            plt.savefig(os.path.join(save_path,('velocity_embedding_tune_n' + \
+            str(n_neighbors)+'_gAmt'+str(add_amt_gene) + \
+            '_colorful_arrow.pdf')))
+        if save_csv is not None:
+            cell_velocity_df=pd.DataFrame({'embedding1':embedding[sampling_ixs, 0],
+                         'embedding2':embedding[sampling_ixs, 1],
+                         ('embedding1_n'+str(n_neighbors)+'_gAmt'+str(add_amt_gene)):velocity_embedding[:, 0],
+                         ('embedding2_n'+str(n_neighbors)+'_gAmt'+str(add_amt_gene)):velocity_embedding[:, 1]})
+            cell_velocity_df.to_csv(os.path.join(save_path,('velocity_embedding_tune_n' + \
+            str(n_neighbors)+'_gAmt'+str(add_amt_gene) + \
+            '_colorful_arrow.csv')))
+        
+    def velocity_cell_map_curve(load_raw_data,load_cellDancer, n_neighbors=200,add_amt_gene=2000,step=(60,60),save_path=None, save_csv=None,gene_list=None, custom_xlim=None,colors=None,mode='embedding'):
         from get_embedding import get_embedding
 
         """Cell velocity plot.
@@ -158,25 +187,28 @@ class velocity_plot():
         `matplotlib.Axis` if `show==False`
         """
 
-        embedding, sampling_ixs, velocity_embedding=get_embedding(load_raw_data,load_cellDancer,gene_list=gene_list,n_neighbors=n_neighbors,step=step)
+        embedding, sampling_ixs, velocity_embedding=get_embedding(load_raw_data,load_cellDancer,gene_list=gene_list,n_neighbors=n_neighbors,step=step,mode=mode)
 
-        colors = {'CA': grove2[7],
-                  'CA1-Sub': grove2[9],
-                  'CA2-3-4': grove2[8],
-                  'Granule': grove2[6],
-                  'ImmGranule1': grove2[6],
-                  'ImmGranule2': grove2[6],
-                  'Nbl1': grove2[5],
-                  'Nbl2': grove2[5],
-                  'nIPC': grove2[4],
-                  'RadialGlia': grove2[3],
-                  'RadialGlia2': grove2[3],
-                  'GlialProg': grove2[2],
-                  'OPC': grove2[1],
-                  'ImmAstro': grove2[0]}
+        if colors is not None:
+            colors=colors
+        else:
+            colors = {'CA': grove2[7],
+                    'CA1-Sub': grove2[9],
+                    'CA2-3-4': grove2[8],
+                    'Granule': grove2[6],
+                    'ImmGranule1': grove2[6],
+                    'ImmGranule2': grove2[6],
+                    'Nbl1': grove2[5],
+                    'Nbl2': grove2[5],
+                    'nIPC': grove2[4],
+                    'RadialGlia': grove2[3],
+                    'RadialGlia2': grove2[3],
+                    'GlialProg': grove2[2],
+                    'OPC': grove2[1],
+                    'ImmAstro': grove2[0]}
         pointsize = 5
 
-        one_gene_raw = list(load_raw_data.gene_list[0])[0]
+        one_gene_raw = load_raw_data.gene_list[0]
 
         step_i = 25
         step_j = 25
@@ -353,7 +385,7 @@ class velocity_plot():
                                                 [XYM[i, 1]-UVT[i, 1]-UVT2[i, 1], XYM[i, 1]-UVT[i, 1], XYM[i, 1], XYM[i, 1]+UVH[i, 1], XYM[i, 1]+UVH[i, 1]+UVH2[i, 1]]])
                     curve = bezier.Curve(nodes, degree=4)
                     curve_dots = curve.evaluate_multi(s_vals)
-                    plt.plot(curve_dots[0], curve_dots[1], 'k',
+                    plt.plot(curve_dots[0], curve_dots[1],
                                 linewidth=0.5, color='black', alpha=1)
 
                     # normalize the arrow of the last two points at the tail, to let all arrows has the same size in quiver
@@ -376,11 +408,23 @@ class velocity_plot():
 
         if custom_xlim is not None:
             plt.xlim(-23, 45)
-        plt.legend(handles=legend_elements, loc='right', prop={'size': 6})
+        plt.legend(handles=legend_elements, bbox_to_anchor=(1.01, 1), loc='upper left')
+        # plt.show()
+        
         if save_path is not None:
-            plt.savefig(save_path)
-
-    def velocity_gene(gene,detail,color_scatter="#95D9EF",point_size=120,alpha_inside=0.3,v_min=None,v_max=None,save_path=None,step_i=15,step_j=15,show_arrow=True,cluster_info=None,mode=None,cluster_annot=False):
+            plt.savefig(os.path.join(save_path,('velocity_embedding_tune_n' + \
+            str(n_neighbors)+'_gAmt'+str(add_amt_gene) + \
+            '_colorful_grid_curve_arrow.pdf')))
+        if save_csv is not None:
+            cell_velocity_df=pd.DataFrame({'embedding1':embedding[sampling_ixs, 0],
+                         'embedding2':embedding[sampling_ixs, 1],
+                         ('embedding1_n'+str(n_neighbors)+'_gAmt'+str(add_amt_gene)):velocity_embedding[:, 0],
+                         ('embedding2_n'+str(n_neighbors)+'_gAmt'+str(add_amt_gene)):velocity_embedding[:, 1]})
+            cell_velocity_df.to_csv(os.path.join(save_path,('velocity_embedding_tune_n' + \
+            str(n_neighbors)+'_gAmt'+str(add_amt_gene) + \
+            '_colorful_grid_curve_arrow.csv')))
+        
+    def velocity_gene(gene,detail,color_scatter="#95D9EF",point_size=120,alpha_inside=0.3,v_min=None,v_max=None,save_path=None,step_i=15,step_j=15,show_arrow=True,cluster_info=None,mode=None,cluster_annot=False,colors=None):
         
         '''Gene velocity plot.
         '''
@@ -406,21 +450,24 @@ class velocity_plot():
 
         title_info=gene
         if (cluster_info is not None) and (mode == 'cluster'):
-
-            colors = {'CA':grove2[6],
-                        'CA1-Sub':grove2[8],
-                        'CA2-3-4':grove2[7],
-                        'Granule':grove2[5],
-                        'ImmGranule1':grove2[5],
-                        'ImmGranule2':grove2[5],
-                        'Nbl1':grove2[4],
-                        'Nbl2':grove2[4],
-                        'nIPC':grove2[3],
-                        'RadialGlia':grove2[2],
-                        'RadialGlia2':grove2[2],
-                        'GlialProg' :grove2[2],
-                        'OPC':grove2[1],
-                        'ImmAstro':grove2[0]}
+            
+            if colors is not None:
+                colors=colors
+            else:
+                colors = {'CA':grove2[6],
+                            'CA1-Sub':grove2[8],
+                            'CA2-3-4':grove2[7],
+                            'Granule':grove2[5],
+                            'ImmGranule1':grove2[5],
+                            'ImmGranule2':grove2[5],
+                            'Nbl1':grove2[4],
+                            'Nbl2':grove2[4],
+                            'nIPC':grove2[3],
+                            'RadialGlia':grove2[2],
+                            'RadialGlia2':grove2[2],
+                            'GlialProg' :grove2[2],
+                            'OPC':grove2[1],
+                            'ImmAstro':grove2[0]}
             custom_map=cluster_info.map(colors)
             title_info=gene
             layer1=plt.scatter(u_s[:, 1], u_s[:, 0],
@@ -435,7 +482,7 @@ class velocity_plot():
                 legend_elements = []
                 for i in colors:
                     legend_elements.append(gen_Line2D(i, colors[i]))
-                plt.legend(handles=legend_elements, loc='right', prop={'size': 6})
+                plt.legend(handles=legend_elements, bbox_to_anchor=(1.01, 1), loc='upper left')
 
             #plt.colorbar(layer1)
         # para in gene velocity # not using
@@ -458,7 +505,6 @@ class velocity_plot():
         plt.title(title_info)
         if save_path is not None:
             plt.savefig(save_path)
-        plt.show()
 
     def vaildation_plot(gene,validation_result,save_path_validation=None):
         '''gene validation plot

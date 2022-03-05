@@ -136,7 +136,7 @@ def adata_to_detail(data, para, gene):
     detail = pd.DataFrame({'gene_list':gene, 'u0':u0, 's0':s0})
     return(detail)
 
-def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors):
+def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors,mode=None):
     '''
     Guangyu
     sampling cells by embedding
@@ -152,7 +152,14 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
                 step_i=step_i,
                 step_j=step_j
                 )
-    embedding_downsampling = embedding.iloc[idx_downSampling_embedding][['embedding1','embedding2']]
+    if mode=='gene':
+        print('using gene mode')
+        cellID = data_df.loc[data_df['gene_list']==gene]['cellID']
+        data_df_pivot=data_df.pivot(index='cellID', columns='gene_list', values='s0').reindex(cellID)
+        embedding_downsampling = data_df_pivot.iloc[idx_downSampling_embedding]
+    elif mode=='embedding':
+        print('using cell mode')
+        embedding_downsampling = embedding.iloc[idx_downSampling_embedding][['embedding1','embedding2']]
     nn = NearestNeighbors(n_neighbors=n_neighbors)
     nn.fit(embedding_downsampling)  # NOTE should support knn in high dimensions
     embedding_knn = nn.kneighbors_graph(mode="connectivity")
