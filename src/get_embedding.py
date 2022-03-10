@@ -24,7 +24,7 @@ else:
 ####### organize code
 
 
-def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,step=(60,60),mode=None):
+def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,step=(60,60),transfer_mode=None,mode=None,pca_n_components=None,umap_n=None,umap_n_components=None):
     # mode: [mode='embedding', mode='gene']
     step_i,step_j=step[0],step[1]
 
@@ -109,6 +109,8 @@ def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,s
         # load_cellDancer['index'] = 0
         load_cellDancer.loc[:,'index']=0
         for g in gene_names:
+            # print(g)
+            # print(load_cellDancer[load_cellDancer['gene_name'] == g].shape[0])
             load_cellDancer.loc[load_cellDancer['gene_name'] == g, 'index'] = range(
                 load_cellDancer[load_cellDancer['gene_name'] == g].shape[0])
         s0_reshape = load_cellDancer.pivot(
@@ -124,7 +126,7 @@ def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,s
 
 
     if gene_list is None:
-        gene_choice=list(set(load_raw_data.gene_list))
+        gene_choice=load_raw_data.gene_list.drop_duplicates()
     else:
         gene_choice=gene_list
 
@@ -137,7 +139,11 @@ def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,s
                                                                                     step_i=step_i,
                                                                                     step_j=step_j,
                                                                                     n_neighbors=n_neighbors,
-                                                                                mode=mode)
+                                                                                mode=mode,
+                                                                                 transfer_mode=transfer_mode,
+                                                                                 pca_n_components=pca_n_components,
+                                                                                 umap_n=umap_n,
+                                                                                 umap_n_components=umap_n_components)
 
     # print(embedding_downsampling)
 
@@ -170,9 +176,12 @@ def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,s
         
         # combine result
         for i,result_i in enumerate(result):
-            print(i)
+            # print(i)
+
             np_s0=result_i[0]
             np_dMatrix=result_i[1]
+            # print(np_s0.shape)
+            # print(np_dMatrix.shape)
             if i == 0:
                 np_s0_all = np_s0
                 np_dMatrix_all = np_dMatrix
@@ -202,6 +211,10 @@ def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,s
     #     load_raw_data.gene_list[0])[0]][['embedding1', 'embedding2']].to_numpy()
     embedding = load_raw_data[load_raw_data.gene_list == 
         load_raw_data.gene_list[0]][['embedding1', 'embedding2']].to_numpy()
+    
+    
+    
+    
     velocity_embedding = velocity_projection(
         np_s0_all[:, sampling_ixs], np_dMatrix_all[:, sampling_ixs], embedding[sampling_ixs, :], knn_embedding)
 
