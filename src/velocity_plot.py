@@ -158,7 +158,7 @@ class velocity_plot():
             str(n_neighbors)+'_gAmt'+str(add_amt_gene) + \
             '_colorful_arrow.csv')))
         
-    def velocity_cell_map_curve(load_raw_data,load_cellDancer, n_neighbors=200,add_amt_gene=2000,step=(60,60),save_path=None, save_csv=None,gene_list=None, custom_xlim=None,colors=None,mode='embedding'):
+    def velocity_cell_map_curve(load_raw_data,load_cellDancer, n_neighbors=200,add_amt_gene=2000,step=(60,60),save_path=None, save_csv=None,gene_list=None, custom_xlim=None,custom_ylim=None,colors=None,mode='embedding',pca_n_components=4,file_name_additional_info='',umap_n=10,transfer_mode=None,umap_n_components=None,min_mass=2,grid_steps=(30,30),alpha_inside=0.5):
         from get_embedding import get_embedding
 
         """Cell velocity plot.
@@ -187,7 +187,7 @@ class velocity_plot():
         `matplotlib.Axis` if `show==False`
         """
 
-        embedding, sampling_ixs, velocity_embedding=get_embedding(load_raw_data,load_cellDancer,gene_list=gene_list,n_neighbors=n_neighbors,step=step,mode=mode)
+        embedding, sampling_ixs, velocity_embedding=get_embedding(load_raw_data,load_cellDancer,gene_list=gene_list,n_neighbors=n_neighbors,step=step,mode=mode,pca_n_components=pca_n_components,umap_n=umap_n,transfer_mode=transfer_mode,umap_n_components=umap_n_components)
 
         if colors is not None:
             colors=colors
@@ -234,7 +234,7 @@ class velocity_plot():
                     # alpha=1,
                     # alpha=0.3,
                     # alpha=0.05,
-                    alpha=0.1,
+                    alpha=alpha_inside,
                     edgecolor="none")
 
         # arrow all points
@@ -246,7 +246,7 @@ class velocity_plot():
             import bezier
             # kernel grid plot
 
-            def calculate_two_end_grid(embedding, sampling_ixs, velocity_embedding, smooth=0.8, steps=(40, 40), min_mass=2):
+            def calculate_two_end_grid(embedding, sampling_ixs, velocity_embedding, smooth=None, steps=None, min_mass=None):
                 def find_neighbors(data, n_neighbors, gridpoints_coordinates):
                     # data  = embedding[sampling_ixs, :]
                     nn = NearestNeighbors(
@@ -319,7 +319,7 @@ class velocity_plot():
                 return(XY_filtered, UZ_head_filtered, UZ_tail_filtered, UZ_head2_filtered, UZ_tail2_filtered, mass_filter, grs)
 
             XY_filtered, UZ_head_filtered, UZ_tail_filtered, UZ_head2_filtered, UZ_tail2_filtered, mass_filter, grs = calculate_two_end_grid(
-                embedding, sampling_ixs, velocity_embedding, smooth=0.8, steps=(30, 30), min_mass=2)
+                embedding, sampling_ixs, velocity_embedding, smooth=0.8, steps=grid_steps, min_mass=min_mass)
 
             # plt.quiver(XY_filtered[:, 0], XY_filtered[:, 1], UZ_head_filtered[:, 0], UZ_head_filtered[:, 1], zorder=20000, color='blue')
             # plt.quiver(XY_filtered[:, 0]-UZ_tail_filtered[:, 0], XY_filtered[:, 1]-UZ_tail_filtered[:, 1], UZ_tail_filtered[:, 0], UZ_tail_filtered[:, 1], zorder=20000, color='red')
@@ -407,14 +407,19 @@ class velocity_plot():
 
 
         if custom_xlim is not None:
-            plt.xlim(-23, 45)
-        plt.legend(handles=legend_elements, bbox_to_anchor=(1.01, 1), loc='upper left')
+            plt.xlim(custom_xlim[0], custom_xlim[1])
+            # plt.xlim(-23, 45) # for neurn dataset
+        if custom_ylim is not None:
+            plt.ylim(custom_ylim[0], custom_ylim[1])
+        
+        lgd=plt.legend(handles=legend_elements, bbox_to_anchor=(1.01, 1), loc='upper left')
         # plt.show()
         
         if save_path is not None:
             plt.savefig(os.path.join(save_path,('velocity_embedding_tune_n' + \
             str(n_neighbors)+'_gAmt'+str(add_amt_gene) + \
-            '_colorful_grid_curve_arrow.pdf')))
+            file_name_additional_info+\
+            '_colorful_grid_curve_arrow.pdf')),bbox_inches='tight',bbox_extra_artists=(lgd,),)
         if save_csv is not None:
             cell_velocity_df=pd.DataFrame({'embedding1':embedding[sampling_ixs, 0],
                          'embedding2':embedding[sampling_ixs, 1],
@@ -422,6 +427,7 @@ class velocity_plot():
                          ('embedding2_n'+str(n_neighbors)+'_gAmt'+str(add_amt_gene)):velocity_embedding[:, 1]})
             cell_velocity_df.to_csv(os.path.join(save_path,('velocity_embedding_tune_n' + \
             str(n_neighbors)+'_gAmt'+str(add_amt_gene) + \
+            file_name_additional_info + \
             '_colorful_grid_curve_arrow.csv')))
         
     def velocity_gene(gene,detail,color_scatter="#95D9EF",point_size=120,alpha_inside=0.3,v_min=None,v_max=None,save_path=None,step_i=15,step_j=15,show_arrow=True,cluster_info=None,mode=None,cluster_annot=False,colors=None):
@@ -482,7 +488,7 @@ class velocity_plot():
                 legend_elements = []
                 for i in colors:
                     legend_elements.append(gen_Line2D(i, colors[i]))
-                plt.legend(handles=legend_elements, bbox_to_anchor=(1.01, 1), loc='upper left')
+                lgd=plt.legend(handles=legend_elements, bbox_to_anchor=(1.01, 1), loc='upper left')
 
             #plt.colorbar(layer1)
         # para in gene velocity # not using
@@ -504,7 +510,10 @@ class velocity_plot():
             angles='xy', clim=(0., 1.))
         plt.title(title_info)
         if save_path is not None:
-            plt.savefig(save_path)
+            if cluster_annot:
+                plt.savefig(save_path,bbox_inches='tight',bbox_extra_artists=(lgd,),)
+            else:
+                plt.savefig(save_path)
 
     def vaildation_plot(gene,validation_result,save_path_validation=None):
         '''gene validation plot
