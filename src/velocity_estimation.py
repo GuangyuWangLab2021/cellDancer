@@ -300,7 +300,10 @@ class ltModule(pl.LightningModule):
                 cost2_cutoff=None,
                 optimizer=None,
                 trace_cost_ratio=None,
-                corrcoef_cost_ratio=None):
+                corrcoef_cost_ratio=None,
+                cost_type=None,
+                average_cost_window_size=None,
+                smooth_weight=None):
         super().__init__()
         self.backbone = backbone   # load network; caculate loss function; predict u1 s1 ("DynamicModule")
         self.pretrain = pretrain   # 
@@ -316,7 +319,11 @@ class ltModule(pl.LightningModule):
         self.corrcoef_cost_ratio=corrcoef_cost_ratio
         self.save_hyperparameters()
         self.get_loss=1000
-
+        self.cost_type=cost_type
+        self.average_cost_window_size=average_cost_window_size # will be used only cost_tpye=='average'
+        self.cost_window=[]
+        self.smooth_weight=smooth_weight
+        
     def save(self, model_path):
         self.backbone.module.save(model_path)    # save network
 
@@ -355,15 +362,48 @@ class ltModule(pl.LightningModule):
 
         cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio) # for real dataset, u0: np.array(u0 for cells selected by __getitem__) to a tensor in pytorch, s0 the same as u0
         # print("cost for training_step: "+str(cost))
-        cost_mean=cost
         # cost_mean = torch.mean(cost)    # cost: a list of cost of each cell for a given gene
-        self.log("loss", cost_mean) # used for early stop. controled by log_every_n_steps(default 50) 
-        self.get_loss = cost_mean
+        if self.cost_type=='average':
+            print('-----STOP: using average cost-----')
+            # keep the window len <= check_n_epoch
+            if len(self.cost_window)<self.average_cost_window_size:
+                self.cost_window.append(cost)
+            else:
+                self.cost_window.pop(0)
+                self.cost_window.append(cost)
+            self.get_loss = torch.mean(torch.stack(self.cost_window))
+            self.log("loss", self.get_loss) # used for early stop. controled by log_every_n_steps
+            
+        elif self.cost_type=='median':
+            print('-----STOP: using average cost-----')
+            # keep the window len <= check_n_epoch
+            if len(self.cost_window)<self.average_cost_window_size:
+                self.cost_window.append(cost)
+            else:
+                self.cost_window.pop(0)
+                self.cost_window.append(cost)
+            self.get_loss = torch.median(torch.stack(self.cost_window))
+            self.log("loss", self.get_loss) # used for early stop. controled by log_every_n_steps
+            
+        elif self.cost_type=='smooth':
+            print('-----STOP: using smooth cost-----')
+            if self.get_loss==1000:
+                self.get_loss=cost
+            smoothed_val = cost * self.smooth_weight + (1 - self.smooth_weight) * self.get_loss  # Calculate smoothed value
+            self.get_loss = smoothed_val  
+
+            self.log("loss", self.get_loss)
+        else:
+            print('-----STOP: not using cost-----')
+            self.get_loss = cost
+            self.log("loss", self.get_loss) # used for early stop. controled by log_every_n_steps
+        
+        
         return {
-            "loss": cost_mean,
+            "loss": cost,
             "beta": beta.detach(),
             "gamma": gamma.detach()
-        } 
+        }
 
     def training_epoch_end(self, outputs):# name cannot be changed 
         '''
@@ -397,7 +437,8 @@ class ltModule(pl.LightningModule):
         if self.current_epoch!=0:
             cost = self.get_loss.data.numpy()
             # print("cost_mean: "+str(cost_mean))
-            brief = self.backbone.summary_para_validation(cost)
+            # brief = self.backbone.summary_para_validation(cost) # training cost
+            brief = self.backbone.summary_para_validation(cost) # average cost
             brief.insert(0, "gene_name", gene_name)
             brief.insert(1, "epoch", self.current_epoch)
             if self.validation_brief.empty:
@@ -430,7 +471,7 @@ class ltModule(pl.LightningModule):
 
 
 class getItem(Dataset): # TO DO: Change to a suitable name
-    def __init__(self, data_fit=None, data_predict=None,datastatus="predict_dataset", sampling_ratio=1,auto_norm_u_s=True): #point_number=600 for training
+    def __init__(self, data_fit=None, data_predict=None,datastatus="predict_dataset", sampling_ratio=1,auto_norm_u_s=True,binning=False): #point_number=600 for training
         self.data_fit=data_fit
         self.data_predict=data_predict
         self.datastatus=datastatus
@@ -439,32 +480,51 @@ class getItem(Dataset): # TO DO: Change to a suitable name
         self.auto_norm_u_s=auto_norm_u_s
         self.norm_max_u0=None
         self.norm_max_s0=None
-
+        self.binning=binning
 
     def __len__(self):# name cannot be changed 
         return len(self.gene_list) # gene count
 
     def __getitem__(self, idx):# name cannot be changed
         gene_name = self.gene_list[idx]
+
+
+        if self.datastatus=="fit_dataset":
+            data_fitting=self.data_fit[self.data_fit.gene_list==gene_name] # u0 & s0 for cells for one gene
+            if self.binning==True:    # select cells to train using binning methods
+                u0 = data_fitting.u0
+                s0 = data_fitting.s0
+                u0max_fit = np.float32(max(u0))
+                s0max_fit = np.float32(max(s0))
+                u0 = np.round(u0/u0max_fit, 2)*u0max_fit
+                s0 = np.round(s0/s0max_fit, 2)*s0max_fit
+                upoints = np.unique(np.array([u0, s0]), axis=1)
+                u0 = upoints[0]
+                s0 = upoints[1]
+                data_fitting = pd.DataFrame({'gene_list':gene_name,'u0':u0, 's0':s0,'embedding1':u0,'embedding2':s0})
+                # print(data_fitting.shape) #guangyu
+        
+        # TODO: OPtimize #############
+            # random sampling ratio selection
+            if self.sampling_ratio==1:
+                data=data_fitting
+            elif (self.sampling_ratio<1) & (self.sampling_ratio>0):
+                data=data_fitting.sample(frac=self.sampling_ratio)  # select cells to train using random methods
+                # print('sampling_ratio:'+str(self.sampling_ratio))
+                # print(data.shape)
+            else:
+                print('sampling ratio is wrong!')
+        elif self.datastatus=="predict_dataset":
+            data_pred=self.data_predict[self.data_predict.gene_list==gene_name] # u0 & s0 for cells for one gene
+            data=data_pred
+        # #############
+            
         data_pred=self.data_predict[self.data_predict.gene_list==gene_name] # u0 & s0 for cells for one gene
         #print('gene_name: '+gene_name)
         #print(data_pred)
         # 未来可能存在的问题：训练cell，和predict cell的u0和s0重大，不match，若不match？（当前predict cell 里是包含训练cell的，所以暂定用predict的u0max和s0max，如果不包含怎么办？还是在外面算好再传参？）
         u0max = np.float32(max(data_pred["u0"]))
         s0max = np.float32(max(data_pred["s0"]))
-
-        if self.datastatus=="fit_dataset":
-            data_fitting=self.data_fit[self.data_fit.gene_list==gene_name] # u0 & s0 for cells for one gene
-            # random sampling ratio selection
-            if self.sampling_ratio==1:
-                data=data_fitting
-            if self.sampling_ratio>1:
-                print("Please set the ratio to be 1 or less than 1.")
-            if self.sampling_ratio<1:
-                data=data_fitting.sample(frac=self.sampling_ratio)
-        elif self.datastatus=="predict_dataset":
-            data=data_pred
-
         # set u0 array and s0 array
         u0 = np.array(data.u0.copy().astype(np.float32))
         s0 = np.array(data.s0.copy().astype(np.float32))
@@ -498,11 +558,11 @@ class feedData(pl.LightningDataModule): #change name to feedData
     '''
     load training and test data
     '''
-    def __init__(self, data_fit=None, data_predict=None,sampling_ratio=1,auto_norm_u_s=True):
+    def __init__(self, data_fit=None, data_predict=None,sampling_ratio=1,auto_norm_u_s=True,binning=False):
         super().__init__()
 
         #change name to fit
-        self.training_dataset = getItem(data_fit=data_fit, data_predict=data_predict,datastatus="fit_dataset", sampling_ratio=sampling_ratio,auto_norm_u_s=auto_norm_u_s)
+        self.training_dataset = getItem(data_fit=data_fit, data_predict=data_predict,datastatus="fit_dataset", sampling_ratio=sampling_ratio,auto_norm_u_s=auto_norm_u_s,binning=binning)
         
         #change name to predict
         self.test_dataset = getItem(data_fit=data_fit, data_predict=data_predict,datastatus="predict_dataset", sampling_ratio=sampling_ratio,auto_norm_u_s=auto_norm_u_s)
@@ -537,7 +597,12 @@ def _train_thread(datamodule,
                     filepath_detail=None,
                     trace_cost_ratio=None,
                     corrcoef_cost_ratio=None,
-                 auto_norm_u_s=None):
+                 auto_norm_u_s=None,
+                  cost_type=None,
+                  average_cost_window_size=None,
+                 patience=None,
+                 smooth_weight=None,
+                 ini_model='normal'):
     # print("train thread---------")
     import random
     seed = 0
@@ -553,7 +618,10 @@ def _train_thread(datamodule,
                     cost2_cutoff=cost2_cutoff,
                     optimizer=optimizer,
                     trace_cost_ratio=trace_cost_ratio,
-                    corrcoef_cost_ratio=corrcoef_cost_ratio)
+                    corrcoef_cost_ratio=corrcoef_cost_ratio,
+                    cost_type=cost_type,
+                    average_cost_window_size=average_cost_window_size,
+                    smooth_weight=smooth_weight,)
 
 
     # print("indices", data_indices)
@@ -567,7 +635,6 @@ def _train_thread(datamodule,
     data_df=pd.DataFrame({'u0':u0,'s0':s0,'embedding1':embedding1,'embedding2':embedding2})
     data_df['gene_list']=this_gene_name
     print(this_gene_name)
-
     _, sampling_ixs_select_model, _ = downsampling_embedding(data_df,
                         para='neighbors',
                         target_amount=0,
@@ -575,17 +642,24 @@ def _train_thread(datamodule,
                         step_j=20,
                         n_neighbors=n_neighbors)
     gene_downsampling=downsampling(data_df=data_df, gene_choice=[this_gene_name], downsampling_ixs=sampling_ixs_select_model)
-    model_path=select_initial_net(this_gene_name, gene_downsampling, data_df)
+    if ini_model=='normal':
+        model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/cellDancer-development_20220128/src/model/normal/normal.pt'
+    if ini_model=='sulf':
+        model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/cellDancer-development_20220128/src/model/Sulf2/Sulf2.pt'
+    else:
+        model_path=select_initial_net(this_gene_name, gene_downsampling, data_df)
     model.load(model_path)
 
-    early_stop_callback = EarlyStopping(monitor="loss", min_delta=0.0, patience=3,mode='min')
+    early_stop_callback = EarlyStopping(monitor="loss", min_delta=0.0, patience=patience,mode='min')
     checkpoint_callback = ModelCheckpoint(monitor="loss",
                                           dirpath='output/callback_checkpoint/',
                                           save_top_k=1,
                                           mode='min',
                                           auto_insert_metric_name=True
                                           )
+
     if check_n_epoch is None:
+        print('not using early stop')
         trainer = pl.Trainer(
             max_epochs=max_epoches, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1, 
             logger = False,
@@ -593,6 +667,7 @@ def _train_thread(datamodule,
             weights_summary=None,
             )
     else:
+        print('using early stop')
         trainer = pl.Trainer(
             max_epochs=max_epoches, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1, 
             logger = False,
@@ -644,12 +719,12 @@ def _train_thread(datamodule,
 
     return None
 
-def downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=None):
+def downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=None,binning=False):
     
     if gene_choice is None:
-        data_df=load_raw_data[['gene_list', 'u0','s0','embedding1','embedding2']][load_raw_data.gene_list.isin(gene_choice)]
-    else:
         data_df=load_raw_data[['gene_list', 'u0','s0','embedding1','embedding2']]
+    else:
+        data_df=load_raw_data[['gene_list', 'u0','s0','embedding1','embedding2']][load_raw_data.gene_list.isin(gene_choice)]
 
     # data_df.s0=data_df.s0/max(data_df.s0)
     # data_df=load_raw_data[['gene_list', 'u0','s0','cellID','embedding1','embedding2']][load_raw_data.gene_list.isin(gene_choice)]
@@ -662,11 +737,11 @@ def downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsa
                             step_j=step_j,
                             n_neighbors=n_neighbors_downsample)
         gene_downsampling = downsampling(data_df=data_df, gene_choice=gene_choice, downsampling_ixs=sampling_ixs)
+        
 
-
-        feed_data = feedData(data_fit = gene_downsampling, data_predict=data_df, sampling_ratio=sampling_ratio,auto_norm_u_s=auto_norm_u_s) # default 
+        feed_data = feedData(data_fit = gene_downsampling, data_predict=data_df, sampling_ratio=sampling_ratio,auto_norm_u_s=auto_norm_u_s,binning=binning) # default 
     else:
-        feed_data = feedData(data_fit = data_df, data_predict=data_df, sampling_ratio=sampling_ratio,auto_norm_u_s=auto_norm_u_s) # default 
+        feed_data = feedData(data_fit = data_df, data_predict=data_df, sampling_ratio=sampling_ratio,auto_norm_u_s=auto_norm_u_s,binning=binning) # default 
 
     # set fitting data, data to be predicted, and sampling ratio in fitting data
     
@@ -697,13 +772,18 @@ def train( # use train_thread # change name to velocity estiminate
     n_neighbors=30,
     optimizer="Adam",
     trace_cost_ratio=0,
-    corrcoef_cost_ratio=0):
+    corrcoef_cost_ratio=0,
+    cost_type='average',
+    average_cost_window_size=10, 
+    patience=3,
+    smooth_weight=0.9,
+    binning=False):
     '''
     multple jobs
     when model_path is defined, model_number wont be used
     '''
     
-    datamodule=downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=gene_choice)
+    datamodule=downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=gene_choice,binning=binning)
     
     if check_n_epoch=='None':check_n_epoch=None
     all_data = datamodule
@@ -732,7 +812,11 @@ def train( # use train_thread # change name to velocity estiminate
             filepath_detail=filepath_detail,
             trace_cost_ratio=trace_cost_ratio,
             corrcoef_cost_ratio=corrcoef_cost_ratio,
-        auto_norm_u_s=auto_norm_u_s)
+            auto_norm_u_s=auto_norm_u_s,
+            cost_type=cost_type,
+            average_cost_window_size=average_cost_window_size,
+            patience=patience,
+            smooth_weight=smooth_weight)
         for data_index in range(data_len)) #for 循环里执行train_thread
         
     brief=pd.read_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv')))
@@ -747,7 +831,6 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
     sampling cells by embedding
     return: sampled embedding, the indexs of sampled cells, and the neighbors of sampled cells
     '''
-
     gene = data_df['gene_list'].drop_duplicates().iloc[0]
     embedding = data_df.loc[data_df['gene_list']==gene][['embedding1','embedding2']]
     idx_downSampling_embedding = sampling_embedding(embedding,
@@ -757,10 +840,14 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
                 step_j=step_j
                 )
     embedding_downsampling = embedding.iloc[idx_downSampling_embedding][['embedding1','embedding2']]
-    nn = NearestNeighbors(n_neighbors=n_neighbors + 1)
+    n_neighbors = min((embedding_downsampling.shape[0]-2), n_neighbors)
+    nn = NearestNeighbors(n_neighbors=n_neighbors)
+    # print(embedding_downsampling)
+    print(embedding_downsampling.shape)
+    print(n_neighbors)
     nn.fit(embedding_downsampling)  # NOTE should support knn in high dimensions
     embedding_knn = nn.kneighbors_graph(mode="connectivity")
-    neighbor_ixs = embedding_knn.indices.reshape((-1, n_neighbors + 1))
+    neighbor_ixs = embedding_knn.indices.reshape((-1, n_neighbors))
     return(embedding_downsampling, idx_downSampling_embedding, neighbor_ixs)
 
 def downsampling(data_df, gene_choice, downsampling_ixs):
