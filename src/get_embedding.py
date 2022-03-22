@@ -170,7 +170,7 @@ def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,s
             return([np_s0,np_dMatrix])
 
         # run parallel
-        result = Parallel(n_jobs=os.cpu_count(), backend="loky")(
+        result = Parallel(n_jobs=20, backend="loky")(
             delayed(_s0_matrix_thread)(data_index=data_index,load_cellDancer_input=load_cellDancer_input,process_gene_amt_each_job=process_gene_amt_each_job,gene_list_choice=gene_list_choice)
             for data_index in range(0,gene_amt,process_gene_amt_each_job))
         

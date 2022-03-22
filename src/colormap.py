@@ -69,6 +69,13 @@ whiteBlue = ['#fff7fb','#ece7f2','#d0d1e6','#a6bddb','#74a9cf','#3690c0','#0570b
 whiteRed = ["white", "red"]
 comet = ["#E6E7E8","#3A97FF","#8816A7","black"]
 
+solarExtra02=['#3361A5',
+ '#248AF3',
+ '#14B3FF',
+ '#88CEEF',
+ '#FDB31A',
+ '#E42A2A']
+
 #7-colors
 greenBlue = ['#e0f3db','#ccebc5','#a8ddb5','#4eb3d3','#2b8cbe','#0868ac','#084081']
 
