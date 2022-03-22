@@ -6,6 +6,8 @@ from scipy.sparse import csr_matrix
 import pandas as pd
 
 
+
+
 def adata_to_raw_with_embed(adata,save_path,gene_list=None):
     '''convert adata to raw data format with embedding info
     data:
@@ -97,6 +99,68 @@ def adata_to_raw(adata,save_path,gene_list=None):
     raw_data=pd.read_csv(save_path)
 
     return(raw_data)
+
+def filter_by_neighbor_sample_parallel(load_raw_data,step_i=15,step_j=15,cutoff_s0_zero_ratio=0.2,cutoff_u0_zero_ratio=0.2,gene_amt_each_job=100):
+    from joblib import Parallel, delayed
+    import pandas as pd
+    import numpy as np
+
+    '''filter genes with'''
+    # parallel filter gene_by_neighbor_sample_one_gene
+    def filter_gene_by_neighbor_sample_one_gene(gene,load_raw_data,step_i=None,step_j=None,cutoff_s0_zero_ratio=None,cutoff_u0_zero_ratio=None,gene_amt_each_job=None):
+        # print(gene)
+        u_s= np.array(load_raw_data[load_raw_data['gene_list']==gene][["u0","s0"]]) # u_s
+        sampling_idx=sampling_neighbors(u_s[:,0:2], step_i=step_i,step_j=step_j,percentile=15) # Sampling
+        u_s_downsample = u_s[sampling_idx,0:4]
+        u_s_df=pd.DataFrame({"s0":u_s_downsample[:, 1],'u0':u_s_downsample[:, 0]})
+        u_s_df=u_s_df[~((u_s_df.s0==0) & (u_s_df.u0==0))]
+        # print(u_s_df)
+        u_s_df_zero_amt=u_s_df.agg(lambda x: x.eq(0).sum())
+        sampled_gene_amt=len(u_s_df)
+        u_s_df_zero_ratio=u_s_df_zero_amt/sampled_gene_amt
+        # plt.figure(None,(6,6))
+        # plt.scatter(u_s_df.s0,u_s_df.u0,alpha=0.1)
+        # plt.show()
+        # return [u_s_df_zero_ratio.s0,u_s_df_zero_ratio.u0]
+        # return(u_s_df)
+        if ~(u_s_df_zero_ratio.s0>cutoff_s0_zero_ratio or u_s_df_zero_ratio.u0>cutoff_u0_zero_ratio):
+            return(gene)
+
+    def filter_gene_by_neighbor_sample(start_point,load_raw_data,gene_list=None,step_i=None,step_j=None,cutoff_s0_zero_ratio=None,cutoff_u0_zero_ratio=None,gene_amt_each_job=None):
+        if start_point+gene_amt_each_job<len(load_raw_data.gene_list.drop_duplicates()):
+            gene_list=load_raw_data.gene_list.drop_duplicates()[start_point:(start_point+gene_amt_each_job)]
+        else:
+            gene_list=load_raw_data.gene_list.drop_duplicates()[start_point:,]
+        print(gene_list)
+        gene_list_keep=[]
+        for i,gene in enumerate(gene_list):
+            print(i)
+            filter_result=filter_gene_by_neighbor_sample_one_gene(gene,load_raw_data,step_i=step_i,step_j=step_j,cutoff_s0_zero_ratio=cutoff_s0_zero_ratio,cutoff_u0_zero_ratio=cutoff_u0_zero_ratio,gene_amt_each_job=gene_amt_each_job)
+            if filter_result is not None:gene_list_keep.append(filter_result)
+        return(gene_list_keep)
+
+    def parallel_get_gene(load_raw_data,gene_list=None,step_i=None,step_j=None,cutoff_s0_zero_ratio=None,cutoff_u0_zero_ratio=None,gene_amt_each_job=None):
+        if gene_list is None:
+            gene_list=load_raw_data.gene_list.drop_duplicates().reset_index(drop=True)
+        else:
+            load_raw_data=load_raw_data[load_raw_data.gene_list.isin(gene_list)]
+        print(gene_list)
+        result = Parallel(n_jobs=-1, backend="loky",verbose=10)(
+            delayed(filter_gene_by_neighbor_sample)(start_point,load_raw_data,gene_list=gene_list,step_i=step_i,step_j=step_j,cutoff_s0_zero_ratio=cutoff_s0_zero_ratio,cutoff_u0_zero_ratio=cutoff_u0_zero_ratio,gene_amt_each_job=gene_amt_each_job)
+            for start_point in range(0,len(gene_list),gene_amt_each_job))
+        return(result)
+
+    gene_list_keep=parallel_get_gene(load_raw_data,step_i=step_i,step_j=step_j,cutoff_s0_zero_ratio=cutoff_s0_zero_ratio,cutoff_u0_zero_ratio=cutoff_u0_zero_ratio,gene_amt_each_job=gene_amt_each_job)
+
+    # combine parallel results
+    gene_list_keep_fin=[]
+    for segment_list in gene_list_keep:
+        gene_list_keep_fin=gene_list_keep_fin+segment_list
+    len(gene_list_keep_fin)
+    gene_list_keep_fin_pd=pd.DataFrame({'gene_list':gene_list_keep_fin})
+
+    return(gene_list_keep_fin_pd)
+
 
 def panda_to_adata():
     '''panda_to_adata'''
