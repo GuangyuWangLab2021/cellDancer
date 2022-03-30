@@ -30,15 +30,25 @@ def sampling_neighbors(gene_u0_s0,step_i=30,step_j=30,percentile=25): # current 
     gridpoints_coordinates = gridpoints_coordinates + norm.rvs(loc=0, scale=0.15, size=gridpoints_coordinates.shape)
     
     np.random.seed(10) # set random seed
+    
+    
     nn = NearestNeighbors()
+
+    neighbors_1 = min((gene_u0_s0[:,0:2].shape[0]-1), 20)
     nn.fit(gene_u0_s0[:,0:2])
-    dist, ixs = nn.kneighbors(gridpoints_coordinates, 20)
+    dist, ixs = nn.kneighbors(gridpoints_coordinates, neighbors_1)
+
     ix_choice = ixs[:,0].flat[:]
     ix_choice = np.unique(ix_choice)
 
+    
     nn = NearestNeighbors()
+
+    neighbors_2 = min((gene_u0_s0[:,0:2].shape[0]-1), 20)
     nn.fit(gene_u0_s0[:,0:2])
-    dist, ixs = nn.kneighbors(gene_u0_s0[ix_choice, 0:2], 20)
+    dist, ixs = nn.kneighbors(gene_u0_s0[ix_choice, 0:2], neighbors_2)
+    
+    
     density_extimate = gaussian_kernel(dist, mu=0, sigma=0.5).sum(1)
     bool_density = density_extimate > np.percentile(density_extimate, percentile)
     ix_choice = ix_choice[bool_density]
@@ -136,7 +146,7 @@ def adata_to_detail(data, para, gene):
     detail = pd.DataFrame({'gene_list':gene, 'u0':u0, 's0':s0})
     return(detail)
 
-def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors,transfer_mode=None,mode=None,pca_n_components=None,umap_n=None,umap_n_components=None):
+def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors,transfer_mode=None,mode=None,pca_n_components=None,umap_n=None,umap_n_components=None,use_downsampling=None):
     '''
     Guangyu
     sampling cells by embedding
@@ -149,12 +159,16 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
     gene = data_df['gene_list'].drop_duplicates().iloc[0]
     embedding = data_df.loc[data_df['gene_list']==gene][['embedding1','embedding2']]
     print(para)
-    idx_downSampling_embedding = sampling_embedding(embedding,
-                para=para,
-                target_amount=target_amount,
-                step_i=step_i,
-                step_j=step_j
-                )
+    
+    if use_downsampling:
+        idx_downSampling_embedding = sampling_embedding(embedding,
+                    para=para,
+                    target_amount=target_amount,
+                    step_i=step_i,
+                    step_j=step_j
+                    )
+    else:
+        idx_downSampling_embedding=range(0,embedding.shape[0]) # all cells
     
     def transfer(data_df,transfer_mode):
         print('tranfer mode: '+str(transfer_mode))
@@ -194,7 +208,7 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
         cellID = data_df.loc[data_df['gene_list']==gene]['cellID']
         data_df_pivot=data_df.pivot(index='cellID', columns='gene_list', values='s0').reindex(cellID)
         embedding_downsampling = data_df_pivot.iloc[idx_downSampling_embedding]
-    elif mode=='pca':
+    elif mode=='pca': # not use
         from sklearn.decomposition import PCA
         print('using pca mode')
         cellID = data_df.loc[data_df['gene_list']==gene]['cellID']

@@ -24,7 +24,7 @@ else:
 ####### organize code
 
 
-def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,step=(60,60),transfer_mode=None,mode=None,pca_n_components=None,umap_n=None,umap_n_components=None):
+def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,step=(60,60),transfer_mode=None,mode=None,pca_n_components=None,umap_n=None,umap_n_components=None,use_downsampling=None):
     # mode: [mode='embedding', mode='gene']
     step_i,step_j=step[0],step[1]
 
@@ -97,22 +97,50 @@ def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,s
         return velocity_embedding
 
 
-    def data_reshape(load_cellDancer):
+    # def data_reshape(load_cellDancer):
+    #     '''
+    #     load detail file
+    #     return expression matrix and velocity (ngenes, ncells)
+    #     '''
+    #     psc = 1
+    #     gene_names = load_cellDancer['gene_name'].drop_duplicates().to_list()
+    #     # cell_number = load_cellDancer[load_cellDancer['gene_name']==gene_names[0]].shape[0]
+    #     # load_cellDancer['index'] = np.tile(range(cell_number),len(gene_names))
+    #     # load_cellDancer['index'] = 0
+    #     load_cellDancer.loc[:,'index']=0
+    #     for g in gene_names:
+    #         # print(g)
+    #         # print(load_cellDancer[load_cellDancer['gene_name'] == g].shape[0])
+    #         load_cellDancer.loc[load_cellDancer['gene_name'] == g, 'index'] = range(
+    #             load_cellDancer[load_cellDancer['gene_name'] == g].shape[0])
+    #     s0_reshape = load_cellDancer.pivot(
+    #         index='gene_name', values='s0', columns='index')
+    #     s1_reshape = load_cellDancer.pivot(
+    #         index='gene_name', values='s1', columns='index')
+    #     dMatrix = s1_reshape-s0_reshape
+    #     np_s0_reshape = np.array(s0_reshape)
+    #     np_dMatrix = np.array(dMatrix)
+    #     np_dMatrix2 = np.sqrt(np.abs(np_dMatrix) + psc) * \
+    #         np.sign(np_dMatrix)  # (2159, 18140)
+    #     return(np_s0_reshape, np_dMatrix2)
+
+    def data_reshape(load_cellDancer): # pengzhi version
         '''
         load detail file
         return expression matrix and velocity (ngenes, ncells)
         '''
         psc = 1
         gene_names = load_cellDancer['gene_name'].drop_duplicates().to_list()
-        # cell_number = load_cellDancer[load_cellDancer['gene_name']==gene_names[0]].shape[0]
-        # load_cellDancer['index'] = np.tile(range(cell_number),len(gene_names))
+        # PZ uncommented this.
+        cell_number = load_cellDancer[load_cellDancer['gene_name']==gene_names[0]].shape[0]
+        load_cellDancer['index'] = np.tile(range(cell_number),len(gene_names))
         # load_cellDancer['index'] = 0
-        load_cellDancer.loc[:,'index']=0
-        for g in gene_names:
+        #load_cellDancer.loc[:,'index']=0
+        #for g in gene_names:
             # print(g)
             # print(load_cellDancer[load_cellDancer['gene_name'] == g].shape[0])
-            load_cellDancer.loc[load_cellDancer['gene_name'] == g, 'index'] = range(
-                load_cellDancer[load_cellDancer['gene_name'] == g].shape[0])
+        #    load_cellDancer.loc[load_cellDancer['gene_name'] == g, 'index'] = range(
+        #        load_cellDancer[load_cellDancer['gene_name'] == g].shape[0])
         s0_reshape = load_cellDancer.pivot(
             index='gene_name', values='s0', columns='index')
         s1_reshape = load_cellDancer.pivot(
@@ -123,7 +151,6 @@ def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,s
         np_dMatrix2 = np.sqrt(np.abs(np_dMatrix) + psc) * \
             np.sign(np_dMatrix)  # (2159, 18140)
         return(np_s0_reshape, np_dMatrix2)
-
 
     if gene_list is None:
         gene_choice=load_raw_data.gene_list.drop_duplicates()
@@ -143,55 +170,61 @@ def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,s
                                                                                  transfer_mode=transfer_mode,
                                                                                  pca_n_components=pca_n_components,
                                                                                  umap_n=umap_n,
-                                                                                 umap_n_components=umap_n_components)
-
+                                                                                 umap_n_components=umap_n_components,
+                                                                                use_downsampling=use_downsampling)
+    
     # print(embedding_downsampling)
 
     
     load_cellDancer_input = load_cellDancer[load_cellDancer.gene_name.isin(gene_choice)]
-    
-    def thread_s0_dmax(load_cellDancer_input,process_gene_amt_each_job=100):
-        from joblib import Parallel, delayed
-        load_cellDancer_input=load_cellDancer
-        gene_list_choice=load_cellDancer_input.gene_name.drop_duplicates()
-        load_cellDancer_input=load_cellDancer_input[load_cellDancer_input.gene_name.isin(gene_list_choice)]
-        
-        gene_amt=len(set(load_cellDancer_input.gene_name))
-        
-        # thread
-        def _s0_matrix_thread(data_index,load_cellDancer_input,process_gene_amt_each_job,gene_list_choice):
-            # data_index:start index of gene in load_cellDancer_input
 
-            if data_index+process_gene_amt_each_job<gene_amt:
-                load_cellDancer=load_cellDancer_input[load_cellDancer_input.gene_name.isin(gene_list_choice[data_index:(data_index+process_gene_amt_each_job)])]
-            else:
-                load_cellDancer = load_cellDancer_input[load_cellDancer_input.gene_name.isin(gene_list_choice[data_index:,])]
-            np_s0, np_dMatrix = data_reshape(load_cellDancer) 
-            return([np_s0,np_dMatrix])
-
-        # run parallel
-        result = Parallel(n_jobs=20, backend="loky")(
-            delayed(_s0_matrix_thread)(data_index=data_index,load_cellDancer_input=load_cellDancer_input,process_gene_amt_each_job=process_gene_amt_each_job,gene_list_choice=gene_list_choice)
-            for data_index in range(0,gene_amt,process_gene_amt_each_job))
+# thread_start
+#     def thread_s0_dmax(load_cellDancer_input,process_gene_amt_each_job=100):
+#         from joblib import Parallel, delayed
+#         load_cellDancer_input=load_cellDancer
+#         gene_list_choice=load_cellDancer_input.gene_name.drop_duplicates()
+#         load_cellDancer_input=load_cellDancer_input[load_cellDancer_input.gene_name.isin(gene_list_choice)]
         
-        # combine result
-        for i,result_i in enumerate(result):
-            # print(i)
+#         gene_amt=len(set(load_cellDancer_input.gene_name))
+        
+#         # thread
+#         def _s0_matrix_thread(data_index,load_cellDancer_input,process_gene_amt_each_job,gene_list_choice):
+#             # data_index:start index of gene in load_cellDancer_input
 
-            np_s0=result_i[0]
-            np_dMatrix=result_i[1]
-            # print(np_s0.shape)
-            # print(np_dMatrix.shape)
-            if i == 0:
-                np_s0_all = np_s0
-                np_dMatrix_all = np_dMatrix
-            else:
-                np_s0_all = np.vstack((np_s0_all, np_s0))
-                np_dMatrix_all = np.vstack((np_dMatrix_all, np_dMatrix))
-        return(np_s0_all,np_dMatrix_all)
+#             if data_index+process_gene_amt_each_job<gene_amt:
+#                 load_cellDancer=load_cellDancer_input[load_cellDancer_input.gene_name.isin(gene_list_choice[data_index:(data_index+process_gene_amt_each_job)])]
+#             else:
+#                 load_cellDancer = load_cellDancer_input[load_cellDancer_input.gene_name.isin(gene_list_choice[data_index:,])]
+#             np_s0, np_dMatrix = data_reshape(load_cellDancer) 
+#             return([np_s0,np_dMatrix])
+
+#         # run parallel
+#         result = Parallel(n_jobs=20, backend="loky")(
+#             delayed(_s0_matrix_thread)(data_index=data_index,load_cellDancer_input=load_cellDancer_input,process_gene_amt_each_job=process_gene_amt_each_job,gene_list_choice=gene_list_choice)
+#             for data_index in range(0,gene_amt,process_gene_amt_each_job))
+        
+#         # combine result
+#         for i,result_i in enumerate(result):
+#             # print(i)
+
+#             np_s0=result_i[0]
+#             np_dMatrix=result_i[1]
+#             # print(np_s0.shape)
+#             # print(np_dMatrix.shape)
+#             if i == 0:
+#                 np_s0_all = np_s0
+#                 np_dMatrix_all = np_dMatrix
+#             else:
+#                 np_s0_all = np.vstack((np_s0_all, np_s0))
+#                 np_dMatrix_all = np.vstack((np_dMatrix_all, np_dMatrix))
+#         return(np_s0_all,np_dMatrix_all)
     
     
-    np_s0_all,np_dMatrix_all= thread_s0_dmax(load_cellDancer_input)  # 2min for 200 genes
+    #np_s0_all,np_dMatrix_all= thread_s0_dmax(load_cellDancer_input)  # 2min for 200 genes
+# thread_end
+
+
+    np_s0_all,np_dMatrix_all= data_reshape(load_cellDancer)
 
 
     
@@ -215,9 +248,12 @@ def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,s
     
     
     
+
+
     velocity_embedding = velocity_projection(
         np_s0_all[:, sampling_ixs], np_dMatrix_all[:, sampling_ixs], embedding[sampling_ixs, :], knn_embedding)
-
+    
+    
     # plt.quiver(embedding[sampling_ixs,0],embedding[sampling_ixs,1],velocity_embedding[:,0],velocity_embedding[:,1])
     return(embedding, sampling_ixs, velocity_embedding)
 
