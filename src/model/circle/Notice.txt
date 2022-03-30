@@ -1,0 +1,3 @@
+Notice
+This circle.pt is generated from paramters:
+pancreas;Try_NormalPT;local;80;None;1;0.01;0.3;neighbors;0;200;200;0.5;30;SGD;0;0;/Users/wanglab/Documents/ShengyuLi/Velocity/data/raw_data/scv_data_full.csv;/Users/wanglab/Documents/ShengyuLi/Velocity/data/pancreas/RECOVER_SULF2/;30;1;0;normal;10;5;0.1;1
