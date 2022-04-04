@@ -24,6 +24,7 @@ import glob
 import random
 import multiprocessing as mp
 import itertools
+import collections
 
 
 def gaussian_kernel(X, mu=0, sigma=1):
@@ -244,7 +245,8 @@ def velocity_rotation(velocity, theta):
     return velocity
 
 
-def diffusion_off_grid_wallbound(cell_embedding, vel, init, grid_density, dt=0.01, t_total=10000, eps = 1e-5):
+def diffusion_off_grid_wallbound(cell_embedding, vel, init, grid_density,
+        dt=0.001, t_total=10000, eps = 1e-5):
     
     '''
     Simulation of diffusion of a cell in the velocity field (on grid), the cell's velocity will turn 90 degrees
@@ -270,7 +272,7 @@ def diffusion_off_grid_wallbound(cell_embedding, vel, init, grid_density, dt=0.0
     
     Return
     ------
-        a numpy array of coordinates in the trajectory,  shape: (real_n_time_steps, 2)
+        a numpy array of coordinates in the trajectory, shape: (real_n_time_steps, 2)
     '''
     
     #from collections import deque
@@ -341,7 +343,8 @@ def diffusion_off_grid_wallbound(cell_embedding, vel, init, grid_density, dt=0.0
     return np.array(trajectory)
 
 
-def diffusion_on_grid_wallbound(cell_embedding, vel, init, grid_density, dt=0.01, t_total=10000, eps = 1e-5):
+def diffusion_on_grid_wallbound(cell_embedding, vel, init, grid_density,
+        dt=0.001, t_total=10000, eps = 1e-5):
     
     '''
     Simulation of diffusion of a cell in the velocity field (on grid), the cell's velocity will turn 90 degrees
@@ -578,7 +581,7 @@ def truncate_end_state_stuttering(paths, cell_embedding, PLOT=True):
     return np.array(newPaths, dtype=object)
 
 
-def clustering(path_clusters, cell_clusters, paths, traj_length, similarity_cutoff, similarity_threshold, nkeep=10):
+def path_clustering(path_clusters, cell_clusters, paths, traj_length, similarity_cutoff, similarity_threshold, nkeep=10):
     '''
     a clustering method to find representative paths.
     
@@ -627,39 +630,57 @@ def clustering(path_clusters, cell_clusters, paths, traj_length, similarity_cuto
     
     paths = paths[~sel]
     traj_length = traj_length[~sel]
-    return clustering(path_clusters, cell_clusters, paths, traj_length, similarity_cutoff, similarity_threshold, nkeep)
+    return path_clustering(path_clusters, cell_clusters, paths, traj_length, similarity_cutoff, similarity_threshold, nkeep)
 
-
-def cellPath(cell_embedding, cell_clusters):
+    
+def cell_clustering_tuning(embedding, cell_clusters):
     '''
     Parameters
     ----------
-    cell_embedding: numpy ndarray (ncells, 2)
+    embedding: numpy ndarray (ncells, 2)
     
     cell_clusters: List lenth: n_clusters
         A list of starting cell positions (1,2) in each cluster.
         
     Return
     ------
-    A numpy array (ncells, n_clusters) recording number of occurence in each path 
+    A numpy array (size: ncells) recording fate of each cell in the order of
+    cellIDs.
     '''
-    
+
+    # path time to cell time.
     n_clusters = len(cell_clusters)
-    n_cells = len(cell_embedding)
+    n_cells = len(embedding)
 
     # initialization
     # each cell has a chance to go through the n_clusters fates
+    # according to its match with cells in each cluster
     # defined by [p0, p1, ..., p{n_cluster-1}]
+
     cell_fate = np.zeros((n_cells, n_clusters))
     cluster_index = 0
     for icluster in cell_clusters:
-        temp = icluster - cell_embedding[:,None]
+        temp = icluster - embedding[:,None]
         # tuple [0] --> cell indices
         # tuple [1] --> traj indices in the cluster
         for i in np.where(np.sum(temp**2, axis = 2) == 0)[0]:
             cell_fate[i][cluster_index] += 1
         cluster_index += 1
-    return cell_fate
+    cell_fate_major = np.argmax(cell_fate, axis=1)
+
+
+    neigh = NearestNeighbors(n_neighbors=10)
+    neigh.fit(embedding)
+
+    cell_fate_smooth = list()
+    for i in range(len(cell_fate_major)):
+        cellIDs = neigh.kneighbors([embedding[i]], return_distance=False)[0]
+        cell_fate_smooth.append(collections.Counter(cell_fate_major[cellIDs]).most_common()[0][0])
+
+    A = cell_fate_major*neigh.kneighbors_graph(embedding)
+    print(np.array_equal(A, np.array(cell_fate_smooth)))
+
+    return np.array(cell_fate_smooth)
 
 
 def cell_time_projection_cluster(embedding, rep_path, cluster, cell_fate):
@@ -692,27 +713,30 @@ def cell_time_projection_cluster(embedding, rep_path, cluster, cell_fate):
     return cell_time_per_cluster
 
 
-def Plot_cell_cluster(cell_embedding, cell_clusters, path_clusters):
-    n_clusters = len(cell_clusters)
-    #cmap = cm.get_cmap('brg_r', n_clusters) 
-    cmap = ListedColormap(sns.color_palette("coolwarm",n_clusters))
-    cell_fate = cellPath(cell_embedding, cell_clusters)
-    cell_fate_majority = cell_fate.argmax(axis=1)
-    fig, ax1 = plt.subplots(figsize=(6, 6))
-    img1=ax1.scatter(cell_embedding[:,0], cell_embedding[:,1], c=cell_fate_majority, s=20, alpha=0.6, cmap=cmap)
-    ax1.set_aspect('equal', adjustable='box')
-    ax1.set_title("cell fate majority votes")
-    ax1.axis("off")
+def Plot_cell_cluster(cell_embedding, cell_fate, path_clusters):
+    n_clusters = len(path_clusters)
 
+    cmap = ListedColormap(sns.color_palette("colorblind", n_colors
+        = n_clusters))
+    #cmap = ListedColormap(sns.color_palette("coolwarm",n_clusters))
+    fig, ax1 = plt.subplots(figsize=(6, 6))
+    img1=ax1.scatter(cell_embedding[:,0], cell_embedding[:,1], c=cell_fate,
+            s=20, alpha=1, cmap=cmap)
+    ax1.set_aspect('equal', adjustable='box')
+    ax1.set_title("cell fate: majority votes")
+    ax1.axis("off")
 
     bounds = np.linspace(0, n_clusters, n_clusters+1)
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
     ax3 = fig.add_axes([0.9, 0.3, 0.02, 0.3])
     cb = mpl.colorbar.ColorbarBase(ax3, cmap=cmap, spacing='proportional', boundaries=bounds, norm=norm, format='%1i')
     labels = ["cluster "+str(i) for i in range(n_clusters)]
-    labels.append("")
-    cb.set_ticklabels(labels)
-    
+
+    cb.ax.get_yaxis().set_ticks([])
+    for i, label in enumerate(labels):
+        cb.ax.text(4.5, i + 0.5 , label, ha='center', va='center')
+
+
     for i in range(n_clusters):
         ax1.scatter(path_clusters[i][0][:,0], path_clusters[i][0][:,1],
                 c=range(len(path_clusters[i][0])))
@@ -764,7 +788,7 @@ def progressive_cell_time_assignment_intracluster(
     unresolved_cell_time_cluster, cluster, sorted_refPaths, cell_fate,
     cell_embedding, vel, cell_grid_idx, grid_density, 
     dt=0.001, t_total=10000, n_repeats = 10, n_jobs = mp.cpu_count()-1,
-    MAX_ZERO_TIME_CELLS = 0.01):
+    MAX_ZERO_TIME_CELLS = 0.05):
     '''
     
     Recursive function to consolidate cell time within a cluster.
@@ -793,13 +817,17 @@ def progressive_cell_time_assignment_intracluster(
     ZERO = 0
 
     if isinstance(MAX_ZERO_TIME_CELLS, float):
-        MAX_ZERO_TIME_CELLS = int(MAX_ZERO_TIME_CELLS * len(cell_embedding))
+        MAX_ZERO_TIME_CELLS = int(MAX_ZERO_TIME_CELLS
+                * len(unresolved_cell_time_cluster[cluster]))
+    MAX_ZERO_TIME_CELLS = max(MAX_ZERO_TIME_CELLS, 10)
+    #print("\n\nMAX allowed zero time cells are: ", MAX_ZERO_TIME_CELLS)
 
     # Let's not edit the original dictionary
     #resolved_cell_time_cluster = copy.deepcopy(unresolved_cell_time_cluster)
     
     zero_time_cells = [cellid for cellid, celltime in unresolved_cell_time_cluster[cluster].items() if celltime <= ZERO]
     if len(zero_time_cells) < MAX_ZERO_TIME_CELLS:
+#        print("Only ", len(zero_time_cells), " Cells left. Stopping.")
         return unresolved_cell_time_cluster, sorted_refPaths
     
     # get subsampled cell embedding
@@ -829,7 +857,7 @@ def progressive_cell_time_assignment_intracluster(
     print("Sampling new trajectories for zero-time cells in cluster ", cluster, "  ...")
     sub_traj=run_diffusion(cell_embedding, vel=vel,
             grid_density=sub_grid_density, 
-            dt=dt, t_total=t_total, eps=1e-5, 
+            dt=dt, t_total=t_total, eps=1e-3, 
             off_cell_init=False, init_cell=zero_time_cells, 
             n_repeats = n_repeats, n_jobs = n_jobs)
     
@@ -917,7 +945,7 @@ def Cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
     for i,j in itertools.combinations(clusterIDs, 2):
         shiftT, overlap_cells = overlap_inter_cluster(cell_embedding, cell_fate, unresolved_cell_time, i, j, cutoff)
         if shiftT:
-            shiftT = 0 if shiftT < MAX_IGNORED_TIME_SHIFT else shiftT
+            shiftT = 0 if abs(shiftT) < MAX_IGNORED_TIME_SHIFT else shiftT
 
             print("shift time is: ", shiftT, ".\n The overlapping cells are:\n",
                     "cell ", overlap_cells[0], " from cluster ", i, " and ", 
@@ -944,8 +972,8 @@ def Cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
     
     paths = np.array(paths)
     w = np.array(w)
-    print(w)
-    print(paths)
+    #print(w)
+    #print(paths)
     pseudotime = np.array(unresolved_cell_time, dtype=object)
     flag = np.array([0]*n_nodes)
     w_cumm = np.array([0]*n_nodes)
@@ -962,23 +990,23 @@ def Cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
     while len(flag[flag==0])>0:
         for path in paths:
             if path[0]==node:
-                print("Forward: "+str(node))
+                #print("Forward: "+str(node))
                 w_cumm[nodes==path[1]] = w_cumm[nodes==node]+w[np.all(paths==path, axis=1)]
                 node = path[1]
                 idx = np.where(nodes==node)
                 flag[idx] = 1
             
             elif path[1]==node:
-                print("Backward: "+str(node))
+                #print("Backward: "+str(node))
                 w_cumm[nodes==path[0]] = w_cumm[nodes==node]-w[np.all(paths==path, axis=1)]
                 node=path[0]
                 idx = np.where(nodes==node)
                 flag[idx] = 1
             else:
-                print("Pass: "+str(node))
+                #print("Pass: "+str(node))
                 pass
 
-    print(w_cumm)
+    #print(w_cumm)
 
     # update pseudotime
     for node in range(len(w_cumm)):
@@ -1092,14 +1120,6 @@ def Cell_time_assignment_intercluster_bak(unresolved_cell_time, cell_fate, cell_
                     
     return unresolved_cell_time, V
 
-def adjust_time(G, unresolved_cell_time):
-    '''
-    returns nothing. The adjustment happens in-replace in the list
-    unresolved_cell_time
-    '''
-    return
-
-
 def Plot_celltime_clusters(cell_time_per_cluster, rep_paths, embedding):
     longest_paths = [ipath[0] for ipath in rep_paths]
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -1134,24 +1154,29 @@ def combine_clusters(cell_time_per_cluster):
             cell_time[k] = v
     return cell_time
 
+
 def interpolate_all_cell_time(cell_time, all_cell_embedding, sampling_ixs, step):
     x = all_cell_embedding[sampling_ixs,0]
     y = all_cell_embedding[sampling_ixs,1]
-    f = cell_time
-    
+
     xx = np.linspace(min(x), max(x), step[0]+1)
     yy = np.linspace(min(y), max(y), step[1]+1)
     xx, yy = np.meshgrid(xx, yy)
     
     points = np.transpose(np.vstack((x, y)))
-    f_interp = interpolate.griddata(points, f, (xx, yy), method='nearest')
+    interp = interpolate.griddata(points, cell_time, (xx, yy), method='nearest')
     cell_time_all = list()
     for cell_coord in all_cell_embedding:
         gd = discretize(cell_coord, xmin=(min(x), min(y)), xmax=(max(x),max(y)), steps=step, capping = True)[0]
-        cell_time_all.append(f_interp[gd[1], gd[0]])
+        cell_time_all.append(interp[gd[1], gd[0]])
+
+    # drop the top 5 percentile
     cell_time_all = np.array(cell_time_all)
+    cell_time[cell_time>np.quantile(cell_time, 0.95)]=np.quantile(cell_time, 0.95)
+    cell_time_all -= np.min(cell_time_all)
     cell_time_all = cell_time_all/np.max(cell_time_all)
     
+    # smoothing the data using nearest neighbours
     print("\n\n\nPlotting estimated pseudotime for all cells ...")
     fig, ax = plt.subplots(figsize=(10,10))
     im = plt.scatter(all_cell_embedding[:,0], all_cell_embedding[:,1], c=cell_time_all, alpha = 1, s = 1)
@@ -1267,8 +1292,8 @@ def overlap_inter_cluster(cell_embedding, cell_fate, cell_time_per_cluster, clus
         #print("\nfrequency is \n", freq)
         #print("\ndelta T is \n", delta)
         
-        if len(deltaT_values) == 1:
-            return deltaT_values[0], idx[0]
+        #if len(deltaT_values) == 1:
+        #    return deltaT_values[0], idx[0]
 
         if len(deltaT_values) < 5:
             shiftT = deltaT_values[np.argmin(np.abs(deltaT_values))]
@@ -1297,22 +1322,21 @@ def overlap_inter_cluster(cell_embedding, cell_fate, cell_time_per_cluster, clus
         closest_pair = list(deltaT.keys())[list(deltaT.values()).index(shiftT)]
         return shiftT, closest_pair
 
-def compute_all_cell_time(embedding, cell_embedding, 
+def compute_all_cell_time(load_cellDancer,
+                          embedding, cell_embedding, 
                           path_clusters, cell_clusters, 
                           vel_mesh, cell_grid_idx, grid_density,
                           sampling_ixs, step,
-                          dt=0.001, t_total=10000, n_repeats = 10, n_jobs
-                          = mp.cpu_count()-1):
+                          dt=0.001, t_total=10000, n_repeats = 10, 
+                          n_jobs = mp.cpu_count()-1,
+                          outfile = None):
     
-    # path time to cell time.
-    cell_fate = cellPath(cell_embedding, cell_clusters)
-    cell_fate_major = np.argmax(cell_fate, axis=1)
+    cell_fate = cell_clustering_tuning(cell_embedding, cell_clusters)
+    Plot_cell_cluster(cell_embedding, cell_fate, path_clusters)
+    #Plot_path_clusters(cell_embedding, path_clusters, n_clusters=len(path_clusters))
     
     cell_time_per_cluster = [cell_time_projection_cluster(
-        cell_embedding, path_clusters[i][0], i, cell_fate_major) 
-                             for i in np.unique(cell_fate_major)]
-    Plot_cell_cluster(cell_embedding, cell_clusters, path_clusters)
-    #Plot_path_clusters(cell_embedding, path_clusters, n_clusters=len(path_clusters))
+        cell_embedding, path_clusters[i][0], i, cell_fate) for i in np.unique(cell_fate)]
 
     n_clusters = len(path_clusters)
     
@@ -1320,22 +1344,24 @@ def compute_all_cell_time(embedding, cell_embedding,
     for cluster_number in range(n_clusters):
         cell_time_per_cluster, refPaths = progressive_cell_time_assignment_intracluster(
             cell_time_per_cluster, cluster_number, [path_clusters[cluster_number][0]], 
-            cell_fate_major, cell_embedding, vel_mesh, cell_grid_idx, grid_density,
+            cell_fate, cell_embedding, vel_mesh, cell_grid_idx, grid_density,
             dt=dt, t_total=t_total, n_repeats=n_repeats, n_jobs=n_jobs,
-            MAX_ZERO_TIME_CELLS = 0.01)
+            MAX_ZERO_TIME_CELLS = 0.05)
 
     print("\nAll intra cluster cell time has been resolved.\n\n\n")
     print("\nPlotting cluster internal time\n")
     Plot_celltime_clusters(cell_time_per_cluster, path_clusters, cell_embedding)
     
     # inter-cluster time alignment
-#    resolved_cell_time, V = Cell_time_assignment_intercluster(cell_time_per_cluster, cell_fate_major, cell_embedding, tau = 0.05)
-    print(cell_time_per_cluster[4])
-    resolved_cell_time = Cell_time_assignment_intercluster(cell_time_per_cluster, cell_fate_major, cell_embedding, tau = 0.05)
-    print(resolved_cell_time[4])
+#    resolved_cell_time, V = Cell_time_assignment_intercluster(cell_time_per_cluster, cell_fate, cell_embedding, tau = 0.05)
+#    print(cell_time_per_cluster[0])
+    resolved_cell_time = Cell_time_assignment_intercluster(cell_time_per_cluster, cell_fate, cell_embedding, tau = 0.05)
+#    print(resolved_cell_time[0])
     cell_time = combine_clusters(resolved_cell_time)
 
     ordered_cell_time = np.array([cell_time[cell] for cell in sorted(cell_time.keys())])
 
     all_cell_time=interpolate_all_cell_time(ordered_cell_time, embedding, sampling_ixs, step)
+    if outfile:
+        export_cell_time(load_cellDancer, all_cell_time, outfile)
     return all_cell_time
