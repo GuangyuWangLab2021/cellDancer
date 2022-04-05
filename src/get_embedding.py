@@ -246,12 +246,8 @@ def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,s
         load_raw_data.gene_list[0]][['embedding1', 'embedding2']].to_numpy()
     
     
-    
-    
 
-
-    velocity_embedding = velocity_projection(
-        np_s0_all[:, sampling_ixs], np_dMatrix_all[:, sampling_ixs], embedding[sampling_ixs, :], knn_embedding)
+    velocity_embedding = velocity_projection(np_s0_all[:, sampling_ixs], np_dMatrix_all[:, sampling_ixs], embedding[sampling_ixs, :], knn_embedding)
     
     
     # plt.quiver(embedding[sampling_ixs,0],embedding[sampling_ixs,1],velocity_embedding[:,0],velocity_embedding[:,1])
