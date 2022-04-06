@@ -11,3 +11,9 @@ pip install seaborn==0.11.2 --no-warn-script-location
 pip install joblib==1.1.0 --no-warn-script-location
 pip install matplotlib==3.5.0 --no-warn-script-location
 pip install ipykernel --no-warn-script-location
+
+# time series
+https://tslearn.readthedocs.io/en/stable/installation.html
+python -m pip install tslearn
+
+# curve
