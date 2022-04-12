@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from get_embedding import get_embedding
+from ..get_embedding import get_embedding
 
 import numpy as np
 import pandas as pd
@@ -907,6 +907,10 @@ def Cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
 
     Assumption: No cyclic behavior between clusters.
 
+    We construct two directed graphs for the purpose of visualization:
+    CT --> inter-cluster time gap (transfer)
+    LinTr --> lineage tracing.
+
 
     Parameters
     ----------
@@ -928,8 +932,11 @@ def Cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
     cutoff = overlap_crit_intra_cluster(cell_embedding, cell_fate, tau)
 
     CT = nx.DiGraph()
+#    LinTr = nx.DiGraph()
     for cluster in clusterIDs:
         CT.add_node(cluster)
+#        LinTr.add_node(str(cluster)+"_src")
+#        LinTr.add_node(str(cluster)+"_des")
 
     # nodes
     nodes = clusterIDs
@@ -947,6 +954,27 @@ def Cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
         if shiftT:
             shiftT = 0 if abs(shiftT) < MAX_IGNORED_TIME_SHIFT else shiftT
 
+#        
+#            tmax_i = max(unresolved_cell_time[i].values())
+#            tmin_i = min(unresolved_cell_time[i].values())
+#            tmax_j = max(unresolved_cell_time[j].values())
+#            tmin_j = min(unresolved_cell_time[j].values())
+#            tcross_i = unresolved_cell_time[i][overlap_cells[0]]
+#            tcross_j = unresolved_cell_time[j][overlap_cells[1]]
+#
+#            if tcross_i == tmin_i
+#
+#
+#            LinTr.add_node(str(i)+"-"+str(j))
+#            LinTr.add_edge(str(i)+"_src", str(i)+"-"+str(j),
+#                    weight=unresolved_cell_time[i][overlap_cells[0]]-tmin_i)
+#            LinTr.add_edge(str(i)+"-"+str(j), str(i)+"_des",
+#                    weight=tmax_i-unresolved_cell_time[i][overlap_cells[0]])
+#            LinTr.add_edge(str(j)+"_src", str(i)+"-"+str(j),
+#                    weight=unresolved_cell_time[j][overlap_cells[1]]-tmin_j)
+#            LinTr.add_edge(str(i)+"-"+str(j), str(j)+"_des",
+#                    weight=tmax_j-unresolved_cell_time[j][overlap_cells[1]])
+#
             print("shift time is: ", shiftT, ".\n The overlapping cells are:\n",
                     "cell ", overlap_cells[0], " from cluster ", i, " and ", 
                     overlap_cells[1], " from cluster ", j)
@@ -955,13 +983,18 @@ def Cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
                 CT.add_edge(i, j, weight = shiftT)
                 w.append(shiftT)
                 paths.append([i,j])
+
             if shiftT < 0:
                 CT.add_edge(j, i, weight = -shiftT)
                 w.append(-shiftT)
                 paths.append([j,i])
 
-    pos = nx.circular_layout(CT)
-    nx.draw(CT, pos=pos, with_labels=True)  # Draw the original graph
+    pos = nx.spring_layout(CT)
+    nx.draw(CT, pos=pos, with_labels = True, 
+        node_size=500, node_color = 'b',
+       style=':',
+       font_size = 18, font_color = 'w')
+
     labels = nx.get_edge_attributes(CT,'weight')
     nx.draw_networkx_edge_labels(CT,pos,edge_labels=labels)
     plt.show()
@@ -984,6 +1017,7 @@ def Cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
         if not node in paths.flatten():
             flag[node]=1
 
+    # by Guangyu Wang
     node = nodes[0]
     idx = np.where(nodes == node)
     flag[idx] = 1
@@ -1013,112 +1047,8 @@ def Cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
         cells = pseudotime[node]
         for cell in cells:
             cells[cell] += w_cumm[node]
-    return pseudotime
+    return pseudotime, CT
 
-
-def Cell_time_assignment_intercluster_bak(unresolved_cell_time, cell_fate, cell_embedding, tau = 0.05):
-    '''
-
-    Recursive function to consolidate cell time between clusters.
-
-    Find an intersection between cells from two clusters and reconsolidate their time.
-
-    Assumption: No cyclic behavior between clusters.
-
-
-    Parameters
-    ----------
-    unresolved_cell_time: list
-        a list of dictionary {cellID : time}
-        cellIDs and corresponding unresolved time for all cells.
-
-    cell_fate: np.ndarray
-        an array of cluster numbers which each cell belongs to.
-
-    Return
-    ------
-    resolved_cell_time_cluster: list
-        a list of dictionaries {cellID : time}
-
-    '''
-
-    cutoff = overlap_crit_intra_cluster(cell_embedding, cell_fate, tau)
-    clusterIDs = np.unique(cell_fate)
-
-    # Creating two graphs:
-    # Graph CT: node <- clusterID, edge & weight <- absolute shift time
-    # Graph V: node <- cluster_start, cluster_end, overlap; edge weight <- time
-    CT = nx.DiGraph()
-    V = nx.DiGraph()
-    
-    for cluster in clusterIDs:
-        CT.add_node(cluster)
-        
-        #source_node = str(cluster)+'s'
-        #dest_node = str(cluster)+'d'
-        #V.add_node(source_node)
-        #V.add_node(dest_node)
-        #traverse_time = max(unresolved_cell_time[cluster].values())-min(unresolved_cell_time[cluster].values())
-        #V.add_edge(source_node, dest_node, weight=traverse_time)
-    
-    
-    # 5% * length of the quickest path time.
-    MAX_IGNORED_TIME_SHIFT = 0.05 * min([max(unresolved_cell_time[cluster].values()) for
-        cluster in clusterIDs])
-    for i,j in itertools.combinations(clusterIDs, 2):
-        shiftT, overlap_cells = overlap_inter_cluster(cell_embedding, cell_fate, unresolved_cell_time, i, j, cutoff)
-        # if there is overlap
-        if shiftT: 
-            shiftT = 0 if shiftT < MAX_IGNORED_TIME_SHIFT else shiftT
-
-            print("shift time is: ", shiftT, ".\n The overlapping cells are:\n",
-                    "cell ", overlap_cells[0], " from cluster ", i, " and ", 
-                    overlap_cells[1], " from cluster ", j)
-
-            if shiftT > 0:
-                CT.add_edge(i, j, weight = shiftT)
-            if shiftT < 0:
-                CT.add_edge(j, i, weight = -shiftT)
-    
-            
-            # check if the cross is at the begin or end of a cluster.
-            # for i, cid = overlap_cells[0] unresolved_cell_time[i][cid]
-            # for j, same thing.
-            i_x_cid = overlap_cells[0]
-            i_x_time = unresolved_cell_time[i][i_x_cid]
-            i_s_time = min(unresolved_cell_time[i].values())
-            i_d_time = max(unresolved_cell_time[i].values())
-            if i_x_time > i_s_time and i_x_time < i_d_time:
-                V.add_node('-'.join(str(i)+str(j)), time=i_x_time)
-            
-    #pos = nx.kamada_kawai_layout(CT)
-    pos = nx.kamada_kawai_layout(CT, weight)
-    nx.draw(CT, pos=pos, with_labels=True)  # Draw the original graph
-    labels = nx.get_edge_attributes(CT,'weight')
-    nx.draw_networkx_edge_labels(CT,pos,edge_labels=labels)
-    plt.show()
-    
-    if not nx.is_forest(CT):
-        print("There exists a cycle in the cluster graph. We cannot consilidate cells time in this case.")
-        return unresolved_cell_time, V
-    
-    CT_subGraphs = [nx.subgraph(CT,c) for c in nx.weakly_connected_components(CT)]
-    
-    for G in CT_subGraphs:
-        adjust_time(G, unresolved_cell_time)
-
-
-        if len(G) == 1:
-            # isolated cluster, leave it as is.
-            continue
-        else:
-            for i,j in G.edges:
-                j_add_time = G[i][j]['weight']
-                + min(unresolved_cell_time[i].values())
-                for j_cells in unresolved_cell_time[j]:
-                    unresolved_cell_time[j][j_cells] += j_add_time
-                    
-    return unresolved_cell_time, V
 
 def Plot_celltime_clusters(cell_time_per_cluster, rep_paths, embedding):
     longest_paths = [ipath[0] for ipath in rep_paths]
@@ -1209,10 +1139,14 @@ def export_everything(load_cellDancer, cell_time, filename):
         load_cellDancer['time'] = np.tile(cell_time,len(gene_names))
         load_cellDancer.to_csv(filename, index=None)
 
-def export_cell_time(cell_fate, cell_time, filename): 
-    data = np.vstack((range(len(cell_fate)), cell_fate, cell_time)).T
-    df = pd.DataFrame(data, columns = ['index', 'traj_cluster', 'pseudotime'])
-    df = df.astype({"index": int, "traj_cluster": int, "pseudotime": float})
+def export_cell_time(cell_fate, cell_time, sampling_ixs, filename): 
+    sample = np.array([True if i in sampling_ixs else False for i in
+        range(len(cell_fate))], dtype=bool)
+    data = np.vstack((range(len(cell_fate)), cell_fate, cell_time, sample)).T
+    df = pd.DataFrame(data, columns = ['cellindex', 'traj_cluster', 'pseudotime',
+    'downsampled'])
+    df = df.astype({"cellindex": int, "traj_cluster": int, "pseudotime": float,
+        "downsampled": bool})
     df.to_csv(filename, index=False)
         
 def overlap_crit_intra_cluster(cell_embedding, cell_fate, quant):
@@ -1285,8 +1219,6 @@ def overlap_inter_cluster(cell_embedding, cell_fate, cell_time_per_cluster, clus
         idx[:,[1,0]] = idx[:,[0,1]]
     
         #print("to unique pairs\n", idx)
-
-        
         plt.scatter(cell_embedding[:,0], cell_embedding[:,1], s=5, alpha=0.3)
         plt.scatter(cell_cluster0[idx[:,0]][:,0], cell_cluster0[idx[:,0]][:,1])
         plt.scatter(cell_cluster1[idx[:,1]][:,0], cell_cluster1[idx[:,1]][:,1])
@@ -1381,7 +1313,7 @@ def compute_all_cell_time(load_cellDancer,
     # inter-cluster time alignment
 #    resolved_cell_time, V = Cell_time_assignment_intercluster(cell_time_per_cluster, cell_fate, cell_embedding, tau = 0.05)
 #    print(cell_time_per_cluster[0])
-    resolved_cell_time = Cell_time_assignment_intercluster(cell_time_per_cluster, cell_fate, cell_embedding, tau = 0.05)
+    resolved_cell_time, CT = Cell_time_assignment_intercluster(cell_time_per_cluster, cell_fate, cell_embedding, tau = 0.05)
 #    print(resolved_cell_time[0])
     cell_time = combine_clusters(resolved_cell_time)
 
@@ -1391,5 +1323,5 @@ def compute_all_cell_time(load_cellDancer,
     Plot_cell_cluster(embedding, all_cell_fate, [])
     if outfile:
         print("Exporting data to ", outfile)
-        export_cell_time(all_cell_fate, all_cell_time, outfile)
-    return all_cell_time
+        export_cell_time(all_cell_fate, all_cell_time, sampling_ixs, outfile)
+    return all_cell_time, all_cell_fate, CT
