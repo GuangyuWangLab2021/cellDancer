@@ -7,7 +7,7 @@ if "diffusion" in sys.modules:
     importlib.reload(sys.modules["diffusion"])
 
 from diffusion import *
-from cellDancer.get_embedding import get_embedding
+from get_embedding import get_embedding
     
 def load_velocity(raw_data_file, detail_result_path, n_neighbors, step):
     load_raw_data = pd.read_csv(raw_data_file)
