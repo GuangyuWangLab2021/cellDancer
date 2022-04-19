@@ -138,3 +138,28 @@ colormap_erythroid={
 'Erythroid1':solarExtra02[3],
 'Erythroid2':solarExtra02[4],
 'Erythroid3':solarExtra02[5]}
+
+colormap_neuro = {'CA': grove2[7],
+'CA1-Sub': grove2[9],
+'CA2-3-4': grove2[8],
+'Granule': grove2[6],
+'ImmGranule1': grove2[6],
+'ImmGranule2': grove2[6],
+'Nbl1': grove2[5],
+'Nbl2': grove2[5],
+'nIPC': grove2[4],
+'RadialGlia': grove2[3],
+'RadialGlia2': grove2[3],
+'GlialProg': grove2[2],
+'OPC': grove2[1],
+'ImmAstro': grove2[0]}
+
+colormap_pancreas={'Ductal':solarExtra02[0],
+'Ngn3 low EP':solarExtra02[1],
+'Ngn3 high EP':solarExtra02[2],
+'Pre-endocrine':solarExtra02[3],
+'Alpha':'#ff4800',
+'Beta':"#B81136",#'#ffb600',#'#f6ad2f',
+'Delta':'green',
+'Epsilon':'#03B3B0'#'#e05780'#'#fcf300'
+         }
