@@ -137,6 +137,7 @@ class stochasticModule(nn.Module): # deep learning module
         
         # 用downsampling以后的cell，计算neighbors，作为输入
         # 加入neighbor信息
+        self.n_neighbors=min((points.shape[0]-1), self.n_neighbors)
         nbrs = NearestNeighbors(n_neighbors=self.n_neighbors, algorithm='ball_tree').fit(points)
         distances, indices = nbrs.kneighbors(points) # indices: raw is individe cell, col is nearby cells, value is the index of cells, the fist col is the index of row
         expr = pd.merge(pd.DataFrame(s0, columns=['s0']), pd.DataFrame(u0, columns=['u0']), left_index=True, right_index=True)
@@ -364,7 +365,7 @@ class ltModule(pl.LightningModule):
         # print("cost for training_step: "+str(cost))
         # cost_mean = torch.mean(cost)    # cost: a list of cost of each cell for a given gene
         if self.cost_type=='average':
-            print('-----STOP: using average cost-----')
+            # print('-----STOP: using average cost-----')
             # keep the window len <= check_n_epoch
             if len(self.cost_window)<self.average_cost_window_size:
                 self.cost_window.append(cost)
@@ -375,7 +376,7 @@ class ltModule(pl.LightningModule):
             self.log("loss", self.get_loss) # used for early stop. controled by log_every_n_steps
             
         elif self.cost_type=='median':
-            print('-----STOP: using average cost-----')
+            # print('-----STOP: using average cost-----')
             # keep the window len <= check_n_epoch
             if len(self.cost_window)<self.average_cost_window_size:
                 self.cost_window.append(cost)
@@ -386,7 +387,7 @@ class ltModule(pl.LightningModule):
             self.log("loss", self.get_loss) # used for early stop. controled by log_every_n_steps
             
         elif self.cost_type=='smooth':
-            print('-----STOP: using smooth cost-----')
+            # print('-----STOP: using smooth cost-----')
             if self.get_loss==1000:
                 self.get_loss=cost
             smoothed_val = cost * self.smooth_weight + (1 - self.smooth_weight) * self.get_loss  # Calculate smoothed value
@@ -394,7 +395,7 @@ class ltModule(pl.LightningModule):
 
             self.log("loss", self.get_loss)
         else:
-            print('-----STOP: not using cost-----')
+            # print('-----STOP: not using cost-----')
             self.get_loss = cost
             self.log("loss", self.get_loss) # used for early stop. controled by log_every_n_steps
         
@@ -589,7 +590,6 @@ def _train_thread(datamodule,
                     check_n_epoch=None, 
                     initial_zoom=None, 
                     initial_strech=None, 
-                    model_save_path=None,
                     learning_rate=None,
                     cost2_cutoff=None,
                     optimizer=None,
@@ -602,7 +602,8 @@ def _train_thread(datamodule,
                   average_cost_window_size=None,
                  patience=None,
                  smooth_weight=None,
-                 ini_model='normal'):
+                 ini_model=None, 
+                 model_save_path=None):
     # print("train thread---------")
     import random
     seed = 0
@@ -635,7 +636,7 @@ def _train_thread(datamodule,
     data_df=pd.DataFrame({'u0':u0,'s0':s0,'embedding1':embedding1,'embedding2':embedding2})
     data_df['gene_list']=this_gene_name
     print(this_gene_name)
-    _, sampling_ixs_select_model, _ = downsampling_embedding(data_df,
+    _, sampling_ixs_select_model, _ = downsampling_embedding(data_df, # for select model
                         para='neighbors',
                         target_amount=0,
                         step_i=20,
@@ -711,6 +712,9 @@ def _train_thread(datamodule,
         detail.u1=detail.u1*u0max
         detail.beta=detail.beta*u0max
         detail.gamma=detail.gamma*s0max
+        
+    if(model_save_path != None):
+        model.save(model_save_path)
     
     if (os.path.exists(filepath_detail)) :header_detail=False
     else:header_detail=['gene_name','s0','u0','s1','u1','alpha','beta','gamma','cost']
@@ -840,7 +844,7 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
                 step_j=step_j
                 )
     embedding_downsampling = embedding.iloc[idx_downSampling_embedding][['embedding1','embedding2']]
-    n_neighbors = min((embedding_downsampling.shape[0]-2), n_neighbors)
+    n_neighbors = min((embedding_downsampling.shape[0]-1), n_neighbors)
     nn = NearestNeighbors(n_neighbors=n_neighbors)
     # print(embedding_downsampling)
     print(embedding_downsampling.shape)
@@ -904,7 +908,8 @@ def select_initial_net(gene, gene_downsampling, data_df):
     if gene_u_s_full.loc[gene_u_s_full['color']=='red'].shape[0]>0.001*gene_u_s_full.shape[0]:
         model = 'Sulf2'
         
-        model_path=os.path.join(model_path,'model','Sulf2','Sulf2.pt')
+        # model_path=os.path.join(model_path,'model','Sulf2','Sulf2.pt')
+        model_path=os.path.join(model_path,'model','circle','circle.pt')
         # model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/cellDancer-development_20220128/src/model/Sulf2/Sulf2.pt'
     else:
         model = 'Ntrk2_e500'

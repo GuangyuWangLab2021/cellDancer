@@ -126,3 +126,15 @@ purpleOrange = ["#581845", "#900C3F", "#C70039", "#FF5744", "#FFC30F"]
 #     save_path="output/detailcsv/adj_e/"+i+"_"+"e"+str(e_num)+".pdf"# notice: changed
 #     velocity_plot(detail, [i],detailfinfo,color_scatter,20,1,color_map,vmin,vmax,save_path,step_i,step_j) # from cell dancer
 #map_list=[stallion,stallion2,calm,kelly,bear,ironMan,ironMan_2,circus,paired,grove,summerNight]
+
+###############case study color map
+
+
+
+colormap_erythroid={
+'Haematoendothelial progenitors':solarExtra02[0],
+'Blood progenitors 1':solarExtra02[1],
+'Blood progenitors 2':solarExtra02[2],
+'Erythroid1':solarExtra02[3],
+'Erythroid2':solarExtra02[4],
+'Erythroid3':solarExtra02[5]}

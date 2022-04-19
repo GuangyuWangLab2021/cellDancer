@@ -6,7 +6,129 @@ from scipy.sparse import csr_matrix
 import pandas as pd
 
 
+######### pseudotime rsquare
 
+def _non_para_kernel_t4(X,Y,down_sample_idx):
+    # (no first cls),pseudotime r square calculation
+    # this version has downsampling section
+    # TO DO WHEN ONLY USING ONE GENE, WILL CAUSL PROBLEM WHEN COMBINING
+    # Usage: Gene pseudotime fitting and r square (moved to utilities)
+    # input: X,Y
+    # return: estimator, r_square
+    # example: 
+    # X = pd.DataFrame(np.arange(100)*np.pi/100)
+    # Y = pd.DataFrame(np.sin(X)+np.random.normal(loc = 0, scale = 0.5, size = (100,1)))
+    # estimator,r_square=non_para_kernel(X,Y)
+    
+    # X2=pd.DataFrame(np.random.randint(0,100,size=[200,1]))
+    # Y2=pd.DataFrame(np.random.normal(9,5,size=[200]))
+    # X = pd.DataFrame(np.arange(100)*np.pi/100)
+    # Y = pd.DataFrame(np.sin(X)+np.random.normal(loc = 0, scale = 0.5, size = (100,1)))
+    from statsmodels.nonparametric.kernel_regression import KernelReg
+    import matplotlib.pyplot as plt
+    Y=Y[X['index'].isin(down_sample_idx)]
+    X=X[X['index'].isin(down_sample_idx)].time
+    kde=KernelReg(endog=Y,
+                           exog=X,
+                           var_type='c',#变量的类型
+                           #ckertype='gaussian',#用于连续变量的内核
+                           #bw='cv_ls'#带宽，数值：指定带宽； ‘cv_ls’：最小二乘交叉验证； ‘aic’：AIC Hurvich带宽估计
+                           )
+    #X=merged.time
+    #Y=merged.s0
+    print(kde.r_squared())
+    n=X.shape[0]
+
+    estimator = kde.fit(X)
+    estimator = np.reshape(estimator[0],[n,1])
+
+    return(estimator,kde.r_squared())
+
+def getidx_downSampling_embedding(load_cellDancer,cell_choice=None):
+    # find the origional id
+    if cell_choice is not None:
+        load_cellDancer=load_cellDancer[load_cellDancer.cellIndex.isin(cell_choice)]
+        
+    embedding=load_cellDancer.loc[load_cellDancer.gene_name==list(load_cellDancer.gene_name)[0]][['embedding1','embedding2']]
+    
+    # get transfer id
+    from sampling import sampling_embedding
+    idx_downSampling_embedding = sampling_embedding(embedding,
+                para='neighbors',
+                target_amount=0,
+                step_i=30,
+                step_j=30 # TODO: default is 30 
+                )
+    
+    if cell_choice is None:
+        return(idx_downSampling_embedding)
+    else:
+        # transfer to the id of origional all detail list
+        onegene=load_cellDancer[load_cellDancer.gene_name==list(load_cellDancer.gene_name)[0]]
+        onegene.loc[:,['transfer_id']]=range(len(onegene))
+        sampled_left=onegene[onegene.transfer_id.isin(idx_downSampling_embedding)]
+        transfered_index=sampled_left.cellIndex
+        return(transfered_index)
+
+
+def combine_parallel_result(result,gene_list,sampled_idx,merged_part_time):
+    # combine result of rsquare and non-para fitting obtained from parallel computing
+    for i,result_i in enumerate(result):
+
+        r_square=result_i[1]
+        non_para_fit=result_i[0]
+        #print(r_square)
+        if i == 0:
+            r_square_list = r_square
+            non_para_fit_list = np.transpose(non_para_fit)
+        else:
+            r_square_list = np.vstack((r_square_list, r_square))
+            non_para_fit_list = np.vstack((non_para_fit_list, np.transpose(non_para_fit)[0]))
+    r_square=pd.DataFrame({'gene_name':gene_list,'r_square':np.transpose(r_square_list)[0]})
+
+    non_para_fit_heat=pd.DataFrame(non_para_fit_list,index=gene_list)
+    non_para_fit_heat.columns=merged_part_time[merged_part_time['index'].isin(sampled_idx)]['index']
+
+    non_para_list=pd.DataFrame(non_para_fit_list)
+    non_para_list['combined']=non_para_list.values.tolist()
+    r_square
+    r_square_non_para_list=pd.concat([r_square,non_para_list['combined']],axis=1)
+    r_square_non_para_list_sort=r_square_non_para_list.sort_values(by=['r_square'], axis=0, ascending=False)
+    
+    return(r_square_non_para_list_sort,non_para_fit_heat,non_para_fit_list)    
+    
+def get_rsquare(load_cellDancer,gene_list,s0_merged_part_time,s0_merged_part_gene,cell_choice=None,):
+    # downsample
+    sampled_idx=getidx_downSampling_embedding(load_cellDancer,cell_choice=cell_choice)
+    
+    
+    # PARALLEL thread
+    from joblib import Parallel, delayed
+    # run parallel
+    result = Parallel(n_jobs= -1, backend="loky")( # TODO: FIND suitable njobs
+        delayed(_non_para_kernel_t4)(s0_merged_part_time,s0_merged_part_gene[gene_list[gene_index]],sampled_idx)
+        for gene_index in range(0,len(gene_list)))
+    
+    # combine
+    r_square_non_para_list_sort,non_para_fit_heat,non_para_fit_list=combine_parallel_result(result,gene_list,sampled_idx,s0_merged_part_time)
+    
+    return (r_square_non_para_list_sort,non_para_fit_heat,non_para_fit_list,sampled_idx)
+######### pseudotime rsquare
+
+
+def get_gene_s0_by_time(cell_time,load_cellDancer): # pseudotime
+    cell_time_time_sort=cell_time.sort_values('pseudotime')
+    cell_time_time_sort.columns=['index','time']
+
+    s0_heatmap_raw=load_cellDancer.pivot(index='cellIndex', columns='gene_name', values='s0')
+
+    s0_heatmap_raw
+    s0_merged=pd.merge(cell_time_time_sort,s0_heatmap_raw,left_on='index', right_on='cellIndex') # TODO: NOT cellIndex in the future
+
+    s0_merged_part_gene=s0_merged.loc[:, s0_merged.columns[2:]]
+    s0_merged_part_time=s0_merged.loc[:, s0_merged.columns[0:2]]
+    
+    return(s0_merged_part_gene,s0_merged_part_time)
 
 def adata_to_raw_with_embed(adata,save_path,gene_list=None):
     '''convert adata to raw data format with embedding info
