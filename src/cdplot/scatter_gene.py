@@ -1,15 +1,18 @@
 import matplotlib.pyplot as plt
 import os
 import sys
+import pandas as pd
 
 if __name__ == "__main__":
     sys.path.append('..')
     from colormap import *
 else:
     try:
-        from ..colormap import *
+        from .colormap import *
+        print('.colormap')
     except ImportError:
         from colormap import *
+        print('.ImportError')
 
 ################# gene_pseudotime
 def gene_pseudotime(gene,load_cellDancer,cell_time,colors=None,save_path=None):
