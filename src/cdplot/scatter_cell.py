@@ -130,9 +130,9 @@ def velocity_cell_map_curve(
 
             n_neighbors = int(velocity_embedding.shape[0]/3)
             dists_head, neighs_head = find_neighbors(
-                embedding_ds, n_neighbors, gridpoints_coordinates)
+                embedding_ds, gridpoints_coordinates, n_neighbors, radius=1)
             dists_tail, neighs_tail = find_neighbors(
-                embedding_ds+velocity_embedding, n_neighbors, gridpoints_coordinates)
+                embedding_ds+velocity_embedding, gridpoints_coordinates, n_neighbors, radius=1)
             std = np.mean([(g[1] - g[0]) for g in grs])
 
             # isotropic gaussian kernel
@@ -152,9 +152,9 @@ def velocity_cell_map_curve(
             XY = gridpoints_coordinates
 
             dists_head2, neighs_head2 = find_neighbors(
-                embedding_ds, n_neighbors, XY+UZ_head)
+                embedding_ds, XY+UZ_head, n_neighbors, radius=1)
             dists_tail2, neighs_tail2 = find_neighbors(
-                embedding_ds, n_neighbors, XY-UZ_tail)
+                embedding_ds, XY-UZ_tail, n_neighbors, radius=1)
 
             gaussian_w_head2 = normal.pdf(
                 loc=0, scale=smooth * std, x=dists_head2)
@@ -311,7 +311,9 @@ def cell_level_para_plot(load_cellDancer,gene_choice,para_list,cluster_choice=No
                 plt.savefig(os.path.join(save_path,(gene_name+'_'+para+'.pdf')),dpi=300)
             plt.show()
 
-def find_neighbors(data, n_neighbors, gridpoints_coordinates):
+
+# PENGZHI -> Move this to utilities
+def find_neighbors(data, gridpoints_coordinates, n_neighbors, radius=1):
     nn = NearestNeighbors(n_neighbors=n_neighbors, radius=1, n_jobs=-1)
     nn.fit(data)
     dists, neighs = nn.kneighbors(gridpoints_coordinates)
