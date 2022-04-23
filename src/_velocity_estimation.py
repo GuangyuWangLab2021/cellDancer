@@ -1,19 +1,26 @@
-import os
+#
+# V8.  fully connected layers, V6 intial value bug fixed. There is a new NA bug in __main__
+#
 import pytorch_lightning as pl
+import os
+from scipy.integrate._ivp.radau import P
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 import pandas as pd
+from pytorch_lightning.loggers import TensorBoardLogger
+import matplotlib.pyplot as plt
 from torch.utils.data import *
+from sklearn.cluster import KMeans
+import seaborn as sns
 import sys
 from joblib import Parallel, delayed
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
 if __name__ == "__main__":
     sys.path.append('.')
     from sampling import *
@@ -23,19 +30,18 @@ else:
     except ImportError:
         from sampling import *
         
-class L2Module(nn.Module):
-
-    """Define network structure.
-    """
-
-    def __init__(self, h1, h2, ratio):
+class L2Module(nn.Module): #can change name #set the shape of the net
+    '''
+    network structure
+    '''
+    def __init__(self, h1, h2, ratio):#all init cannot change name
         super().__init__()
         self.l1 = nn.Linear(2, h1)
         self.l2 = nn.Linear(h1, h2)
         self.l3 = nn.Linear(h2, 3)
         self.ratio = ratio
 
-    def forward(self, u0, s0, alpha0, beta0, gamma0, dt):
+    def forward(self, u0, s0, alpha0, beta0, gamma0, dt):#better not change name
         input = torch.tensor(np.array([np.array(u0), np.array(s0)]).T)
         x = self.l1(input)
         x = F.leaky_relu(x)
@@ -54,6 +60,7 @@ class L2Module(nn.Module):
         gamma = gamma * gamma0
 
         def corrcoef_cost(alphas, u0, beta, s0):
+            # print('epoch'+str(epoch_num))
             corrcoef1 = torch.corrcoef(torch.tensor([alphas.detach().numpy(),u0.detach().numpy()]))[1,0]
             #print("corrcoef1: "+str(corrcoef1))
             corrcoef2 = torch.corrcoef(torch.tensor([beta.detach().numpy(), s0.detach().numpy()]))[1,0]
@@ -629,7 +636,7 @@ def _train_thread(datamodule,
     data_df=pd.DataFrame({'u0':u0,'s0':s0,'embedding1':embedding1,'embedding2':embedding2})
     data_df['gene_list']=this_gene_name
     print(this_gene_name)
-    _, sampling_ixs_select_model, _ = downsampling_embedding(data_df, # for select model
+    _, sampling_ixs_select_model, _ = downsampling_embedding(data_df,
                         para='neighbors',
                         target_amount=0,
                         step_i=20,
@@ -779,7 +786,7 @@ def train( # use train_thread # change name to velocity estiminate
     multple jobs
     when model_path is defined, model_number wont be used
     '''
-    print(os.path.abspath(os.getcwd()))
+    
     datamodule=downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=gene_choice,binning=binning)
     
     if check_n_epoch=='None':check_n_epoch=None
@@ -878,6 +885,7 @@ def select_initial_net(gene, gene_downsampling, data_df):
     model1 is the model for single kinetic
     model2 is multiple kinetic
     '''
+    # gene = 'Rbfox3'
     gene_u_s = gene_downsampling[gene_downsampling.gene_list==gene]
     gene_u_s_full = data_df[data_df.gene_list==gene]
     
@@ -898,10 +906,14 @@ def select_initial_net(gene, gene_downsampling, data_df):
     import pathlib
     model_path=pathlib.Path(__file__).parent.resolve()
     if gene_u_s_full.loc[gene_u_s_full['color']=='red'].shape[0]>0.001*gene_u_s_full.shape[0]:
-        # model in circle shape
-        model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/celldancer_polish/src/model/circle.pt'
+        model = 'Sulf2'
+        
+        # model_path=os.path.join(model_path,'model','Sulf2','Sulf2.pt')
+        model_path=os.path.join(model_path,'model','circle','circle.pt')
+        # model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/cellDancer-development_20220128/src/model/Sulf2/Sulf2.pt'
     else:
-        # model in seperated branch shape
-        model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/celldancer_polish/src/model/branch.pt'
+        model = 'Ntrk2_e500'
+        model_path=os.path.join(model_path,'model','Ntrk2_e500','Ntrk2_e500.pt')
+        # model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/cellDancer-development_20220128/src/model/Ntrk2_e500/Ntrk2_e500.pt'
     return(model_path)
 
