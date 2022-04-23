@@ -26,30 +26,8 @@ if "get_embedding" in sys.modules:
 
 from diffusion import *
 from get_embedding import get_embedding
+from 
     
-def load_velocity(raw_data_file, detail_result_path, n_neighbors, step):
-    load_raw_data = pd.read_csv(raw_data_file)
-    detail_files = glob.iglob(os.path.join(detail_result_path, '*detail*.csv'))
-    lcd = list()
-    for f in detail_files:
-        load_cellDancer_temp = pd.read_csv(f)
-        load_cellDancer_temp.rename(columns = {'Unnamed: 0':'cellIndex'}, inplace = True)
-        load_cellDancer_temp = load_cellDancer_temp.sort_values(by = ['gene_name', 'cellIndex'], ascending = [True, True])
-        lcd.append(load_cellDancer_temp)
-    load_cellDancer = pd.concat(lcd)
-    
-    gene_choice=list(set(load_cellDancer.gene_name))
-    embedding, sampling_ixs, velocity_embedding = get_embedding(
-        load_raw_data=load_raw_data,
-        load_cellDancer=load_cellDancer,
-        gene_list=gene_choice,
-        mode="gene",
-        n_neighbors=n_neighbors,
-        step=step)
-    plot_velocity(embedding[sampling_ixs], velocity_embedding)
-    
-    return load_cellDancer, embedding, sampling_ixs, velocity_embedding
-
 
 def compute_trajectory_displacement(traj):
     traj = np.array(traj)
@@ -108,9 +86,9 @@ def truncate_end_state_stuttering(paths, cell_embedding):
     return np.array(newPaths, dtype=object)
 
 
-def path_clustering(path_clusters, cell_clusters, paths, similarity_cutoff, similarity_threshold, nkeep=10):
+def extract_representative_long_trajectories(path_clusters, cell_clusters, paths, similarity_cutoff, similarity_threshold, nkeep=10):
     '''
-    a clustering method to find representative paths.
+    a method to find representative paths and group similar paths.
     
     Parameters
     ----------
@@ -119,7 +97,7 @@ def path_clustering(path_clusters, cell_clusters, paths, similarity_cutoff, simi
         N paths, sorted by their |displacement|, each trajectory is a (ntimestep, 2) array
         
     similarity_threshold: float
-        first round clustering to keep trajectories which are within this threshold
+        group trajectories within this similarity threshold
     
     After each iteration, a number of trajectories are popped in the traj list 
     returns a list of clusters
@@ -139,8 +117,6 @@ def path_clustering(path_clusters, cell_clusters, paths, similarity_cutoff, simi
     similarity = np.array([compute_trajectory_similarity(np.array(longest), np.array(ipath), 10) 
                            for ipath in paths])
     
-    #print(similarity.shape)
-    #print(paths.shape)
     sel = (similarity < similarity_cutoff)
     sel_keep = (similarity_threshold <= similarity)
     cluster = paths[sel & sel_keep][:nkeep]
@@ -150,15 +126,14 @@ def path_clustering(path_clusters, cell_clusters, paths, similarity_cutoff, simi
     elif not np.array_equal(paths[0], cluster[0]):
         #print("concat", cluster[0].shape, paths[0].shape)
         cluster = np.append(cluster, paths[0,None])
-    #print(cluster.shape)
     path_clusters[clusterID] = cluster
     cell_clusters[clusterID] = [ipath[0] for ipath in paths[sel]]
     
     paths = paths[~sel]
-    return path_clustering(path_clusters, cell_clusters, paths, similarity_cutoff, similarity_threshold, nkeep)
+    return extract_representative_long_trajectories(path_clusters, cell_clusters, paths, similarity_cutoff, similarity_threshold, nkeep)
 
     
-def cell_clustering_tuning(embedding, cell_clusters, n_neighbors=20):
+def cell_fate_tuning(embedding, cell_clusters, n_neighbors=20):
     '''
     Parameters
     ----------
@@ -631,7 +606,7 @@ def interpolate_all_cell_time(cell_time, all_cell_embedding, sampling_ixs, step)
     all_cell_time = np.array(all_cell_time)
     all_cell_time[all_cell_time>np.quantile(all_cell_time, 0.95)]=np.quantile(all_cell_time, 0.95)
     
-    # smoothing the data using nearest neighbours
+    # smoothing the data using the nearest neighbours
     neigh = NearestNeighbors(n_neighbors=20, radius=1, n_jobs=mp.cpu_count()-1)
     neigh.fit(all_cell_embedding)
     A = neigh.kneighbors_graph(all_cell_embedding)
@@ -641,7 +616,12 @@ def interpolate_all_cell_time(cell_time, all_cell_embedding, sampling_ixs, step)
             range(len(all_cell_time))]
     all_cell_time_smooth -= np.min(all_cell_time_smooth)
     all_cell_time_smooth = all_cell_time_smooth/np.max(all_cell_time_smooth)
+    return all_cell_time_smooth
 
+
+
+# TOREMOVE
+def pseudotime_cell_plot():
     print("\n\n\nPlotting estimated pseudotime for all cells ...")
     fig, ax = plt.subplots(figsize=(6,6))
     im = plt.scatter(all_cell_embedding[:,0], all_cell_embedding[:,1],
@@ -649,24 +629,14 @@ def interpolate_all_cell_time(cell_time, all_cell_embedding, sampling_ixs, step)
 
     plt.xlim([min(x), max(x)])
     plt.ylim([min(y), max(y)])
-    #plt.scatter(x, y, c=f, alpha = 0.2, s = 5, edgecolors='black')
     cax = plt.colorbar(im,fraction=0.03, pad=0., location='bottom')
     cax.set_label('normalized pseudotime')
-    #plt.title('pseudotime: gastrulation')
     plt.axis('off')
     plt.show()
     
-    return all_cell_time_smooth
     
     
-def export_time(load_cellDancer, cell_time):
-    gene_names = load_cellDancer['gene_name'].drop_duplicates().to_list()
-    cell_number = load_cellDancer[load_cellDancer['gene_name']==gene_names[0]].shape[0]
-
-    if len(load_cellDancer) == len(gene_names) * len(cell_time):
-        load_cellDancer['pseudo_time'] = np.tile(cell_time, len(gene_names))
-        load_cellDancer = load_cellDancer.astype({"pseudotime": float})
-
+def write_cell_time(load_cellDancer, cell_time):
 
 def export_cell_time(cell_time, cell_fate, sampling_ixs, filename): 
     sample = np.array([True if i in sampling_ixs else False for i in
@@ -862,7 +832,12 @@ def compute_all_cell_time(load_cellDancer, embedding, cell_embedding,
     print("There are %d cells." % (len(cell_fate)))
     plot_cell_clusters(all_cell_fate, embedding)
     
-    export_time(load_cellDancer, cell_time)
+    # write cell time to load_cellDancer
+    gene_names = load_cellDancer['gene_name'].drop_duplicates().to_list()
+    if len(load_cellDancer) == len(gene_names) * len(cell_time):
+        load_cellDancer['pseudo_time'] = np.tile(cell_time, len(gene_names))
+        load_cellDancer = load_cellDancer.astype({"pseudotime": float})
+
     if outfile:
         print("\nExporting data to:\n ", outfile)
         df.to_csv(filename, index=False)
@@ -888,7 +863,7 @@ def pseudo_time(load_cellDancer, embedding, velocity_embedding, sampling_ixs, do
     all_grid_idx = __[4] 
     all_grid_coor = __[5]
     
-    plot_mesh_velocity(vel_mesh, grid_density)
+    #plot_mesh_velocity(vel_mesh, grid_density)
     
     paths=run_diffusion(cell_embedding, 
                         vel_mesh, 
@@ -900,7 +875,7 @@ def pseudo_time(load_cellDancer, embedding, velocity_embedding, sampling_ixs, do
                         n_repeats = n_repeats, 
                         n_jobs = mp.cpu_count()-1)
     
-    newPaths = truncate_end_state_stuttering(paths, cell_embedding, PLOT=False)
+    newPaths = truncate_end_state_stuttering(paths, cell_embedding) 
     traj_displacement = np.array([compute_trajectory_displacement(ipath) for ipath in newPaths])
 
     # sorted from long to short
@@ -909,10 +884,9 @@ def pseudo_time(load_cellDancer, embedding, velocity_embedding, sampling_ixs, do
     traj_displacement=traj_displacement[order]
 
 
-
     path_clusters = dict()
     cell_clusters = dict()
-    path_clusters, cell_clusters = path_clustering(
+    path_clusters, cell_clusters = extract_representative_long_trajectories(
         path_clusters, 
         cell_clusters, 
         sorted_traj, 
@@ -921,9 +895,8 @@ def pseudo_time(load_cellDancer, embedding, velocity_embedding, sampling_ixs, do
         nkeep=-1)
 
     # This step could cause dropping of number of path clusters.
-    cell_fate = cell_clustering_tuning(cell_embedding, cell_clusters)
+    cell_fate = cell_fate_tuning(cell_embedding, cell_clusters)
     clusters = np.unique(cell_fate)
-    #path_clusters = [path_clusters[i] for i in clusters]
     
     outname = 'pseudo_time_neuro_combined'+ \
         '__grid' + str(grid[0])+'x'+str(grid[1])+ \
@@ -952,3 +925,28 @@ def pseudo_time(load_cellDancer, embedding, velocity_embedding, sampling_ixs, do
     print("--- %s seconds ---" % (time.time() - start_time))
     
     return all_cell_time
+
+# deprecated since I'm going to get load_cellDancer as input.
+def load_velocity(raw_data_file, detail_result_path, n_neighbors, step):
+    load_raw_data = pd.read_csv(raw_data_file)
+    detail_files = glob.iglob(os.path.join(detail_result_path, '*detail*.csv'))
+    lcd = list()
+    for f in detail_files:
+        load_cellDancer_temp = pd.read_csv(f)
+        load_cellDancer_temp.rename(columns = {'Unnamed: 0':'cellIndex'}, inplace = True)
+        load_cellDancer_temp = load_cellDancer_temp.sort_values(by = ['gene_name', 'cellIndex'], ascending = [True, True])
+        lcd.append(load_cellDancer_temp)
+    load_cellDancer = pd.concat(lcd)
+    
+    gene_choice=list(set(load_cellDancer.gene_name))
+    embedding, sampling_ixs, velocity_embedding = get_embedding(
+        load_raw_data=load_raw_data,
+        load_cellDancer=load_cellDancer,
+        gene_list=gene_choice,
+        mode="gene",
+        n_neighbors=n_neighbors,
+        step=step)
+    plot_velocity(embedding[sampling_ixs], velocity_embedding)
+    
+    return load_cellDancer, embedding, sampling_ixs, velocity_embedding
+
