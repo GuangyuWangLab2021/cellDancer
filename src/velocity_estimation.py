@@ -1,26 +1,19 @@
-#
-# V8.  fully connected layers, V6 intial value bug fixed. There is a new NA bug in __main__
-#
-import pytorch_lightning as pl
 import os
-from scipy.integrate._ivp.radau import P
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 import pandas as pd
-from pytorch_lightning.loggers import TensorBoardLogger
-import matplotlib.pyplot as plt
 from torch.utils.data import *
-from sklearn.cluster import KMeans
-import seaborn as sns
 import sys
 from joblib import Parallel, delayed
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning) 
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 if __name__ == "__main__":
     sys.path.append('.')
     from sampling import *
@@ -885,7 +878,6 @@ def select_initial_net(gene, gene_downsampling, data_df):
     model1 is the model for single kinetic
     model2 is multiple kinetic
     '''
-    # gene = 'Rbfox3'
     gene_u_s = gene_downsampling[gene_downsampling.gene_list==gene]
     gene_u_s_full = data_df[data_df.gene_list==gene]
     
