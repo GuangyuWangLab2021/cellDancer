@@ -1,6 +1,12 @@
-import matplotlib.pyplot as plt
 import os
 import sys
+import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
+from scipy.stats import norm as normal
+import bezier
+import numpy as np
+import pandas as pd
 
 if __name__ == "__main__":
     sys.path.append('.')
@@ -18,11 +24,12 @@ else:
 # todo: add cluster color
 # todo: plt.show() for all plot functions
 # todo: build map itself    
-def velocity_cell_map_curve(
+def scatter(
         load_cellDancer, 
         save_path=None,
         custom_xlim=None,custom_ylim=None,
         colors=None, alpha=0.5,
+        velocity=False,
         #add_amt_gene=2000, gene_name=None,
         #mode='embedding',pca_n_components=4,file_name_additional_info='',umap_n=10,transfer_mode=None,umap_n_components=None,
         min_mass=2,grid_steps=(30,30)): 
@@ -53,14 +60,28 @@ def velocity_cell_map_curve(
     `matplotlib.Axis` if `show==False`
     """
 
-    # colors = dict() --> A
-    # colors = 'pseudo time'  --> C
-    # color = list(cluster) --> cycle a colormap
-    # color = None
+    # colors = dict() --> specified colormap constructed based on the dict
+    # colors = 'pseudotime'  --> a defined colormap by us, and pseudotime as c.
+    # colors = list(cluster) --> cycle a colormap of size n_clusters
+    # colors = None --> grey
 
-    if colors is not None:
-        colors=colors
-    else:
+    # The colors should be one of those:
+    #   a dictionary of {cluster:color}
+    #   a string of the column attribute (pseudotime, alpha, beta etc)
+    #   a list of clusters 
+    #   None
+
+    if isinstance(colors, dict):
+        colors = colors
+        c = xx
+        cmap = yy
+    elif isinstance(colors, str):
+        colors = some colormap
+        c = extract_from_df(load_cellDancer, ['colors'])
+    elif isinstance(colors, list):
+        colors = cycling a default colormap
+    elif colors is None:
+        colors=  grey color
         # 
         # colors = generate_colormap(load_celldancer)
         colors = {'CA': grove2[7],
@@ -80,16 +101,14 @@ def velocity_cell_map_curve(
     pointsize = 5
 
 
-    one_gene_idx = load_cellDancer.gene_name == load_cellDancer.gene_name[0]
-    embedding = load_cellDancer[one_gene_idx][['embedding1', 'embedding2']].dropna()
-    embedding = embedding.to_numpy()
-    embedding_ds = load_cellDancer[one_gene_idx][['embedding_1', 'embedding_2']].dropna()
-    embedding_ds = embedding_ds.to_numpy()
-    velocity_embedding = load_cellDancer[one_gene_idx][['velocity_1', 'velocity_2']].dropna()
-    velocity_embedding= velocity_embedding.to_numpy()
+    # PENGZHI
+    # I think it is probably a better idea 
+    # to add a column in load_cellDancer to indicate sampled or not.
 
-    from matplotlib.patches import Patch
-    from matplotlib.lines import Line2D
+    embedding = extract_from_df(load_cellDancer, ['embedding1', 'embedding2'])
+    embedding_ds = extract_from_df(load_cellDancer, ['embedding_1', 'embedding_2'])
+    velocity_embedding= extract_from_df(load_cellDancer, ['velocity_1', 'velocity_2'])
+
 
     def gen_Line2D(label, markerfacecolor):
         return Line2D([0], [0], color='w', marker='o', label=label, markerfacecolor=markerfacecolor,  markeredgewidth=0, markersize=5)
@@ -110,8 +129,6 @@ def velocity_cell_map_curve(
     # calculate_grid_arrows
     # Source - https://github.com/velocyto-team/velocyto.py/blob/0963dd2df0ac802c36404e0f434ba97f07edfe4b/velocyto/analysis.py
     def grid_curve(embedding_ds, velocity_embedding):
-        from scipy.stats import norm as normal
-        import bezier
         # kernel grid plot
 
         def calculate_two_end_grid(embedding_ds, velocity_embedding, smooth=None, steps=None, min_mass=None):
@@ -259,7 +276,8 @@ def velocity_cell_map_curve(
         plot_cell_velocity_curve(XYM, UVT, UVH, UVT2, UVH2, s_vals)
         ############ end --- plot the curve arrow for cell velocity ############
 
-    grid_curve(embedding_ds, velocity_embedding)
+    if velocity:
+        grid_curve(embedding_ds, velocity_embedding)
 
 
     if custom_xlim is not None:
@@ -268,15 +286,12 @@ def velocity_cell_map_curve(
         plt.ylim(custom_ylim[0], custom_ylim[1])
     
     lgd=plt.legend(handles=legend_elements, bbox_to_anchor=(1.01, 1), loc='upper left')
-    #plt.show()
     
     if save_path is not None:
         plt.savefig(os.path.join(save_path,('velocity_embedding' + \
         file_name_additional_info+\
         '_colorful_grid_curve_arrow.pdf')),bbox_inches='tight',bbox_extra_artists=(lgd,),)
         
-
-
 
 def cell_level_para_plot(load_cellDancer,gene_choice,para_list,cluster_choice=None,save_path=None,pointsize=0.2,alpha=1):
     
@@ -318,3 +333,12 @@ def find_neighbors(data, gridpoints_coordinates, n_neighbors, radius=1):
     nn.fit(data)
     dists, neighs = nn.kneighbors(gridpoints_coordinates)
     return(dists, neighs)
+
+def extract_from_df(load_cellDancer, attr_list):
+    ''' 
+    Extract a single copy of a list of columns from the load_cellDancer data frame
+    Returns a numpy array.
+    '''
+    one_gene_idx = load_cellDancer.gene_name == load_cellDancer.gene_name[0]
+    data = load_cellDancer[one_gene_idx][attr_list].dropna()
+    return data.to_numpy()

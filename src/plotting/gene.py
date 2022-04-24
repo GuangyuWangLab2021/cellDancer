@@ -51,6 +51,7 @@ def gene_pseudotime(gene,load_cellDancer,cell_time,colors=None,save_path=None):
         plt.savefig(save_path+gene+'.pdf',bbox_inches='tight',bbox_extra_artists=(lgd,),)
     plt.show()
 
+
 def gene_list_pseudotime(gene_list,load_cellDancer,cell_time,colors=None,save_path=None):
     for gene in gene_list:
         gene_pseudotime(gene,load_cellDancer,cell_time,colors=colors,save_path=save_path)
