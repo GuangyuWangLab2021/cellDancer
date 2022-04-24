@@ -1,0 +1,34 @@
+_get_embedding.py:def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,step=(60,60),transfer_mode=None,mode=None,pca_n_components=None,umap_n=None,umap_n_components=None):
+---> consider to make it: compute_cell_velocity
+
+velocity_estimation.py:def downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=None,binning=False):
+velocity_estimation.py:def downsampling(data_df, gene_choice, downsampling_ixs):
+velocity_estimation.py:def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors):
+---> the three names are too similar...
+---> downsampling_embedding also appears in sampling.py
+
+
+velocity_estimation.py:def vaildation_plot(gene,validation_result,save_path_validation):
+---> consider to remove 
+
+
+
+cell.py:def scatter_cell(
+---> I made some changes, however, "colors" part is basically pseudocode...
+cell.py:def cell_level_para_plot(load_cellDancer,gene_choice,para_list,cluster_choice=None,save_path=None,pointsize=0.2,alpha=1):
+---> I was thinking combining those two functions.
+
+
+gene.py:def gene_pseudotime(gene,load_cellDancer,cell_time,colors=None,save_path=None):
+gene.py:def gene_list_pseudotime(gene_list,load_cellDancer,cell_time,colors=None,save_path=None):
+gene.py:def velocity_gene(gene,detail,color_scatter="#95D9EF",point_size=120,alpha_inside=0.3,v_min=None,v_max=None,save_path=None,step_i=15,step_j=15,show_arrow=True,cluster_info=None,mode=None,cluster_annot=False,colors=None):
+---> same here, can we merge the functions to one without too much work?
+
+
+graph.py:def create_graph_KNN_based(data, n_neighbors, neighborhood_radius):
+graph.py:def layout_graph(data, n_neighbors, neighborhood_radius):
+graph.py:def nodesplot(nodes, name=None, canvas=None, cat=None):
+graph.py:def edgesplot(edges, name=None, canvas=None):
+graph.py:def graphplot(nodes, edges, name="", canvas=None, cat=None):
+graph.py:opts.defaults(opts.Nodes(**kwargs), opts.Graph(**kwargs))
+---> I plan to work on this.

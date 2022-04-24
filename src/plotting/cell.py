@@ -24,7 +24,7 @@ else:
 # todo: add cluster color
 # todo: plt.show() for all plot functions
 # todo: build map itself    
-def scatter(
+def scatter_cell(
         load_cellDancer, 
         save_path=None,
         custom_xlim=None,custom_ylim=None,
