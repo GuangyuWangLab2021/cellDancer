@@ -143,10 +143,10 @@ def adata_to_detail(data, para, gene):
     data2 = data[:, data.var.index.isin([gene])].copy()
     u0 = data2.layers[para[0]][:,0].copy().astype(np.float32)
     s0 = data2.layers[para[1]][:,0].copy().astype(np.float32)
-    detail = pd.DataFrame({'gene_list':gene, 'u0':u0, 's0':s0})
+    detail = pd.DataFrame({'gene_name':gene, 'u0':u0, 's0':s0})
     return(detail)
 
-def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors,transfer_mode=None,mode=None,pca_n_components=None,umap_n=None,umap_n_components=None,use_downsampling=None):
+def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors,transfer_mode=None,mode=None,pca_n_components=None,umap_n=None,umap_n_components=None,use_downsampling=True):
     '''
     Guangyu
     sampling cells by embedding
@@ -156,8 +156,8 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
     return: sampled embedding, the indexs of sampled cells, and the neighbors of sampled cells
     '''
 
-    gene = data_df['gene_list'].drop_duplicates().iloc[0]
-    embedding = data_df.loc[data_df['gene_list']==gene][['embedding1','embedding2']]
+    gene = data_df['gene_name'].drop_duplicates().iloc[0]
+    embedding = data_df.loc[data_df['gene_name']==gene][['embedding1','embedding2']]
     print(para)
     
     if use_downsampling:
@@ -182,11 +182,11 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
             data_df.s0=(data_df.s0)**10
             data_df.u0=(data_df.u0)**10
         elif transfer_mode=='2power_norm_multi10':
-            gene_order=data_df.gene_list.drop_duplicates()
-            onegene=data_df[data_df.gene_list==data_df.gene_list[0]]
+            gene_order=data_df.gene_name.drop_duplicates()
+            onegene=data_df[data_df.gene_name==data_df.gene_name[0]]
             cellAmt=len(onegene)
-            data_df_max=data_df.groupby('gene_list')[['s0','u0']].max().rename(columns={'s0': 's0_max','u0': 'u0_max'})
-            data_df_min=data_df.groupby('gene_list')[['s0','u0']].min().rename(columns={'s0': 's0_min','u0': 'u0_min'})
+            data_df_max=data_df.groupby('gene_name')[['s0','u0']].max().rename(columns={'s0': 's0_max','u0': 'u0_max'})
+            data_df_min=data_df.groupby('gene_name')[['s0','u0']].min().rename(columns={'s0': 's0_min','u0': 'u0_min'})
             data_df_fin=pd.concat([data_df_max,data_df_min],axis=1).reindex(gene_order)
             data_df_fin=data_df_fin.loc[data_df_fin.index.repeat(cellAmt)]
             data_df_combined=pd.concat([data_df.reset_index(drop=True) ,data_df_fin[['s0_max','u0_max','s0_min','u0_min']].reset_index(drop=True)],axis=1)
@@ -205,14 +205,14 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
  
     if mode=='gene':
         print('using gene mode')
-        cellID = data_df.loc[data_df['gene_list']==gene]['cellID']
-        data_df_pivot=data_df.pivot(index='cellID', columns='gene_list', values='s0').reindex(cellID)
+        cellID = data_df.loc[data_df['gene_name']==gene]['cellID']
+        data_df_pivot=data_df.pivot(index='cellID', columns='gene_name', values='s0').reindex(cellID)
         embedding_downsampling = data_df_pivot.iloc[idx_downSampling_embedding]
     elif mode=='pca': # not use
         from sklearn.decomposition import PCA
         print('using pca mode')
-        cellID = data_df.loc[data_df['gene_list']==gene]['cellID']
-        data_df_pivot=data_df.pivot(index='cellID', columns='gene_list', values='s0').reindex(cellID)
+        cellID = data_df.loc[data_df['gene_name']==gene]['cellID']
+        data_df_pivot=data_df.pivot(index='cellID', columns='gene_name', values='s0').reindex(cellID)
         embedding_downsampling_0 = data_df_pivot.iloc[idx_downSampling_embedding]
         pca=PCA(n_components=pca_n_components)
         pca.fit(embedding_downsampling_0)
@@ -220,8 +220,8 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
     elif mode=='pca_norm':
         from sklearn.decomposition import PCA
         print('pca_norm')
-        cellID = data_df.loc[data_df['gene_list']==gene]['cellID']
-        data_df_pivot=data_df.pivot(index='cellID', columns='gene_list', values='s0').reindex(cellID)
+        cellID = data_df.loc[data_df['gene_name']==gene]['cellID']
+        data_df_pivot=data_df.pivot(index='cellID', columns='gene_name', values='s0').reindex(cellID)
         embedding_downsampling_0 = data_df_pivot.iloc[idx_downSampling_embedding]
         pca=PCA(n_components=pca_n_components)
         pca.fit(embedding_downsampling_0)
@@ -235,8 +235,8 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
     elif mode =='umap':
         import umap
         print('using umap mode')
-        cellID = data_df.loc[data_df['gene_list']==gene]['cellID']
-        data_df_pivot=data_df.pivot(index='cellID', columns='gene_list', values='s0').reindex(cellID)
+        cellID = data_df.loc[data_df['gene_name']==gene]['cellID']
+        data_df_pivot=data_df.pivot(index='cellID', columns='gene_name', values='s0').reindex(cellID)
         embedding_downsampling_0 = data_df_pivot.iloc[idx_downSampling_embedding]
         
         def get_umap(df,n_neighbors=umap_n, min_dist=0.1, n_components=umap_n_components, metric='euclidean'): 
@@ -275,7 +275,7 @@ def downsampling(data_df, gene_choice, downsampling_ixs):
     '''
     data_df_downsampled=pd.DataFrame()
     for gene in gene_choice:
-        data_df_one_gene=data_df[data_df['gene_list']==gene]
+        data_df_one_gene=data_df[data_df['gene_name']==gene]
         data_df_one_gene_downsampled = data_df_one_gene.iloc[downsampling_ixs]
         data_df_downsampled=data_df_downsampled.append(data_df_one_gene_downsampled)
 

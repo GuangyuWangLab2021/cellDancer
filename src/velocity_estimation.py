@@ -13,6 +13,7 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
+import pkg_resources
 
 if __name__ == "__main__":
     sys.path.append('.')
@@ -22,9 +23,6 @@ else:
         from .sampling import *
     except ImportError:
         from sampling import *
-
-import pkg_resources
-print(pkg_resources.resource_stream(__name__,'model/circle.pt'))
 
 class L2Module(nn.Module):
 
@@ -465,6 +463,7 @@ class ltModule(pl.LightningModule):
             cost.data.numpy())
         
         self.test_detail.insert(0, "gene_name", gene_name)
+        self.test_detail.insert(0, "cellIndex", self.test_detail.index)
 
 
 class getItem(Dataset): # TO DO: Change to a suitable name
@@ -473,21 +472,21 @@ class getItem(Dataset): # TO DO: Change to a suitable name
         self.data_predict=data_predict
         self.datastatus=datastatus
         self.sampling_ratio=sampling_ratio
-        self.gene_list=list(set(data_fit.gene_list))
+        self.gene_name=list(set(data_fit.gene_name))
         self.auto_norm_u_s=auto_norm_u_s
         self.norm_max_u0=None
         self.norm_max_s0=None
         self.binning=binning
 
     def __len__(self):# name cannot be changed 
-        return len(self.gene_list) # gene count
+        return len(self.gene_name) # gene count
 
     def __getitem__(self, idx):# name cannot be changed
-        gene_name = self.gene_list[idx]
+        gene_name = self.gene_name[idx]
 
 
         if self.datastatus=="fit_dataset":
-            data_fitting=self.data_fit[self.data_fit.gene_list==gene_name] # u0 & s0 for cells for one gene
+            data_fitting=self.data_fit[self.data_fit.gene_name==gene_name] # u0 & s0 for cells for one gene
             if self.binning==True:    # select cells to train using binning methods
                 u0 = data_fitting.u0
                 s0 = data_fitting.s0
@@ -498,7 +497,7 @@ class getItem(Dataset): # TO DO: Change to a suitable name
                 upoints = np.unique(np.array([u0, s0]), axis=1)
                 u0 = upoints[0]
                 s0 = upoints[1]
-                data_fitting = pd.DataFrame({'gene_list':gene_name,'u0':u0, 's0':s0,'embedding1':u0,'embedding2':s0})
+                data_fitting = pd.DataFrame({'gene_name':gene_name,'u0':u0, 's0':s0,'embedding1':u0,'embedding2':s0})
                 # print(data_fitting.shape) #guangyu
         
         # TODO: OPtimize #############
@@ -512,11 +511,11 @@ class getItem(Dataset): # TO DO: Change to a suitable name
             else:
                 print('sampling ratio is wrong!')
         elif self.datastatus=="predict_dataset":
-            data_pred=self.data_predict[self.data_predict.gene_list==gene_name] # u0 & s0 for cells for one gene
+            data_pred=self.data_predict[self.data_predict.gene_name==gene_name] # u0 & s0 for cells for one gene
             data=data_pred
         # #############
             
-        data_pred=self.data_predict[self.data_predict.gene_list==gene_name] # u0 & s0 for cells for one gene
+        data_pred=self.data_predict[self.data_predict.gene_name==gene_name] # u0 & s0 for cells for one gene
         #print('gene_name: '+gene_name)
         #print(data_pred)
         # 未来可能存在的问题：训练cell，和predict cell的u0和s0重大，不match，若不match？（当前predict cell 里是包含训练cell的，所以暂定用predict的u0max和s0max，如果不包含怎么办？还是在外面算好再传参？）
@@ -628,21 +627,22 @@ def _train_thread(datamodule,
 
     u0, s0, u1, s1, alpha, beta, gamma, this_gene_name, type, u0max, s0max, embedding1, embedding2=selected_data.training_dataset.__getitem__(0)
     
-    # data_df=load_raw_data[['gene_list', 'u0','s0','cellID','embedding1','embedding2']][load_raw_data.gene_list.isin(gene_choice)]
+    # data_df=load_raw_data[['gene_name', 'u0','s0','cellID','embedding1','embedding2']][load_raw_data.gene_name.isin(gene_choice)]
     data_df=pd.DataFrame({'u0':u0,'s0':s0,'embedding1':embedding1,'embedding2':embedding2})
-    data_df['gene_list']=this_gene_name
+    data_df['gene_name']=this_gene_name
     print(this_gene_name)
     _, sampling_ixs_select_model, _ = downsampling_embedding(data_df, # for select model
                         para='neighbors',
                         target_amount=0,
                         step_i=20,
                         step_j=20,
-                        n_neighbors=n_neighbors)
+                        n_neighbors=n_neighbors,
+                        mode='embedding')
     gene_downsampling=downsampling(data_df=data_df, gene_choice=[this_gene_name], downsampling_ixs=sampling_ixs_select_model)
-    if ini_model=='normal':
-        model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/cellDancer-development_20220128/src/model/normal/normal.pt'
-    if ini_model=='sulf':
-        model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/cellDancer-development_20220128/src/model/Sulf2/Sulf2.pt'
+    if ini_model=='circle':
+        model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'branch.pt')).name
+    if ini_model=='branch':
+        model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'branch.pt')).name
     else:
         model_path=select_initial_net(this_gene_name, gene_downsampling, data_df)
     model.load(model_path)
@@ -713,21 +713,22 @@ def _train_thread(datamodule,
         model.save(model_save_path)
     
     if (os.path.exists(filepath_detail)) :header_detail=False
-    else:header_detail=['gene_name','s0','u0','s1','u1','alpha','beta','gamma','cost']
-    brief.to_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv')),mode='a',header=header_brief)
-    detail.to_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv')),mode='a',header=header_detail)
+    else:header_detail=['cellIndex','gene_name','s0','u0','s1','u1','alpha','beta','gamma','cost']
+
+    brief.to_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv')),mode='a',header=header_brief,index=False)
+    detail.to_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv')),mode='a',header=header_detail,index=False)
 
     return None
 
 def downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=None,binning=False):
     
     if gene_choice is None:
-        data_df=load_raw_data[['gene_list', 'u0','s0','embedding1','embedding2']]
+        data_df=load_raw_data[['gene_name', 'u0','s0','embedding1','embedding2']]
     else:
-        data_df=load_raw_data[['gene_list', 'u0','s0','embedding1','embedding2']][load_raw_data.gene_list.isin(gene_choice)]
+        data_df=load_raw_data[['gene_name', 'u0','s0','embedding1','embedding2']][load_raw_data.gene_name.isin(gene_choice)]
 
     # data_df.s0=data_df.s0/max(data_df.s0)
-    # data_df=load_raw_data[['gene_list', 'u0','s0','cellID','embedding1','embedding2']][load_raw_data.gene_list.isin(gene_choice)]
+    # data_df=load_raw_data[['gene_name', 'u0','s0','cellID','embedding1','embedding2']][load_raw_data.gene_name.isin(gene_choice)]
     
     if auto_downsample:
         _, sampling_ixs, _ = downsampling_embedding(data_df,
@@ -735,7 +736,7 @@ def downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsa
                             target_amount=downsample_target_amount,
                             step_i=step_i,
                             step_j=step_j,
-                            n_neighbors=n_neighbors_downsample)
+                            n_neighbors=n_neighbors_downsample,mode='embedding')
         gene_downsampling = downsampling(data_df=data_df, gene_choice=gene_choice, downsampling_ixs=sampling_ixs)
         
 
@@ -781,6 +782,17 @@ def train( # use train_thread # change name to velocity estiminate
     '''
     multple jobs
     when model_path is defined, model_number wont be used
+
+    Sample
+    import API.velocity_estimation
+    import API.velocity_estimation as calc_velocity
+    import pandas as pd 
+    raw_path='/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/raw_data/mouse_endo_blood20to25_2000_genes_moment100.csv'
+    load_raw_data=pd.read_csv(raw_path)
+    gene_choice=['Smim1','Hba-x']
+
+    result_path = '/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/Gastrulation/velocity_result/result_detailcsv/polish/'
+    calc_velocity.train(load_raw_data,gene_choice=gene_choice,result_path=result_path)
     '''
     print(os.path.abspath(os.getcwd()))
     datamodule=downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=gene_choice,binning=binning)
@@ -822,33 +834,10 @@ def train( # use train_thread # change name to velocity estiminate
     brief=pd.read_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv')))
     detail=pd.read_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv')))
 
+    load_cellDancer.sort_values(by = ['gene_name', 'cellIndex'], ascending = [True, True])
+
     return brief, detail
 
-
-def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors):
-    '''
-    Guangyu
-    sampling cells by embedding
-    return: sampled embedding, the indexs of sampled cells, and the neighbors of sampled cells
-    '''
-    gene = data_df['gene_list'].drop_duplicates().iloc[0]
-    embedding = data_df.loc[data_df['gene_list']==gene][['embedding1','embedding2']]
-    idx_downSampling_embedding = sampling_embedding(embedding,
-                para=para,
-                target_amount=target_amount,
-                step_i=step_i,
-                step_j=step_j
-                )
-    embedding_downsampling = embedding.iloc[idx_downSampling_embedding][['embedding1','embedding2']]
-    n_neighbors = min((embedding_downsampling.shape[0]-1), n_neighbors)
-    nn = NearestNeighbors(n_neighbors=n_neighbors)
-    # print(embedding_downsampling)
-    print(embedding_downsampling.shape)
-    print(n_neighbors)
-    nn.fit(embedding_downsampling)  # NOTE should support knn in high dimensions
-    embedding_knn = nn.kneighbors_graph(mode="connectivity")
-    neighbor_ixs = embedding_knn.indices.reshape((-1, n_neighbors))
-    return(embedding_downsampling, idx_downSampling_embedding, neighbor_ixs)
 
 def downsampling(data_df, gene_choice, downsampling_ixs):
     '''
@@ -856,7 +845,7 @@ def downsampling(data_df, gene_choice, downsampling_ixs):
     '''
     data_df_downsampled=pd.DataFrame()
     for gene in gene_choice:
-        data_df_one_gene=data_df[data_df['gene_list']==gene]
+        data_df_one_gene=data_df[data_df['gene_name']==gene]
         data_df_one_gene_downsampled = data_df_one_gene.iloc[downsampling_ixs]
         data_df_downsampled=data_df_downsampled.append(data_df_one_gene_downsampled)
 
@@ -881,9 +870,8 @@ def select_initial_net(gene, gene_downsampling, data_df):
     model1 is the model for single kinetic
     model2 is multiple kinetic
     '''
-    import pkg_resources
-    gene_u_s = gene_downsampling[gene_downsampling.gene_list==gene]
-    gene_u_s_full = data_df[data_df.gene_list==gene]
+    gene_u_s = gene_downsampling[gene_downsampling.gene_name==gene]
+    gene_u_s_full = data_df[data_df.gene_name==gene]
     
     s_max=np.max(gene_u_s.s0)
     u_max = np.max(gene_u_s.u0)
@@ -898,16 +886,12 @@ def select_initial_net(gene, gene_downsampling, data_df):
     # plt.title(gene)
     # plt.show()
     
-    
-    import pathlib
-    model_path=pathlib.Path(__file__).parent.resolve()
     if gene_u_s_full.loc[gene_u_s_full['color']=='red'].shape[0]>0.001*gene_u_s_full.shape[0]:
         # model in circle shape
-        model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/celldancer_polish/src/model/circle.pt'
-
+        model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'circle.pt')).name
     
     else:
         # model in seperated branch shape
-        model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/celldancer_polish/src/model/branch.pt'
+        model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'branch.pt')).name
     return(model_path)
 

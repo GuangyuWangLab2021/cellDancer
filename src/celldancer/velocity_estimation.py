@@ -463,6 +463,7 @@ class ltModule(pl.LightningModule):
             cost.data.numpy())
         
         self.test_detail.insert(0, "gene_name", gene_name)
+        self.test_detail.insert(0, "cellIndex", self.test_detail.index)
 
 
 class getItem(Dataset): # TO DO: Change to a suitable name
@@ -712,9 +713,9 @@ def _train_thread(datamodule,
         model.save(model_save_path)
     
     if (os.path.exists(filepath_detail)) :header_detail=False
-    else:header_detail=['gene_name','s0','u0','s1','u1','alpha','beta','gamma','cost']
-    brief.to_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv')),mode='a',header=header_brief)
-    detail.to_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv')),mode='a',header=header_detail)
+
+    brief.to_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv')),mode='a',header=header_brief,index=False)
+    detail.to_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv')),mode='a',header=header_detail,index=False)
 
     return None
 
@@ -734,7 +735,7 @@ def downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsa
                             target_amount=downsample_target_amount,
                             step_i=step_i,
                             step_j=step_j,
-                            n_neighbors=n_neighbors_downsample,mode=='embedding')
+                            n_neighbors=n_neighbors_downsample,mode='embedding')
         gene_downsampling = downsampling(data_df=data_df, gene_choice=gene_choice, downsampling_ixs=sampling_ixs)
         
 
@@ -831,6 +832,8 @@ def train( # use train_thread # change name to velocity estiminate
         
     brief=pd.read_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv')))
     detail=pd.read_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv')))
+
+    load_cellDancer.sort_values(by = ['gene_name', 'cellIndex'], ascending = [True, True])
 
     return brief, detail
 
