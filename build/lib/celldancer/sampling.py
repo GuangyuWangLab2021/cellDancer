@@ -146,7 +146,7 @@ def adata_to_detail(data, para, gene):
     detail = pd.DataFrame({'gene_name':gene, 'u0':u0, 's0':s0})
     return(detail)
 
-def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors,transfer_mode=None,mode=None,pca_n_components=None,umap_n=None,umap_n_components=None,use_downsampling=None):
+def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors,transfer_mode=None,mode=None,pca_n_components=None,umap_n=None,umap_n_components=None,use_downsampling=True):
     '''
     Guangyu
     sampling cells by embedding
@@ -158,7 +158,7 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
 
     gene = data_df['gene_name'].drop_duplicates().iloc[0]
     embedding = data_df.loc[data_df['gene_name']==gene][['embedding1','embedding2']]
-    print(para)
+    #print(para)
     
     if use_downsampling:
         idx_downSampling_embedding = sampling_embedding(embedding,
@@ -171,7 +171,7 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
         idx_downSampling_embedding=range(0,embedding.shape[0]) # all cells
     
     def transfer(data_df,transfer_mode):
-        print('tranfer mode: '+str(transfer_mode))
+        #print('tranfer mode: '+str(transfer_mode))
         if transfer_mode=='log':
             data_df.s0=np.log(data_df.s0+0.000001)
             data_df.u0=np.log(data_df.u0+0.000001)
@@ -197,20 +197,20 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
             data_df_combined.u0=2**(data_df_combined.u0_norm*10)
             data_df_combined.s0=2**(data_df_combined.s0_norm*10)
             data_df=data_df_combined
-        elif transfer_mode==None:
-            print('None')
+        #elif transfer_mode==None:
+            #print('None')
         return (data_df)
 
     data_df=transfer(data_df,transfer_mode)
  
     if mode=='gene':
-        print('using gene mode')
+        #print('using gene mode')
         cellID = data_df.loc[data_df['gene_name']==gene]['cellID']
         data_df_pivot=data_df.pivot(index='cellID', columns='gene_name', values='s0').reindex(cellID)
         embedding_downsampling = data_df_pivot.iloc[idx_downSampling_embedding]
     elif mode=='pca': # not use
         from sklearn.decomposition import PCA
-        print('using pca mode')
+        #print('using pca mode')
         cellID = data_df.loc[data_df['gene_name']==gene]['cellID']
         data_df_pivot=data_df.pivot(index='cellID', columns='gene_name', values='s0').reindex(cellID)
         embedding_downsampling_0 = data_df_pivot.iloc[idx_downSampling_embedding]
@@ -219,7 +219,7 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
         embedding_downsampling = pca.transform(embedding_downsampling_0)[:,range(pca_n_components)]
     elif mode=='pca_norm':
         from sklearn.decomposition import PCA
-        print('pca_norm')
+        #print('pca_norm')
         cellID = data_df.loc[data_df['gene_name']==gene]['cellID']
         data_df_pivot=data_df.pivot(index='cellID', columns='gene_name', values='s0').reindex(cellID)
         embedding_downsampling_0 = data_df_pivot.iloc[idx_downSampling_embedding]
@@ -230,11 +230,11 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
         embedding_downsampling_trans_norm_mult10=embedding_downsampling_trans_norm*10 #optional
         embedding_downsampling=embedding_downsampling_trans_norm_mult10**5 # optional
     elif mode=='embedding':
-        print('using cell mode')
+        #print('using cell mode')
         embedding_downsampling = embedding.iloc[idx_downSampling_embedding][['embedding1','embedding2']]
     elif mode =='umap':
         import umap
-        print('using umap mode')
+        #print('using umap mode')
         cellID = data_df.loc[data_df['gene_name']==gene]['cellID']
         data_df_pivot=data_df.pivot(index='cellID', columns='gene_name', values='s0').reindex(cellID)
         embedding_downsampling_0 = data_df_pivot.iloc[idx_downSampling_embedding]

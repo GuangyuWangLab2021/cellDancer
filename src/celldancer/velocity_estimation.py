@@ -13,7 +13,13 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.simplefilter("ignore", UserWarning)
+
+#logging.getLogger("lightning").setLevel(logging.ERROR)
+#logging.getLogger("lightning").setLevel(logging.ERROR)
+
 import pkg_resources
+import torch.multiprocessing as mp
 
 if __name__ == "__main__":
     sys.path.append('.')
@@ -345,8 +351,8 @@ class ltModule(pl.LightningModule):
         #########       add embedding         #########
         ###############################################
         # print('-----------training_step------------')
-        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs, embedding1s, embedding2s = batch
-        u0, s0, u1t, s1t, _, _, _, _, _, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
+        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, u0maxs, s0maxs, embedding1s, embedding2s = batch
+        u0, s0, u1t, s1t, _, _, _, _, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
         
         umax = u0max
         smax = s0max
@@ -427,8 +433,8 @@ class ltModule(pl.LightningModule):
         #########       add embedding         #########
         ###############################################
         # print('-----------validation_step------------')
-        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs, embedding1s, embedding2s = batch
-        u0, s0, u1t, s1t, _, _, _, gene_name, type, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
+        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, u0maxs, s0maxs, embedding1s, embedding2s = batch
+        u0, s0, u1t, s1t, _, _, _, gene_name, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
         if self.current_epoch!=0:
             cost = self.get_loss.data.numpy()
             # print("cost_mean: "+str(cost_mean))
@@ -449,8 +455,8 @@ class ltModule(pl.LightningModule):
         #########       add embedding         #########
         ###############################################
         # print('-----------test_step------------')
-        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, types, u0maxs, s0maxs, embedding1s, embedding2s = batch
-        u0, s0, u1t, s1t, _, _, _, gene_name, type, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], types[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
+        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, u0maxs, s0maxs, embedding1s, embedding2s = batch
+        u0, s0, u1t, s1t, _, _, _, gene_name, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
         umax = u0max
         smax = s0max
         alpha0 = np.float32(umax*2)
@@ -540,13 +546,13 @@ class getItem(Dataset): # TO DO: Change to a suitable name
         beta = np.float32(0)
         gamma = np.float32(0)
         type = "real"           # delete
-
+        
         # add embedding (Guangyu)
         embedding1 = np.array(data.embedding1.copy().astype(np.float32))
         embedding2 = np.array(data.embedding2.copy().astype(np.float32))
         # print(embedding1)
 
-        return u0, s0, u1, s1, alpha, beta, gamma, gene_name, type, u0max, s0max, embedding1, embedding2
+        return u0, s0, u1, s1, alpha, beta, gamma, gene_name, u0max, s0max, embedding1, embedding2
 
 
 
@@ -625,12 +631,12 @@ def _train_thread(datamodule,
     #因为从前如果不用subset，就会训练出一个网络，对应不同gene的不同alpha，beta，gamma；
     #但是，如果使用subset，就分块训练每个基因不同网络，效果变好
 
-    u0, s0, u1, s1, alpha, beta, gamma, this_gene_name, type, u0max, s0max, embedding1, embedding2=selected_data.training_dataset.__getitem__(0)
+    u0, s0, u1, s1, alpha, beta, gamma, this_gene_name, u0max, s0max, embedding1, embedding2=selected_data.training_dataset.__getitem__(0)
     
     # data_df=load_raw_data[['gene_name', 'u0','s0','cellID','embedding1','embedding2']][load_raw_data.gene_name.isin(gene_choice)]
     data_df=pd.DataFrame({'u0':u0,'s0':s0,'embedding1':embedding1,'embedding2':embedding2})
     data_df['gene_name']=this_gene_name
-    print(this_gene_name)
+    #print(this_gene_name)
     _, sampling_ixs_select_model, _ = downsampling_embedding(data_df, # for select model
                         para='neighbors',
                         target_amount=0,
@@ -656,21 +662,21 @@ def _train_thread(datamodule,
                                           )
 
     if check_n_epoch is None:
-        print('not using early stop')
+        #print('not using early stop')
         trainer = pl.Trainer(
             max_epochs=max_epoches, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1, 
             logger = False,
-            checkpoint_callback = False,
-            weights_summary=None,
+            enable_checkpointing = False,
+            enable_model_summary=False,
             )
     else:
-        print('using early stop')
+        #print('using early stop')
         trainer = pl.Trainer(
             max_epochs=max_epoches, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1, 
             logger = False,
-            checkpoint_callback = False,
+            enable_checkpointing = False,
             check_val_every_n_epoch = int(check_n_epoch),
-            weights_summary=None,
+            enable_model_summary=False,
             callbacks=[early_stop_callback]
             #callbacks=[early_stop_callback,checkpoint_callback]
             )
@@ -793,8 +799,7 @@ def train( # use train_thread # change name to velocity estiminate
 
     result_path = '/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/Gastrulation/velocity_result/result_detailcsv/polish/'
     calc_velocity.train(load_raw_data,gene_choice=gene_choice,result_path=result_path)
-    '''
-    print(os.path.abspath(os.getcwd()))
+    '''    
     datamodule=downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=gene_choice,binning=binning)
     
     if check_n_epoch=='None':check_n_epoch=None
@@ -804,13 +809,10 @@ def train( # use train_thread # change name to velocity estiminate
     detail = pd.DataFrame()
     filepath_brief= os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv'))
     filepath_detail=os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv'))
-    if (os.path.exists(filepath_brief)) :os.remove(filepath_brief)
-    if (os.path.exists(filepath_detail)) :os.remove(filepath_detail)
-
-    result = Parallel(n_jobs=n_jobs, backend="loky")(
-        delayed(_train_thread)(
+    # buring
+    _train_thread(
             datamodule = datamodule,
-            data_indices=[data_index], 
+            data_indices=[0], 
             result_path=result_path,
             max_epoches=max_epoches,
             check_n_epoch=check_n_epoch,
@@ -829,12 +831,69 @@ def train( # use train_thread # change name to velocity estiminate
             average_cost_window_size=average_cost_window_size,
             patience=patience,
             smooth_weight=smooth_weight)
-        for data_index in range(data_len)) #for 循环里执行train_thread
+    # end - buring
+    if (os.path.exists(filepath_brief)) :os.remove(filepath_brief)
+    if (os.path.exists(filepath_detail)) :os.remove(filepath_detail)
+
+    # progress bar
+    import contextlib
+    import joblib
+    from tqdm import tqdm
+
+    @contextlib.contextmanager
+    def tqdm_joblib(tqdm_object):
+        """Context manager to patch joblib to report into tqdm progress bar given as argument"""
+        class TqdmBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
+            def __call__(self, *args, **kwargs):
+                tqdm_object.update(n=self.batch_size)
+                return super().__call__(*args, **kwargs)
+
+        old_batch_callback = joblib.parallel.BatchCompletionCallBack
+        joblib.parallel.BatchCompletionCallBack = TqdmBatchCompletionCallback
+        try:
+            yield tqdm_object
+        finally:
+            joblib.parallel.BatchCompletionCallBack = old_batch_callback
+            tqdm_object.close()
+    # end - progress bar
+    
+
+    with tqdm_joblib(tqdm(desc="My calculation", total=data_len)) as progress_bar:
+        result = Parallel(n_jobs=n_jobs, backend="loky")(
+            delayed(_train_thread)(
+                datamodule = datamodule,
+                data_indices=[data_index], 
+                result_path=result_path,
+                max_epoches=max_epoches,
+                check_n_epoch=check_n_epoch,
+                initial_zoom=initial_zoom, initial_strech=initial_strech,
+                model_save_path=model_save_path,
+                learning_rate=learning_rate,
+                cost2_cutoff=cost2_cutoff,
+                n_neighbors=n_neighbors,
+                optimizer=optimizer,
+                filepath_brief=filepath_brief,
+                filepath_detail=filepath_detail,
+                trace_cost_ratio=trace_cost_ratio,
+                corrcoef_cost_ratio=corrcoef_cost_ratio,
+                auto_norm_u_s=auto_norm_u_s,
+                cost_type=cost_type,
+                average_cost_window_size=average_cost_window_size,
+                patience=patience,
+                smooth_weight=smooth_weight)
+            for data_index in range(data_len)) #for 循环里执行train_thread
         
     brief=pd.read_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv')))
     detail=pd.read_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv')))
 
-    load_cellDancer.sort_values(by = ['gene_name', 'cellIndex'], ascending = [True, True])
+    detail.sort_values(by = ['gene_name', 'cellIndex'], ascending = [True, True])
+    onegene=load_raw_data[load_raw_data.gene_name==load_raw_data.gene_name[0]]
+    embedding_info=onegene[['cellID','clusters','embedding1','embedding2']]
+    gene_amt=len(detail.gene_name.drop_duplicates())
+    embedding_col=pd.concat([embedding_info]*gene_amt)
+    embedding_col.index=detail.index
+    detail=pd.concat([detail,embedding_col],axis=1)
+    detail.to_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv')),index=False)
 
     return brief, detail
 

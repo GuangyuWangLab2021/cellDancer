@@ -8,6 +8,7 @@ requirements0419.txt
 setup.py
 analysis/Analysis_GAS_gene_velocity_plot.ipynb
 analysis/Analysis_mouse_heart_regen.ipynb
+analysis/Case_study_GAS.ipynb
 analysis/Gastrulation_main_function.ipynb
 analysis/Untitled.ipynb
 analysis/Untitled1.ipynb
@@ -102,6 +103,7 @@ analysis/run_simulation.py
 analysis/scv_mouse_blood.ipynb
 analysis/test_plot.ipynb
 analysis/untitled.txt
+analysis/.ipynb_checkpoints/Case_study_GAS-checkpoint.ipynb
 analysis/.ipynb_checkpoints/Gastrulation_main_function-checkpoint.ipynb
 analysis/.ipynb_checkpoints/Test-checkpoint.ipynb
 analysis/.ipynb_checkpoints/Untitled-checkpoint.ipynb
@@ -110,7 +112,10 @@ analysis/.ipynb_checkpoints/Visualization_Binarytree-checkpoint.ipynb
 analysis/.ipynb_checkpoints/Visualization_Graph_EdgeBundling_neuro-checkpoint.ipynb
 analysis/.ipynb_checkpoints/Visualization_edge_bundling_example-checkpoint.ipynb
 analysis/.ipynb_checkpoints/__init__-checkpoint.py
+analysis/.ipynb_checkpoints/analysis_GAS_cell_velocity_MUSK_same_para_but_circlept-checkpoint.ipynb
 analysis/.ipynb_checkpoints/analysis_GAS_smooth_bin_pseudotime-checkpoint.ipynb
+analysis/.ipynb_checkpoints/analysis_GAS_velocity_embedding_tune-checkpoint.ipynb
+analysis/.ipynb_checkpoints/analysis_GASraw_cell_velocity_tune_cleanV2_smooth_bin_detail-checkpoint.ipynb
 analysis/.ipynb_checkpoints/analysis_GASraw_smooth_bin_pseudotime-Copy1-checkpoint.ipynb
 analysis/.ipynb_checkpoints/analysis_GASraw_smooth_bin_pseudotime-checkpoint.ipynb
 analysis/.ipynb_checkpoints/analysis_PAN_cell_velocity_tune-checkpoint.ipynb
@@ -208,9 +213,6 @@ doc/source/plotting.rst
 doc/source/celldancer/velocity_estimation.train.rst
 src/.DS_Store
 src/__init__.py
-src/_get_embedding.py
-src/_sampling.py
-src/_velocity_estimation.py
 src/cdplt.py
 src/colormap.py
 src/diffusion.py
@@ -222,6 +224,8 @@ src/sampling.py
 src/simulation.py
 src/utilities.py
 src/velocity_estimation.py
+src/.ipynb_checkpoints/_get_embedding-checkpoint.py
+src/.ipynb_checkpoints/_sampling-checkpoint.py
 src/.ipynb_checkpoints/colormap-checkpoint.py
 src/.ipynb_checkpoints/velocity_estimation-checkpoint.py
 src/.ipynb_checkpoints/velocity_plot-checkpoint.py
