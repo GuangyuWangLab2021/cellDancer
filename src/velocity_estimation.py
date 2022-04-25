@@ -22,7 +22,10 @@ else:
         from .sampling import *
     except ImportError:
         from sampling import *
-        
+
+import pkg_resources
+print(pkg_resources.resource_stream(__name__,'model/circle.pt'))
+
 class L2Module(nn.Module):
 
     """Define network structure.
@@ -878,6 +881,7 @@ def select_initial_net(gene, gene_downsampling, data_df):
     model1 is the model for single kinetic
     model2 is multiple kinetic
     '''
+    import pkg_resources
     gene_u_s = gene_downsampling[gene_downsampling.gene_list==gene]
     gene_u_s_full = data_df[data_df.gene_list==gene]
     
@@ -900,6 +904,8 @@ def select_initial_net(gene, gene_downsampling, data_df):
     if gene_u_s_full.loc[gene_u_s_full['color']=='red'].shape[0]>0.001*gene_u_s_full.shape[0]:
         # model in circle shape
         model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/celldancer_polish/src/model/circle.pt'
+
+    
     else:
         # model in seperated branch shape
         model_path='/Users/wanglab/Documents/ShengyuLi/Velocity/bin/celldancer_polish/src/model/branch.pt'

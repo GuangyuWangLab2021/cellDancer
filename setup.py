@@ -6,8 +6,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setuptools.setup(
     name="celldancer",
     version="0.0.1",
-    author="Lingqun Ye",
-    author_email="yelingqun@gmail.com",
+    author="Wang Lab",
+    author_email="xxx@gmail.com",
     description="Study RNA velocity through neural network.",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -19,7 +19,7 @@ setuptools.setup(
     ],
     package_dir={"": "src"},
     packages=setuptools.find_packages(where="src"),
-    package_data={'': ['nn_pretrain_model/*.pt']},
+    package_data={'': ['model/*.pt']},
     include_package_data=True,
     install_requires=[
         'pandas>=1.3.1',
@@ -33,3 +33,4 @@ setuptools.setup(
         'joblib>=0.14.1'],
     python_requires=">=3.7",
 )
+

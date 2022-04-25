@@ -2,18 +2,20 @@ import matplotlib.pyplot as plt
 import os
 import sys
 import pandas as pd
+import numpy as np
 
 if __name__ == "__main__":
     sys.path.append('..')
     from colormap import *
 else:
-    try:
-        from .colormap import *
-        print('.colormap')
-    except ImportError:
-        from colormap import *
-        print('.ImportError')
+    #try:
+        from celldancer.sampling import sampling_neighbors
+        from plotting.colormap import *
+    #except ImportError:
+    #    from colormap import *
+    #    print('.ImportError')
 
+    
 ################# gene_pseudotime
 def gene_pseudotime(gene,load_cellDancer,cell_time,colors=None,save_path=None):
     
@@ -56,12 +58,17 @@ def gene_list_pseudotime(gene_list,load_cellDancer,cell_time,colors=None,save_pa
     for gene in gene_list:
         gene_pseudotime(gene,load_cellDancer,cell_time,colors=colors,save_path=save_path)
 
-def velocity_gene(gene,detail,color_scatter="#95D9EF",point_size=120,alpha_inside=0.3,v_min=None,v_max=None,save_path=None,step_i=15,step_j=15,show_arrow=True,cluster_info=None,mode=None,cluster_annot=False,colors=None):
+def velocity_gene(gene_choice,detail,color_scatter="#95D9EF",point_size=120,alpha_inside=0.3,v_min=None,v_max=None,save_path=None,step_i=15,step_j=15,show_arrow=True,mode=None,cluster_annot=False,colors=None):
         
-        '''Gene velocity plot.
-        '''
+    '''Gene velocity plot.
+    '''
+    #plt.figure(None,(6,6))
+    plt.figure() 
+    import math
 
-        plt.figure(None,(6,6))
+    for enum,gene in enumerate(gene_choice):
+        plt.subplot(math.ceil((len(gene_choice))/2), 2, enum+1)
+
         u_s= np.array(detail[detail['gene_name']==gene][["u0","s0","u1","s1"]]) # u_s
 
         max_u_s=np.max(u_s, axis = 0)
@@ -81,25 +88,18 @@ def velocity_gene(gene,detail,color_scatter="#95D9EF",point_size=120,alpha_insid
         plt.ylim(-0.05*u0_max, y_max) 
 
         title_info=gene
-        if (cluster_info is not None) and (mode == 'cluster'):
-            
+        if mode == 'cluster':
+            onegene=detail[detail.gene_name==gene]
+            cluster_info=onegene.clusters
+
             if colors is not None:
                 colors=colors
             else:
-                colors = {'CA':grove2[6],
-                            'CA1-Sub':grove2[8],
-                            'CA2-3-4':grove2[7],
-                            'Granule':grove2[5],
-                            'ImmGranule1':grove2[5],
-                            'ImmGranule2':grove2[5],
-                            'Nbl1':grove2[4],
-                            'Nbl2':grove2[4],
-                            'nIPC':grove2[3],
-                            'RadialGlia':grove2[2],
-                            'RadialGlia2':grove2[2],
-                            'GlialProg' :grove2[2],
-                            'OPC':grove2[1],
-                            'ImmAstro':grove2[0]}
+                color_list=grove2.copy()
+                cluster_list=onegene.clusters.drop_duplicates()
+                from itertools import cycle
+                colors = dict(zip(cluster_list, cycle(color_list)) if len(cluster_list) > len(color_list) else zip(cycle(cluster_list), color_list))
+
             custom_map=cluster_info.map(colors)
             title_info=gene
             layer1=plt.scatter(u_s[:, 1], u_s[:, 0],
@@ -107,14 +107,6 @@ def velocity_gene(gene,detail,color_scatter="#95D9EF",point_size=120,alpha_insid
                 #c=pd.factorize(cluster_info)[0], 
                 c=custom_map)
             
-            if cluster_annot:
-                from matplotlib.lines import Line2D
-                def gen_Line2D(label, markerfacecolor):
-                    return Line2D([0], [0], color='w', marker='o', label=label, markerfacecolor=markerfacecolor,  markeredgewidth=0, markersize=5)
-                legend_elements = []
-                for i in colors:
-                    legend_elements.append(gen_Line2D(i, colors[i]))
-                lgd=plt.legend(handles=legend_elements, bbox_to_anchor=(1.01, 1), loc='upper left')
 
             #plt.colorbar(layer1)
         # para in gene velocity # not using
@@ -135,8 +127,18 @@ def velocity_gene(gene,detail,color_scatter="#95D9EF",point_size=120,alpha_insid
             u_s_downsample[:, 1], u_s_downsample[:, 0], u_s_downsample[:, 3]-u_s_downsample[:, 1], u_s_downsample[:, 2]-u_s_downsample[:, 0],
             angles='xy', clim=(0., 1.))
         plt.title(title_info)
-        if save_path is not None:
-            if cluster_annot:
-                plt.savefig(save_path,bbox_inches='tight',bbox_extra_artists=(lgd,),)
-            else:
-                plt.savefig(save_path)
+    if cluster_annot and (mode == 'cluster'):
+        from matplotlib.lines import Line2D
+        def gen_Line2D(label, markerfacecolor):
+            return Line2D([0], [0], color='w', marker='o', label=label, markerfacecolor=markerfacecolor,  markeredgewidth=0, markersize=5)
+        legend_elements = []
+        for i in colors:
+            legend_elements.append(gen_Line2D(i, colors[i]))
+        lgd=plt.legend(handles=legend_elements, bbox_to_anchor=(1.01, 1), loc='upper left')
+
+    if save_path is not None:
+        if cluster_annot:
+            plt.savefig(save_path,bbox_inches='tight',bbox_extra_artists=(lgd,),)
+        else:
+            plt.savefig(save_path)
+    plt.show()
