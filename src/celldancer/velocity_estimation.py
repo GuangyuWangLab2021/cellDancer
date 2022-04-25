@@ -539,7 +539,7 @@ class getItem(Dataset): # TO DO: Change to a suitable name
         alpha = np.float32(0)
         beta = np.float32(0)
         gamma = np.float32(0)
-        type = "real"
+        type = "real"           # delete
 
         # add embedding (Guangyu)
         embedding1 = np.array(data.embedding1.copy().astype(np.float32))

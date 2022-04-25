@@ -22,11 +22,10 @@ if "diffusion" in sys.modules:
     importlib.reload(sys.modules["diffusion"])
 
 if "get_embedding" in sys.modules:
-    importlib.reload(sys.modules["get_embedding"])
+    importlib.reload(sys.modules["_get_embedding"])
 
 from diffusion import *
-from get_embedding import get_embedding
-from 
+from _get_embedding import get_embedding
     
 
 def compute_trajectory_displacement(traj):
@@ -635,9 +634,6 @@ def pseudotime_cell_plot():
     plt.show()
     
     
-    
-def write_cell_time(load_cellDancer, cell_time):
-
 def export_cell_time(cell_time, cell_fate, sampling_ixs, filename): 
     sample = np.array([True if i in sampling_ixs else False for i in
         range(len(cell_fate))], dtype=bool)
