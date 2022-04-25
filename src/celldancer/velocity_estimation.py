@@ -713,6 +713,7 @@ def _train_thread(datamodule,
         model.save(model_save_path)
     
     if (os.path.exists(filepath_detail)) :header_detail=False
+    else:header_detail=['cellIndex','gene_name','s0','u0','s1','u1','alpha','beta','gamma','cost']
 
     brief.to_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv')),mode='a',header=header_brief,index=False)
     detail.to_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv')),mode='a',header=header_detail,index=False)
