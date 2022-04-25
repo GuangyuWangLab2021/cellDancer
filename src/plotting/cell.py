@@ -71,33 +71,33 @@ def scatter_cell(
     #   a list of clusters 
     #   None
 
-    if isinstance(colors, dict):
-        colors = colors
-        c = xx
-        cmap = yy
-    elif isinstance(colors, str):
-        colors = some colormap
-        c = extract_from_df(load_cellDancer, ['colors'])
-    elif isinstance(colors, list):
-        colors = cycling a default colormap
-    elif colors is None:
-        colors=  grey color
-        # 
-        # colors = generate_colormap(load_celldancer)
-        colors = {'CA': grove2[7],
-        'CA1-Sub': grove2[9],
-        'CA2-3-4': grove2[8],
-        'Granule': grove2[6],
-        'ImmGranule1': grove2[6],
-        'ImmGranule2': grove2[6],
-        'Nbl1': grove2[5],
-        'Nbl2': grove2[5],
-        'nIPC': grove2[4],
-        'RadialGlia': grove2[3],
-        'RadialGlia2': grove2[3],
-        'GlialProg': grove2[2],
-        'OPC': grove2[1],
-        'ImmAstro': grove2[0]}
+    # if isinstance(colors, dict):
+    #     colors = colors
+    #     c = xx
+    #     cmap = yy
+    # elif isinstance(colors, str):
+    #     colors = some colormap
+    #     c = extract_from_df(load_cellDancer, ['colors'])
+    # elif isinstance(colors, list):
+    #     colors = cycling a default colormap
+    # elif colors is None:
+    #     colors=  grey color
+    #     # 
+    #     # colors = generate_colormap(load_celldancer)
+    #     colors = {'CA': grove2[7],
+    #     'CA1-Sub': grove2[9],
+    #     'CA2-3-4': grove2[8],
+    #     'Granule': grove2[6],
+    #     'ImmGranule1': grove2[6],
+    #     'ImmGranule2': grove2[6],
+    #     'Nbl1': grove2[5],
+    #     'Nbl2': grove2[5],
+    #     'nIPC': grove2[4],
+    #     'RadialGlia': grove2[3],
+    #     'RadialGlia2': grove2[3],
+    #     'GlialProg': grove2[2],
+    #     'OPC': grove2[1],
+    #     'ImmAstro': grove2[0]}
     pointsize = 5
 
 

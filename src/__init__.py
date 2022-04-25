@@ -2,5 +2,5 @@
 # need to write readme to teach user how to use the functions in the package.
 
 
-from utilities import *
-from velocity_estimation import *
+from celldancer import *
+from plotting import *

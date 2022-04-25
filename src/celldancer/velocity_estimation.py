@@ -635,7 +635,8 @@ def _train_thread(datamodule,
                         target_amount=0,
                         step_i=20,
                         step_j=20,
-                        n_neighbors=n_neighbors)
+                        n_neighbors=n_neighbors,
+                        mode='embedding')
     gene_downsampling=downsampling(data_df=data_df, gene_choice=[this_gene_name], downsampling_ixs=sampling_ixs_select_model)
     if ini_model=='circle':
         model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'branch.pt')).name
@@ -733,7 +734,7 @@ def downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsa
                             target_amount=downsample_target_amount,
                             step_i=step_i,
                             step_j=step_j,
-                            n_neighbors=n_neighbors_downsample)
+                            n_neighbors=n_neighbors_downsample,mode=='embedding')
         gene_downsampling = downsampling(data_df=data_df, gene_choice=gene_choice, downsampling_ixs=sampling_ixs)
         
 
@@ -833,31 +834,6 @@ def train( # use train_thread # change name to velocity estiminate
 
     return brief, detail
 
-
-def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors):
-    '''
-    Guangyu
-    sampling cells by embedding
-    return: sampled embedding, the indexs of sampled cells, and the neighbors of sampled cells
-    '''
-    gene = data_df['gene_name'].drop_duplicates().iloc[0]
-    embedding = data_df.loc[data_df['gene_name']==gene][['embedding1','embedding2']]
-    idx_downSampling_embedding = sampling_embedding(embedding,
-                para=para,
-                target_amount=target_amount,
-                step_i=step_i,
-                step_j=step_j
-                )
-    embedding_downsampling = embedding.iloc[idx_downSampling_embedding][['embedding1','embedding2']]
-    n_neighbors = min((embedding_downsampling.shape[0]-1), n_neighbors)
-    nn = NearestNeighbors(n_neighbors=n_neighbors)
-    # print(embedding_downsampling)
-    print(embedding_downsampling.shape)
-    print(n_neighbors)
-    nn.fit(embedding_downsampling)  # NOTE should support knn in high dimensions
-    embedding_knn = nn.kneighbors_graph(mode="connectivity")
-    neighbor_ixs = embedding_knn.indices.reshape((-1, n_neighbors))
-    return(embedding_downsampling, idx_downSampling_embedding, neighbor_ixs)
 
 def downsampling(data_df, gene_choice, downsampling_ixs):
     '''
