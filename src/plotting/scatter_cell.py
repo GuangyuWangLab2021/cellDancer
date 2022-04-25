@@ -13,6 +13,7 @@ import pandas as pd
 from colormap import *
 
 def scatter_cell(
+        ax,
         load_cellDancer, 
         save_path=None,
         x=None,
@@ -22,9 +23,10 @@ def scatter_cell(
         alpha=0.5, s = 5,
         velocity=False,
         gene_name=None,
-        #add_amt_gene=2000, gene_name=None,
-        #mode='embedding',pca_n_components=4,file_name_additional_info='',umap_n=10,transfer_mode=None,umap_n_components=None,
-        min_mass=2,grid_steps=(30,30)): 
+        #add_amt_gene=2000,
+        #mode='embedding',
+        min_mass=2,
+        grid_steps=(30,30)): 
 
 
     """Cell velocity plot.
@@ -65,14 +67,15 @@ def scatter_cell(
             markersize=s)
 
     if isinstance(colors, list):
-        print("\nbuild a colormap for a list of clusters as input\n")
+        #print("\nbuild a colormap for a list of clusters as input\n")
         colors = build_colormap(colors)
     if isinstance(colors, dict):
+        attr = 'clusters'
         legend_elements= [gen_Line2D(i, colors[i]) for i in colors]
         c=np.vectorize(dicts.get)(extract_from_df(load_cellDancer, 'clusters', gene_name))
         cmap=ListedColormap(list(colors.keys()))
     elif isinstance(colors, str):
-        
+        attr = colors
         if colors in ['alpha', 'beta', 'gamma']:
             assert gene_name, '\nError! gene_name is required!\n'
             cmap = ListedColormap(zissou2)
@@ -84,6 +87,7 @@ def scatter_cell(
             cmap = 'viridis'
         c = extract_from_df(load_cellDancer, [colors], gene_name)
     elif colors is None:
+        attr = 'basic'
         cmap = None
         c = 'Grey'
         
@@ -94,10 +98,7 @@ def scatter_cell(
     sample_cells = load_cellDancer['velocity_1'][:n_cells].isna()
     embedding_ds = embedding[~sample_cells]
     
-
-
-    f, ax = plt.subplots(figsize=(6,6))
-    plt.scatter(embedding[:, 0],
+    ax.scatter(embedding[:, 0],
                 embedding[:, 1],
                 c=c,
                 cmap=cmap,
@@ -106,15 +107,15 @@ def scatter_cell(
                 edgecolor="none")
 
     if velocity:
-        grid_curve(embedding_ds, velocity_embedding, grid_steps, min_mass)
+        grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass)
 
     if custom_xlim is not None:
-        plt.xlim(custom_xlim[0], custom_xlim[1])
+        ax.set_xlim(custom_xlim[0], custom_xlim[1])
     if custom_ylim is not None:
-        plt.ylim(custom_ylim[0], custom_ylim[1])
+        ax.set_ylim(custom_ylim[0], custom_ylim[1])
     
     if isinstance(colors, dict):
-        lgd=plt.legend(handles=legend_elements, 
+        lgd=ax.legend(handles=legend_elements, 
                 bbox_to_anchor=(1.01, 1), 
                 loc='upper left')
         bbox_extra_artists=(lgd,)
@@ -123,50 +124,19 @@ def scatter_cell(
     
 
     if save_path is not None:
-        save_file_name = os.path.join(save_path, 
-                                      ('velocity_embedding' + 
-                                        file_name_additional_info + 
-                                        '_colorful_grid_curve_arrow.pdf'))
-
+        file_name_parts = ['embedding', attr, gene_name]
+        if velocity:
+            file_name_parts.insert(0, 'velocity')
+        
+        save_file_name = os.path.join(save_path, "_".join(file_name_parts)+'.pdf')
+        
+        print("saved the file as", save_file_name)
         plt.savefig(save_file_name, 
                 bbox_inches='tight',
                 bbox_extra_artists=bbox_extra_artists)
         
     return ax
 
-
-def cell_level_para_plot(load_cellDancer,gene_choice,para_list,cluster_choice=None,save_path=None,s=0.2,alpha=1):
-    
-    '''plot alpha, beta, gamma, s0, u0 at cell level'''
-
-    if cluster_choice is not None:
-        reindexed_one_gene=load_cellDancer[load_cellDancer.gene_name==gene_choice[0]].reset_index()
-        embedding=reindexed_one_gene[reindexed_one_gene.clusters.isin(cluster_choice)][['embedding1','embedding2']].to_numpy()
-    else:
-        embedding=load_cellDancer[load_cellDancer.gene_name==gene_choice[0]][['embedding1','embedding2']].to_numpy()
-    
-    color_map_zissou2 = LinearSegmentedColormap.from_list("mycmap", zissou2)
-    color_map_fireworks3 = LinearSegmentedColormap.from_list("mycmap", fireworks3)
-    color_dict = {'alpha':color_map_zissou2,'beta':color_map_zissou2,'gamma':color_map_zissou2,'s0':color_map_fireworks3,'u0':color_map_fireworks3}
-
-    for para in para_list:
-        for gene_name in gene_choice:
-            #gene_name='Ntrk2'
-            one_gene=load_cellDancer[load_cellDancer.gene_name==gene_name].reset_index()
-            if cluster_choice is not None: 
-                # vmin=min(one_gene[para])
-                # vmax=max(one_gene[para])
-                # layer=plt.scatter(embedding[:,0],embedding[:,1],s=0.2,c=one_gene[reindexed_one_gene.clusters.isin(cluster_choice)][para],cmap=color_map,vmin=vmin,vmax=vmax)
-                layer=plt.scatter(embedding[:,0],embedding[:,1],s=s,alpha=alpha,c=one_gene[reindexed_one_gene.clusters.isin(cluster_choice)][para],cmap=color_dict[para])
-            
-            else:
-                layer=plt.scatter(embedding[:,0],embedding[:,1],s=s,c=one_gene[para],cmap=color_dict[para])
-            
-            plt.title(gene_name+" "+para)
-            plt.colorbar(layer)
-            if save_path is not None:
-                plt.savefig(os.path.join(save_path,(gene_name+'_'+para+'.pdf')),dpi=300)
-            plt.show()
 
 
 # PENGZHI -> Move this to utilities
@@ -195,7 +165,7 @@ def build_colormap(cluster_list):
 
 
 # Source - https://github.com/velocyto-team/velocyto.py/blob/0963dd2df0ac802c36404e0f434ba97f07edfe4b/velocyto/analysis.py
-def grid_curve(embedding_ds, velocity_embedding, grid_steps, min_mass):
+def grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass):
 # calculate_grid_arrows
     # kernel grid plot
 
@@ -331,7 +301,7 @@ def grid_curve(embedding_ds, velocity_embedding, grid_steps, min_mass):
             V = curve_dots[1][-1]-curve_dots[1][-2]
             N = np.sqrt(U**2 + V**2)
             U1, V1 = U/N*0.5, V/N*0.5  # 0.5 is to let the arrow have a suitable size
-            plt.quiver(curve_dots[0][-2], curve_dots[1][-2], U1, V1, units='xy', angles='xy',
+            ax.quiver(curve_dots[0][-2], curve_dots[1][-2], U1, V1, units='xy', angles='xy',
                         scale=1, linewidth=0, color='black', alpha=1, minlength=0, width=0.1)
 
     plot_cell_velocity_curve(XYM, UVT, UVH, UVT2, UVH2, s_vals)
