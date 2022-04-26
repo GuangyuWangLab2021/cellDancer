@@ -17,15 +17,8 @@ from scipy import interpolate
 from matplotlib.pyplot import cm
 from matplotlib.colors import ListedColormap
 
-
-if "diffusion" in sys.modules:
-    importlib.reload(sys.modules["diffusion"])
-
-if "get_embedding" in sys.modules:
-    importlib.reload(sys.modules["_get_embedding"])
-
 from diffusion import *
-from _get_embedding import get_embedding
+from compute_cell_velocity import compute_cell_velocity
     
 
 def compute_trajectory_displacement(traj):
@@ -220,61 +213,6 @@ def cell_time_projection_cluster(embedding, rep_path, cluster, cell_fate):
     return cell_time_per_cluster
 
 
-def plot_cell_clusters(cell_fate, cell_embedding):
-    clusters = np.unique(cell_fate)
-    n_clusters = len(clusters)
-
-    cmap = ListedColormap(sns.color_palette("colorblind", n_colors = n_clusters))
-    fig, ax1 = plt.subplots(figsize=(6, 6))
-    img1=ax1.scatter(cell_embedding[:,0], cell_embedding[:,1], c=cell_fate,
-            s=1, alpha=1, cmap=cmap)
-    ax1.set_aspect('equal', adjustable='box')
-    ax1.set_title("cell fate: majority votes")
-    ax1.axis("off")
-
-    bounds = np.linspace(0, n_clusters, n_clusters+1)
-    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
-    ax3 = fig.add_axes([0.9, 0.3, 0.02, 0.3])
-    cb = mpl.colorbar.ColorbarBase(ax3, cmap=cmap, spacing='proportional', boundaries=bounds, norm=norm, format='%1i')
-    labels = ["cluster "+str(i) for i in range(n_clusters)]
-
-    cb.ax.get_yaxis().set_ticks([])
-    for i, label in enumerate(labels):
-        cb.ax.text(4.5, i + 0.5 , label, ha='center', va='center')
-    plt.show()
-
-
-def plot_path_clusters(path_clusters, clusters, cell_embedding):    
-    fig, ax = plt.subplots(figsize=(6, 6))
-    plt.scatter(cell_embedding[:,0], cell_embedding[:,1], c='silver', s=10, alpha = 0.3)
-    n_clusters = len(clusters)
-    
-    cmap = ListedColormap(sns.color_palette("colorblind", n_colors = n_clusters))
-    colormaps = [ListedColormap(sns.light_palette(cmap.colors[i],
-        n_colors=100)) for i in range(n_clusters)]
-
-    # find the nearest cell (terminal cell) to the end point
-    neigh = NearestNeighbors(n_neighbors=1, n_jobs=mp.cpu_count()-1)
-    neigh.fit(cell_embedding)
-
-    cluster_cnt = 0
-    for cluster in clusters:
-        cl = colormaps[cluster_cnt]
-        leading_path=path_clusters[cluster][0]
-        terminal_cell=leading_path[-1]
-        A = neigh.kneighbors_graph(np.array([terminal_cell]))
-        B = A.toarray()
-        terminal_cell = np.matmul(B, cell_embedding)
-
-        plt.text(leading_path[-1,0], leading_path[-1,1], "cluster"+str(cluster), fontsize=12)
-        plt.scatter(leading_path[:,0], leading_path[:,1], s=5,
-                c=range(len(leading_path)), cmap=colormaps[cluster_cnt])
-        plt.scatter(terminal_cell[:,0], terminal_cell[:,1], s=30, color=cmap.colors[cluster_cnt])
-        cluster_cnt += 1
-    plt.axis('off')
-    plt.show()
-    
-
 def closest_distance_between_two_paths(path1, path2, cell_embedding):
     '''
     returns the closest distance and the closest cells.
@@ -286,13 +224,13 @@ def closest_distance_between_two_paths(path1, path2, cell_embedding):
         pair = np.unravel_index(np.argmin(A), A.shape)
         print("The closest distance is ", np.sqrt(A[pair]))
         print("Between dot", pair[1], " from refPath1 and dot", pair[0], "from refPath2.")
-        fig, ax = plt.subplots(figsize=(6, 6))
-        plt.scatter(cell_embedding[:,0], cell_embedding[:,1], alpha = 0.3)
-        plt.scatter(path1[:,0], path1[:,1], c=range(len(path1)), s=5)
-        plt.text(path1[-1,0], path1[-1,1], "refPath"+str(1), fontsize=12)
-        plt.text(path2[-1,0], path2[-1,1], "refPath"+str(2), fontsize=12)        
-        plt.scatter(path2[:,0], path2[:,1], c=range(len(path2)), s=5)
-        plt.show()
+        #fig, ax = plt.subplots(figsize=(6, 6))
+        #plt.scatter(cell_embedding[:,0], cell_embedding[:,1], alpha = 0.3)
+        #plt.scatter(path1[:,0], path1[:,1], c=range(len(path1)), s=5)
+        #plt.text(path1[-1,0], path1[-1,1], "refPath"+str(1), fontsize=12)
+        #plt.text(path2[-1,0], path2[-1,1], "refPath"+str(2), fontsize=12)        
+        #plt.scatter(path2[:,0], path2[:,1], c=range(len(path2)), s=5)
+        #plt.show()
         return np.sqrt(A[pair]), pair[::-1]
     else:
         return np.Inf,(np.nan,np.nan)
@@ -361,22 +299,22 @@ def recursive_cell_time_assignment_intracluster(
         sub_grid_density[i] = grid_density[i]
     
     # sanity check
-    cells = [_ for _ in unresolved_cell_time_cluster[cluster]]
+    # cells = [_ for _ in unresolved_cell_time_cluster[cluster]]
 
-    fig, axes = plt.subplots(nrows=1, ncols=2,
-            gridspec_kw={'width_ratios':[1,1]}, figsize=(12,6))
-    axes[0].scatter(cell_embedding[:,0], cell_embedding[:,1], s=5, alpha=0.1)
-    axes[0].scatter(cell_embedding[cells,0],
-            cell_embedding[cells,1], s=5, alpha=0.5)
-    axes[0].scatter(sub_embedding[:,0], sub_embedding[:,1], s=5, c='k')
-    axes[0].title.set_text("spread of the zero time cells")
+    # fig, axes = plt.subplots(nrows=1, ncols=2,
+    #         gridspec_kw={'width_ratios':[1,1]}, figsize=(12,6))
+    # axes[0].scatter(cell_embedding[:,0], cell_embedding[:,1], s=5, alpha=0.1)
+    # axes[0].scatter(cell_embedding[cells,0],
+    #         cell_embedding[cells,1], s=5, alpha=0.5)
+    # axes[0].scatter(sub_embedding[:,0], sub_embedding[:,1], s=5, c='k')
+    # axes[0].title.set_text("spread of the zero time cells")
 
-    cmap = sns.cubehelix_palette(start=2, rot=0., dark=0.2, light=1, as_cmap=True)
-    axes[1].imshow(grid_density.T, interpolation=None, origin='lower', cmap="Greys")
-    axes[1].imshow(sub_grid_density.T, interpolation=None,
-            origin='lower',cmap=cmap, alpha=0.3)
-    axes[1].title.set_text("cell density for generating new trajectories")
-    plt.show()
+    # cmap = sns.cubehelix_palette(start=2, rot=0., dark=0.2, light=1, as_cmap=True)
+    # axes[1].imshow(grid_density.T, interpolation=None, origin='lower', cmap="Greys")
+    # axes[1].imshow(sub_grid_density.T, interpolation=None,
+    #         origin='lower',cmap=cmap, alpha=0.3)
+    # axes[1].title.set_text("cell density for generating new trajectories")
+    # plt.show()
     
     # generating new trajectories for the zero-time cells
     print("Sampling new trajectories for zero-time cells in cluster ", cluster, "  ...")
@@ -556,27 +494,6 @@ def cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
     return pseudotime
 
 
-def plot_celltime_clusters(cell_time_per_cluster, rep_paths, embedding):
-    longest_paths = [ipath[0] for ipath in rep_paths]
-    fig, ax = plt.subplots(figsize=(6, 6))
-    plt.scatter(embedding[:,0],embedding[:,1], c='silver', alpha = 0.3)
-
-    n_paths = len(longest_paths)
-    cmap = ['viridis'] * n_paths
-
-    for i in range(n_paths):
-        colormap = cmap[i]
-        cell_index = list(cell_time_per_cluster[i].keys())
-        cell_time = list(cell_time_per_cluster[i].values())
-        cells = embedding[cell_index]
-        plt.scatter(cells[:,0], cells[:,1], c=cell_time, s=20, cmap = colormap)
-        #plt.colorbar()
-        #plt.text(pos[0], pos[1], "cluster"+str(i+1), fontsize=12)
-        ax.set_aspect('equal', adjustable='box')
-    plt.axis('off')
-    plt.show()
-
-
 # combine cell time from clusters
 def combine_clusters(cell_time_per_cluster):
     cell_time = dict()
@@ -618,22 +535,6 @@ def interpolate_all_cell_time(cell_time, all_cell_embedding, sampling_ixs, step)
     return all_cell_time_smooth
 
 
-
-# TOREMOVE
-def pseudotime_cell_plot():
-    print("\n\n\nPlotting estimated pseudotime for all cells ...")
-    fig, ax = plt.subplots(figsize=(6,6))
-    im = plt.scatter(all_cell_embedding[:,0], all_cell_embedding[:,1],
-            c=all_cell_time_smooth, alpha = 1, s = 1)
-
-    plt.xlim([min(x), max(x)])
-    plt.ylim([min(y), max(y)])
-    cax = plt.colorbar(im,fraction=0.03, pad=0., location='bottom')
-    cax.set_label('normalized pseudotime')
-    plt.axis('off')
-    plt.show()
-    
-    
 def export_cell_time(cell_time, cell_fate, sampling_ixs, filename): 
     sample = np.array([True if i in sampling_ixs else False for i in
         range(len(cell_fate))], dtype=bool)
@@ -760,7 +661,7 @@ def overlap_intercluster(
             mode_idx = np.argmax(y)
             axes[1].vlines(x[mode_idx], 0, y[mode_idx], color='tomato', ls='--', lw=5)
             plt.tight_layout()
-            plt.show()
+            #plt.show()
 
             shiftT = x[mode_idx]
             # find the pair ~ shiftT
@@ -831,7 +732,7 @@ def compute_all_cell_time(load_cellDancer, embedding, cell_embedding,
     # write cell time to load_cellDancer
     gene_names = load_cellDancer['gene_name'].drop_duplicates().to_list()
     if len(load_cellDancer) == len(gene_names) * len(cell_time):
-        load_cellDancer['pseudo_time'] = np.tile(cell_time, len(gene_names))
+        load_cellDancer['pseudotime'] = np.tile(cell_time, len(gene_names))
         load_cellDancer = load_cellDancer.astype({"pseudotime": float})
 
     if outfile:
@@ -841,10 +742,18 @@ def compute_all_cell_time(load_cellDancer, embedding, cell_embedding,
     return all_cell_time, all_cell_fate
 
 
-def pseudo_time(load_cellDancer, embedding, velocity_embedding, sampling_ixs, downsample_step, 
-        grid, dt, t_total, n_repeats, output_path):
+def pseudo_time(load_cellDancer, grid, dt, t_total, n_repeats,
+        downsample_step=(60, 60), output_path=None):
 
     start_time = time.time()
+
+    one_gene = load_cellDancer.gene_name[0]
+    embedding = load_cellDancer[load_cellDancer.gene_name == one_gene][['embedding1', 'embedding2']]
+    embedding = embedding.to_numpy()
+
+    velocity_embedding = load_cellDancer[load_cellDancer.gene_name ==
+            one_gene][['velocity1', 'velocity2']].dropna()
+    sampling_ixs = velocity_embedding.index
 
     cell_embedding, normalized_embedding = embedding_normalization(
         embedding[sampling_ixs], embedding, mode='minmax', NORM_ALL_CELLS=True)
@@ -858,8 +767,6 @@ def pseudo_time(load_cellDancer, embedding, velocity_embedding, sampling_ixs, do
     cell_grid_coor = __[3]
     all_grid_idx = __[4] 
     all_grid_coor = __[5]
-    
-    #plot_mesh_velocity(vel_mesh, grid_density)
     
     paths=run_diffusion(cell_embedding, 
                         vel_mesh, 
@@ -922,9 +829,13 @@ def pseudo_time(load_cellDancer, embedding, velocity_embedding, sampling_ixs, do
     
     return all_cell_time
 
+
+
+
+
+# TOREMOVE
 # deprecated since I'm going to get load_cellDancer as input.
-def load_velocity(raw_data_file, detail_result_path, n_neighbors, step):
-    load_raw_data = pd.read_csv(raw_data_file)
+def load_velocity(detail_result_path, n_neighbors, step):
     detail_files = glob.iglob(os.path.join(detail_result_path, '*detail*.csv'))
     lcd = list()
     for f in detail_files:
@@ -935,14 +846,98 @@ def load_velocity(raw_data_file, detail_result_path, n_neighbors, step):
     load_cellDancer = pd.concat(lcd)
     
     gene_choice=list(set(load_cellDancer.gene_name))
-    embedding, sampling_ixs, velocity_embedding = get_embedding(
-        load_raw_data=load_raw_data,
+    compute_cell_velocity(
         load_cellDancer=load_cellDancer,
         gene_list=gene_choice,
         mode="gene",
         n_neighbors=n_neighbors,
         step=step)
-    plot_velocity(embedding[sampling_ixs], velocity_embedding)
     
-    return load_cellDancer, embedding, sampling_ixs, velocity_embedding
 
+# all plot functions
+def pseudotime_cell_plot():
+    print("\n\n\nPlotting estimated pseudotime for all cells ...")
+    fig, ax = plt.subplots(figsize=(6,6))
+    im = plt.scatter(all_cell_embedding[:,0], all_cell_embedding[:,1],
+            c=all_cell_time_smooth, alpha = 1, s = 1)
+
+    plt.xlim([min(x), max(x)])
+    plt.ylim([min(y), max(y)])
+    cax = plt.colorbar(im,fraction=0.03, pad=0., location='bottom')
+    cax.set_label('normalized pseudotime')
+    plt.axis('off')
+    plt.show()
+    
+    
+def plot_cell_clusters(cell_fate, cell_embedding):
+    clusters = np.unique(cell_fate)
+    n_clusters = len(clusters)
+
+    cmap = ListedColormap(sns.color_palette("colorblind", n_colors = n_clusters))
+    fig, ax1 = plt.subplots(figsize=(6, 6))
+    img1=ax1.scatter(cell_embedding[:,0], cell_embedding[:,1], c=cell_fate,
+            s=1, alpha=1, cmap=cmap)
+    ax1.set_aspect('equal', adjustable='box')
+    ax1.set_title("cell fate: majority votes")
+    ax1.axis("off")
+
+    bounds = np.linspace(0, n_clusters, n_clusters+1)
+    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+    ax3 = fig.add_axes([0.9, 0.3, 0.02, 0.3])
+    cb = mpl.colorbar.ColorbarBase(ax3, cmap=cmap, spacing='proportional', boundaries=bounds, norm=norm, format='%1i')
+    labels = ["cluster "+str(i) for i in range(n_clusters)]
+
+    cb.ax.get_yaxis().set_ticks([])
+    for i, label in enumerate(labels):
+        cb.ax.text(4.5, i + 0.5 , label, ha='center', va='center')
+    plt.show()
+
+
+def plot_celltime_clusters(cell_time_per_cluster, rep_paths, embedding):
+    longest_paths = [ipath[0] for ipath in rep_paths]
+    fig, ax = plt.subplots(figsize=(6, 6))
+    plt.scatter(embedding[:,0],embedding[:,1], c='silver', alpha = 0.3)
+
+    n_paths = len(longest_paths)
+    cmap = ['viridis'] * n_paths
+
+    for i in range(n_paths):
+        colormap = cmap[i]
+        cell_index = list(cell_time_per_cluster[i].keys())
+        cell_time = list(cell_time_per_cluster[i].values())
+        cells = embedding[cell_index]
+        plt.scatter(cells[:,0], cells[:,1], c=cell_time, s=20, cmap = colormap)
+        ax.set_aspect('equal', adjustable='box')
+    plt.axis('off')
+    plt.show()
+
+
+def plot_path_clusters(path_clusters, clusters, cell_embedding):    
+    fig, ax = plt.subplots(figsize=(6, 6))
+    plt.scatter(cell_embedding[:,0], cell_embedding[:,1], c='silver', s=10, alpha = 0.3)
+    n_clusters = len(clusters)
+    
+    cmap = ListedColormap(sns.color_palette("colorblind", n_colors = n_clusters))
+    colormaps = [ListedColormap(sns.light_palette(cmap.colors[i],
+        n_colors=100)) for i in range(n_clusters)]
+
+    # find the nearest cell (terminal cell) to the end point
+    neigh = NearestNeighbors(n_neighbors=1, n_jobs=mp.cpu_count()-1)
+    neigh.fit(cell_embedding)
+
+    cluster_cnt = 0
+    for cluster in clusters:
+        cl = colormaps[cluster_cnt]
+        leading_path=path_clusters[cluster][0]
+        terminal_cell=leading_path[-1]
+        A = neigh.kneighbors_graph(np.array([terminal_cell]))
+        B = A.toarray()
+        terminal_cell = np.matmul(B, cell_embedding)
+
+        plt.text(leading_path[-1,0], leading_path[-1,1], "cluster"+str(cluster), fontsize=12)
+        plt.scatter(leading_path[:,0], leading_path[:,1], s=5,
+                c=range(len(leading_path)), cmap=colormaps[cluster_cnt])
+        plt.scatter(terminal_cell[:,0], terminal_cell[:,1], s=30, color=cmap.colors[cluster_cnt])
+        cluster_cnt += 1
+    plt.axis('off')
+    plt.show()

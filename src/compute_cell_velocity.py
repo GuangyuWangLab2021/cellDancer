@@ -24,9 +24,18 @@ else:
 ####### organize code
 
 
-def compute_cell_velocity(load_cellDancer,gene_list=None,n_neighbors=200,step=(60,60),transfer_mode=None,mode=None,pca_n_components=None,umap_n=None,umap_n_components=None,use_downsampling=True):
+def compute_cell_velocity(load_cellDancer,
+        gene_list=None,
+        n_neighbors=200,
+        step=(60,60),
+        transfer_mode=None,
+        mode=None,
+        pca_n_components=None,
+        umap_n=None,
+        umap_n_components=None,
+        use_downsampling=True):
+
     # mode: [mode='embedding', mode='gene']
-    step_i,step_j=step[0],step[1]
 
     def velocity_correlation(cell_matrix, velocity_matrix):
         """Calculate the correlation between the predict velocity (velocity_matrix[:,i])
@@ -86,15 +95,13 @@ def compute_cell_velocity(load_cellDancer,gene_list=None,n_neighbors=200,step=(6
     embedding_downsampling, sampling_ixs, knn_embedding = downsampling_embedding(data_df,
                                                                                     para='neighbors',
                                                                                     target_amount=0,
-                                                                                    step_i=step_i,
-                                                                                    step_j=step_j,
+                                                                                    step=step,
                                                                                     n_neighbors=n_neighbors,
                                                                                     mode=mode,
                                                                                     transfer_mode=transfer_mode,
                                                                                     pca_n_components=pca_n_components,
                                                                                     umap_n=umap_n,
-                                                                                    umap_n_components=umap_n_components,
-                                                                                    use_downsampling=use_downsampling)
+                                                                                    umap_n_components=umap_n_components)
     
 
     np_s0_all,np_dMatrix_all= data_reshape(load_cellDancer)
