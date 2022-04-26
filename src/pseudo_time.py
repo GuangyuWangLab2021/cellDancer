@@ -164,14 +164,14 @@ def cell_fate_tuning(embedding, cell_clusters, n_neighbors=20):
         cluster_index += 1
         clusterIDs.append(cluster)
     cell_fate_major = np.argmax(cell_fate, axis=1)
-    print(cell_fate_major)
+    #print(cell_fate_major)
 
     # mapping back to clusterIDs
     # cluster_index is the list index of the clusterIDs
     cell_fate_major = np.array([clusterIDs[i] for i in cell_fate_major],
             dtype=int)
 
-    print(cell_fate_major)
+    #print(cell_fate_major)
 
     neigh = NearestNeighbors(n_neighbors=n_neighbors)
     neigh.fit(embedding)
@@ -418,8 +418,8 @@ def cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
         if shiftT:
             shiftT = 0 if abs(shiftT) < MAX_IGNORED_TIME_SHIFT else shiftT
 
-            print("shift time is: ", shiftT, ".\n The overlapping cells are:\n",
-                    "cell ", overlap_cells[0], " from cluster ", i, " and ", 
+            print("shift time is: ", shiftT, ".\nThe overlapping cells are:",
+                    "\ncell ", overlap_cells[0], " from cluster ", i, " and ", 
                     overlap_cells[1], " from cluster ", j)
 
             if shiftT > 0:
@@ -600,8 +600,8 @@ def overlap_intercluster(
     returns the indices of overlapping cells in pairs and dT.
     '''
     
-    print("\n\nConsolidating time between clusters ", cluster0_ID, " and ",
-            cluster1_ID, "\n\n")
+    print("\nConsolidating time between clusters ", cluster0_ID, " and ",
+            cluster1_ID, "..")
     cluster0_cellID = np.where(cell_fate == cluster0_ID)[0]
     cluster1_cellID = np.where(cell_fate == cluster1_ID)[0]
 
@@ -661,7 +661,7 @@ def overlap_intercluster(
             mode_idx = np.argmax(y)
             axes[1].vlines(x[mode_idx], 0, y[mode_idx], color='tomato', ls='--', lw=5)
             plt.tight_layout()
-            #plt.show()
+            plt.show()
 
             shiftT = x[mode_idx]
             # find the pair ~ shiftT
@@ -685,16 +685,14 @@ def compute_all_cell_time(load_cellDancer, embedding, cell_embedding,
                           vel_mesh, cell_grid_idx, grid_density,
                           sampling_ixs, step,
                           dt=0.001, t_total=10000, n_repeats = 10, 
-                          n_jobs = mp.cpu_count()-1,
-                          outfile = None):
+                          n_jobs = mp.cpu_count()-1):
     
-    all_cell_fate = assign_all_cell_fate(embedding, sampling_ixs, cell_fate)
     clusters = np.unique(cell_fate)
     n_clusters = len(clusters)
     print("There are %d clusters." % (n_clusters))
     print("They are: ", clusters)
     
-    plot_path_clusters(path_clusters, clusters, cell_embedding)
+    #plot_path_clusters(path_clusters, clusters, cell_embedding)
 
     cell_time_per_cluster = [cell_time_projection_cluster(cell_embedding, 
         path_clusters[i][0], i, cell_fate) for i in clusters]
@@ -724,33 +722,41 @@ def compute_all_cell_time(load_cellDancer, embedding, cell_embedding,
     ordered_cell_time = np.array([cell_time[cell] for cell in sorted(cell_time.keys())])
 
     # interpolate to get the time for all cells.
-    all_cell_time=interpolate_all_cell_time(ordered_cell_time, embedding, sampling_ixs, step)
+    if step is not None:
+        all_cell_time=interpolate_all_cell_time(ordered_cell_time, embedding, sampling_ixs, step)
+    else:
+        all_cell_time=ordered_cell_time
 
-    print("There are %d cells." % (len(cell_fate)))
-    plot_cell_clusters(all_cell_fate, embedding)
+    all_cell_fate = assign_all_cell_fate(embedding, sampling_ixs, cell_fate)
+    print("There are %d cells." % (len(all_cell_fate)))
+    #plot_cell_clusters(all_cell_fate, embedding)
     
     # write cell time to load_cellDancer
     gene_names = load_cellDancer['gene_name'].drop_duplicates().to_list()
-    if len(load_cellDancer) == len(gene_names) * len(cell_time):
-        load_cellDancer['pseudotime'] = np.tile(cell_time, len(gene_names))
+    if len(load_cellDancer) == len(gene_names) * len(all_cell_time):
+        load_cellDancer['pseudotime'] = np.tile(all_cell_time, len(gene_names))
         load_cellDancer = load_cellDancer.astype({"pseudotime": float})
 
-    if outfile:
-        print("\nExporting data to:\n ", outfile)
-        df.to_csv(filename, index=False)
 
-    return all_cell_time, all_cell_fate
-
-
-def pseudo_time(load_cellDancer, grid, dt, t_total, n_repeats,
-        downsample_step=(60, 60), output_path=None):
+def pseudo_time(load_cellDancer, 
+        grid, 
+        dt, 
+        t_total, 
+        n_repeats,
+        downsample_step=(60, 60), 
+        save=False, 
+        output_path=None):
 
     start_time = time.time()
 
-    one_gene = load_cellDancer.gene_name[0]
-    embedding = load_cellDancer[load_cellDancer.gene_name == one_gene][['embedding1', 'embedding2']]
+    gene_choice = load_cellDancer[~load_cellDancer['velocity1'].isna()]['gene_name']
+    gene_choice = gene_choice.drop_duplicates()
+    one_gene = gene_choice.to_list()[0]
+    embedding = load_cellDancer[load_cellDancer['gene_name'] == 
+            one_gene][['embedding1', 'embedding2']]
     embedding = embedding.to_numpy()
 
+    # This could be problematic if it's not in the gene_choice
     velocity_embedding = load_cellDancer[load_cellDancer.gene_name ==
             one_gene][['velocity1', 'velocity2']].dropna()
     sampling_ixs = velocity_embedding.index
@@ -793,20 +799,13 @@ def pseudo_time(load_cellDancer, grid, dt, t_total, n_repeats,
         path_clusters, 
         cell_clusters, 
         sorted_traj, 
-        similarity_cutoff=0.1, 
+        similarity_cutoff=0.2, 
         similarity_threshold=0, 
         nkeep=-1)
 
     # This step could cause dropping of number of path clusters.
     cell_fate = cell_fate_tuning(cell_embedding, cell_clusters)
     clusters = np.unique(cell_fate)
-    
-    outname = 'pseudo_time_neuro_combined'+ \
-        '__grid' + str(grid[0])+'x'+str(grid[1])+ \
-        '__dt' + str(dt)+ \
-        '__ttotal' + str(t_total)+ \
-        '__nrepeats' + str(n_repeats) + \
-        '.csv'
 
     compute_all_cell_time(
         load_cellDancer,
@@ -822,14 +821,26 @@ def pseudo_time(load_cellDancer, grid, dt, t_total, n_repeats,
         dt=dt, 
         t_total=t_total, 
         n_repeats = n_repeats, 
-        n_jobs=mp.cpu_count()-1, 
-        outfile=os.path.join(output_path, outname))
+        n_jobs=mp.cpu_count()-1)
     
     print("--- %s seconds ---" % (time.time() - start_time))
+
+    if save:
+        outname = 'pseudo_time'+ \
+            '__grid' + str(grid[0])+'x'+str(grid[1])+ \
+            '__dt' + str(dt)+ \
+            '__ttotal' + str(t_total)+ \
+            '__nrepeats' + str(n_repeats) + \
+            '.csv'
+        if output_path is not None:
+            outfile = os.path.join(output_path, outname)
+        else:
+            outfile = outname
+
+        print("\nExporting data to:\n ", outfile)
+        load_cellDancer.to_csv(outfile, index=False)
+
     
-    return all_cell_time
-
-
 
 
 
