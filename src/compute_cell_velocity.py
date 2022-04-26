@@ -28,29 +28,6 @@ def compute_cell_velocity(load_cellDancer,gene_list=None,n_neighbors=200,step=(6
     # mode: [mode='embedding', mode='gene']
     step_i,step_j=step[0],step[1]
 
-
-    def corr_coeff(ematrix, vmatrix, i):
-        '''
-        Calculate the correlation between the predict velocity (velocity_matrix[:,i])
-        and the difference between a cell and every other (cell_matrix - cell_matrix[:, i])
-        '''
-        # ematrix = cell_matrix
-        # vmatrix = velocity_matrix
-        ematrix = ematrix.T
-        vmatrix = vmatrix.T
-        ematrix = ematrix - ematrix[i, :]
-        vmatrix = vmatrix[i, :][None, :]
-        ematrix_m = ematrix - ematrix.mean(1)[:, None]
-        vmatrix_m = vmatrix - vmatrix.mean(1)[:, None]
-
-        # Sum of squares across rows
-        ematrix_ss = (ematrix_m**2).sum(1)
-        vmatrix_ss = (vmatrix_m**2).sum(1)
-        cor = np.dot(ematrix_m, vmatrix_m.T) / \
-            np.sqrt(np.dot(ematrix_ss[:, None], vmatrix_ss[None]))
-        return cor.T
-
-
     def velocity_correlation(cell_matrix, velocity_matrix):
         """Calculate the correlation between the predict velocity (velocity_matrix[:,i])
         and the difference between a cell and every other (cell_matrix - cell_matrix[:, i])
@@ -140,6 +117,27 @@ def compute_cell_velocity(load_cellDancer,gene_list=None,n_neighbors=200,step=(6
     load_cellDancer.loc[index_gene_choice,'velocity1'] = np.tile(velocity_embedding[:,0], len(gene_choice))
     load_cellDancer.loc[index_gene_choice,'velocity2'] = np.tile(velocity_embedding[:,1], len(gene_choice))
 
+def corr_coeff(ematrix, vmatrix, i):
+        '''
+        Calculate the correlation between the predict velocity (velocity_matrix[:,i])
+        and the displacement between a cell and every other (cell_matrix - cell_matrix[:, i])
+        '''
+        # ematrix = cell_matrix
+        # vmatrix = velocity_matrix
+        ematrix = ematrix.T
+        vmatrix = vmatrix.T
+        ematrix = ematrix - ematrix[i, :]
+        vmatrix = vmatrix[i, :][None, :]
+        ematrix_m = ematrix - ematrix.mean(1)[:, None]
+        vmatrix_m = vmatrix - vmatrix.mean(1)[:, None]
+
+        # Sum of squares across rows
+        ematrix_ss = (ematrix_m**2).sum(1)
+        vmatrix_ss = (vmatrix_m**2).sum(1)
+        cor = np.dot(ematrix_m, vmatrix_m.T) / \
+            np.sqrt(np.dot(ematrix_ss[:, None], vmatrix_ss[None]))
+        
+        return cor.T
 
 def data_reshape(load_cellDancer): # pengzhi version
     '''
@@ -162,3 +160,4 @@ def data_reshape(load_cellDancer): # pengzhi version
     np_dMatrix2 = np.sqrt(np.abs(np_dMatrix) + psc) * \
         np.sign(np_dMatrix)
     return(np_s0_reshape, np_dMatrix2)
+
