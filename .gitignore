@@ -30,3 +30,7 @@ docs/_build/
 
 # Notebook Checkpoints
 .ipynb_checkpoints/
+
+
+# Mac specific
+.DS_Store
