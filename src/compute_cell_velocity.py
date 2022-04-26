@@ -24,7 +24,7 @@ else:
 ####### organize code
 
 
-def get_embedding(load_cellDancer,gene_list=None,n_neighbors=200,step=(60,60),transfer_mode=None,mode=None,pca_n_components=None,umap_n=None,umap_n_components=None,use_downsampling=True):
+def compute_cell_velocity(load_cellDancer,gene_list=None,n_neighbors=200,step=(60,60),transfer_mode=None,mode=None,pca_n_components=None,umap_n=None,umap_n_components=None,use_downsampling=True):
     # mode: [mode='embedding', mode='gene']
     step_i,step_j=step[0],step[1]
 
