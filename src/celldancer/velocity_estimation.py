@@ -593,8 +593,6 @@ def _train_thread(datamodule,
                     learning_rate=None,
                     cost2_cutoff=None,
                     optimizer=None,
-                    filepath_brief=None,
-                    filepath_detail=None,
                     trace_cost_ratio=None,
                     corrcoef_cost_ratio=None,
                  auto_norm_u_s=None,
@@ -639,8 +637,9 @@ def _train_thread(datamodule,
     _, sampling_ixs_select_model, _ = downsampling_embedding(data_df, # for select model
                         para='neighbors',
                         target_amount=0,
-                        step_i=20,
-                        step_j=20,
+                        step=(20,20),
+                        # step_i=20,
+                        # step_j=20,
                         n_neighbors=n_neighbors,
                         mode='embedding')
     gene_downsampling=downsampling(data_df=data_df, gene_choice=[this_gene_name], downsampling_ixs=sampling_ixs_select_model)
@@ -702,9 +701,8 @@ def _train_thread(datamodule,
     brief = model.validation_brief
     detail = model.test_detail
 
-    if (os.path.exists(filepath_brief)) :header_brief=False
-    # else:header_brief=['model','gene_name','type','epoch','alpha1','alpha2','beta','gamma','cost','backgroud_true_cost']
-    else:header_brief=['gene_name','epoch','cost']
+
+    
 
     if auto_norm_u_s:
         detail.s0=detail.s0*s0max
@@ -717,13 +715,11 @@ def _train_thread(datamodule,
     if(model_save_path != None):
         model.save(model_save_path)
     
-    if (os.path.exists(filepath_detail)) :header_detail=False
-    else:header_detail=['cellIndex','gene_name','s0','u0','s1','u1','alpha','beta','gamma','cost']
-
-    header_detail=['cellIndex','gene_name','s0','u0','s1','u1','alpha','beta','gamma','cost']
+    header_brief=['gene_name','epoch','loss']
+    header_detail=['cellIndex','gene_name','s0','u0','s1','u1','alpha','beta','gamma','loss']
     
-    brief.to_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'_'+this_gene_name+'.csv')),mode='a',header=header_brief,index=False)
-    detail.to_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'_'+this_gene_name+'.csv')),mode='a',header=header_detail,index=False)
+    brief.to_csv(os.path.join(result_path,'TEMP', ('loss'+'_'+this_gene_name+'.csv')),header=header_brief,index=False)
+    detail.to_csv(os.path.join(result_path,'TEMP', ('celldancer_estimation_'+this_gene_name+'.csv')),header=header_detail,index=False)
 
     return None
 
@@ -741,8 +737,9 @@ def downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsa
         _, sampling_ixs, _ = downsampling_embedding(data_df,
                             para=downsample_method,
                             target_amount=downsample_target_amount,
-                            step_i=step_i,
-                            step_j=step_j,
+                            step=(step_i,step_j),
+                            # step_i=step_i,
+                            # step_j=step_j,
                             n_neighbors=n_neighbors_downsample,mode='embedding')
         gene_downsampling = downsampling(data_df=data_df, gene_choice=gene_choice, downsampling_ixs=sampling_ixs)
         
@@ -801,15 +798,33 @@ def train( # use train_thread # change name to velocity estiminate
     result_path = '/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/Gastrulation/velocity_result/result_detailcsv/polish/'
     calc_velocity.train(load_raw_data,gene_choice=gene_choice,result_path=result_path)
     '''    
+
+    import os
+    import shutil
+    import datetime
+
+    datestring = datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S");
+    folder_name='cell_dancer_velocity_'+datestring
+
+    # set output dir
+    if result_path is None:
+        result_path=os.getcwd()
+
+    try:shutil.rmtree(os.path.join(result_path,folder_name))
+    except:os.mkdir(os.path.join(result_path,folder_name))
+    result_path=os.path.join(result_path,folder_name)
+    print('Using '+result_path+' as the output path.')
+
+    try:shutil.rmtree(os.path.join(result_path,'TEMP'))
+    except:os.mkdir(os.path.join(result_path,'TEMP'))
+    # end - set output dir
+
     datamodule=downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=gene_choice,binning=binning)
     
     if check_n_epoch=='None':check_n_epoch=None
     all_data = datamodule
     data_len = all_data.test_dataset.__len__()
-    brief = pd.DataFrame()
-    detail = pd.DataFrame()
-    filepath_brief= os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv'))
-    filepath_detail=os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv'))
+
     # buring
     _train_thread(
             datamodule = datamodule,
@@ -823,8 +838,6 @@ def train( # use train_thread # change name to velocity estiminate
             cost2_cutoff=cost2_cutoff,
             n_neighbors=n_neighbors,
             optimizer=optimizer,
-            filepath_brief=filepath_brief,
-            filepath_detail=filepath_detail,
             trace_cost_ratio=trace_cost_ratio,
             corrcoef_cost_ratio=corrcoef_cost_ratio,
             auto_norm_u_s=auto_norm_u_s,
@@ -833,8 +846,9 @@ def train( # use train_thread # change name to velocity estiminate
             patience=patience,
             smooth_weight=smooth_weight)
     # end - buring
-    if (os.path.exists(filepath_brief)) :os.remove(filepath_brief)
-    if (os.path.exists(filepath_detail)) :os.remove(filepath_detail)
+
+    shutil.rmtree(os.path.join(result_path,'TEMP'))
+    os.mkdir(os.path.join(result_path,'TEMP'))
 
     # progress bar
     import contextlib
@@ -873,8 +887,6 @@ def train( # use train_thread # change name to velocity estiminate
                 cost2_cutoff=cost2_cutoff,
                 n_neighbors=n_neighbors,
                 optimizer=optimizer,
-                filepath_brief=filepath_brief,
-                filepath_detail=filepath_detail,
                 trace_cost_ratio=trace_cost_ratio,
                 corrcoef_cost_ratio=corrcoef_cost_ratio,
                 auto_norm_u_s=auto_norm_u_s,
@@ -887,15 +899,28 @@ def train( # use train_thread # change name to velocity estiminate
     import pandas as pd
     import glob
     import os
-    detail = os.path.join(result_path, "detail*.csv")
-    detail_files = glob.glob(files)
 
-    brief.to_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'_'+this_gene_name+'.csv')),mode='a',header=header_brief,index=False)
-    detail.to_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'_'+this_gene_name+'.csv')),mode='a',header=header_detail,index=False)
+    detail = os.path.join(result_path,'TEMP', "celldancer_estimation*.csv")
+    detail_files = glob.glob(detail)
+    brief = os.path.join(result_path, 'TEMP',"loss*.csv")
+    brief_files = glob.glob(brief)
 
+    def combine_csv(save_path,files):
+        with open(save_path,"wb") as fout:
+            # first file:
+            with open(files[0], "rb") as f:
+                fout.write(f.read())
+            # now the rest:    
+            for filepath in files[1:]:
+                with open(filepath, "rb") as f:
+                    next(f) # the generated csv must contain header, because this step skip the header
+                    fout.write(f.read())
+        return(pd.read_csv(save_path))
 
-    brief=pd.read_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv')))
-    detail=pd.read_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv')))
+    detail=combine_csv(os.path.join(result_path,"celldancer_estimation.csv"),detail_files)
+    brief=combine_csv(os.path.join(result_path,"celldancer_estimation.csv"),brief_files)
+
+    shutil.rmtree(os.path.join(result_path,'TEMP'))
 
     detail.sort_values(by = ['gene_name', 'cellIndex'], ascending = [True, True])
     onegene=load_raw_data[load_raw_data.gene_name==load_raw_data.gene_name[0]]
@@ -904,7 +929,9 @@ def train( # use train_thread # change name to velocity estiminate
     embedding_col=pd.concat([embedding_info]*gene_amt)
     embedding_col.index=detail.index
     detail=pd.concat([detail,embedding_col],axis=1)
-    detail.to_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv')),index=False)
+    detail.to_csv(os.path.join(result_path, ('celldancer_estimation.csv')),index=False)
+
+    brief.to_csv(os.path.join(result_path, ('loss.csv')),index=False)
 
     return brief, detail
 

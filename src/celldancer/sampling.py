@@ -8,13 +8,11 @@ import matplotlib.pyplot as plt
 
 
 
-def sampling_neighbors(gene_u0_s0,step_i=30,step_j=30,percentile=25): # current version will obtain ~100 cells. e.g. Ntrk2:109; Tmem163:104
+def sampling_neighbors(gene_u0_s0,step=(30,30),percentile=25): # current version will obtain ~100 cells. e.g. Ntrk2:109; Tmem163:104
     #step 250 will got 4000 from den data 
     from scipy.stats import norm
     def gaussian_kernel(X, mu = 0, sigma=1):
         return np.exp(-(X - mu)**2 / (2*sigma**2)) / np.sqrt(2*np.pi*sigma**2)
-    steps = step_i, step_j
-    # print(steps)
     grs = []
     # print(gene_u0_s0.shape[1])
     for dim_i in range(gene_u0_s0.shape[1]):
@@ -22,7 +20,7 @@ def sampling_neighbors(gene_u0_s0,step_i=30,step_j=30,percentile=25): # current 
         # print(m, M)
         m = m - 0.025 * np.abs(M - m)
         M = M + 0.025 * np.abs(M - m)
-        gr = np.linspace(m, M, steps[dim_i])
+        gr = np.linspace(m, M, step[dim_i])
         grs.append(gr)
     # print(grs)
     meshes_tuple = np.meshgrid(*grs)
@@ -88,11 +86,10 @@ def sampling_random(gene_u0_s0, target_amount=500):
 def sampling_adata(detail, 
                     para,
                     target_amount=500,
-                    step_i=30,
-                    step_j=30):
+                    step=(30,30)):
     if para == 'neighbors':
         data_U_S= np.array(detail[["u0","s0"]])
-        idx = sampling_neighbors(data_U_S,step_i,step_j)
+        idx = sampling_neighbors(data_U_S,step)
     elif para == 'inverse':
         data_U_S= np.array(detail[["u0","s0"]])
         idx = sampling_inverse(data_U_S,target_amount)
@@ -109,15 +106,14 @@ def sampling_adata(detail,
 def sampling_embedding(detail, 
                     para,
                     target_amount=500,
-                    step_i=30,
-                    step_j=30):
+                    step=(30,30)):
 
     '''
     Guangyu
     '''
     if para == 'neighbors':
         data_U_S= np.array(detail[["embedding1","embedding2"]])
-        idx = sampling_neighbors(data_U_S,step_i,step_j)
+        idx = sampling_neighbors(data_U_S,step)
     elif para == 'inverse':
         print('inverse')
         data_U_S= np.array(detail[["embedding1","embedding2"]])
@@ -146,7 +142,7 @@ def adata_to_detail(data, para, gene):
     detail = pd.DataFrame({'gene_name':gene, 'u0':u0, 's0':s0})
     return(detail)
 
-def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors,transfer_mode=None,mode=None,pca_n_components=None,umap_n=None,umap_n_components=None,use_downsampling=True):
+def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,transfer_mode=None,mode=None,pca_n_components=None,umap_n=None,umap_n_components=None):
     '''
     Guangyu
     sampling cells by embedding
@@ -160,13 +156,11 @@ def downsampling_embedding(data_df,para,target_amount,step_i,step_j, n_neighbors
     embedding = data_df.loc[data_df['gene_name']==gene][['embedding1','embedding2']]
     #print(para)
     
-    if use_downsampling:
+    if step is not None:
         idx_downSampling_embedding = sampling_embedding(embedding,
                     para=para,
                     target_amount=target_amount,
-                    step_i=step_i,
-                    step_j=step_j
-                    )
+                    step=step)
     else:
         idx_downSampling_embedding=range(0,embedding.shape[0]) # all cells
     
