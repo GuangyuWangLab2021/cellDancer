@@ -423,12 +423,12 @@ def cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
                     overlap_cells[1], " from cluster ", j)
 
             if shiftT > 0:
-                CT.add_edge(i, j, weight = shiftT)
+                CT.add_edge(i, j, weight = 1/shiftT)
                 w.append(shiftT)
                 paths.append([i,j])
 
             if shiftT < 0:
-                CT.add_edge(j, i, weight = -shiftT)
+                CT.add_edge(j, i, weight = -1/shiftT)
                 w.append(-shiftT)
                 paths.append([j,i])
 
@@ -442,7 +442,8 @@ def cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
             font_size = 18, 
             font_color = 'w')
 
-    labels = nx.get_edge_attributes(CT,'weight')
+    weights = nx.get_edge_attributes(CT,'weight')
+    labels = {i:int(1/weights[i]) for i in weights}
     nx.draw_networkx_edge_labels(CT,pos,edge_labels=labels)
     plt.show()
     
@@ -470,20 +471,20 @@ def cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
     while len(flag[flag==0])>0:
         for path in paths:
             if path[0]==node:
-                #print("Forward: "+str(node))
+                print("Forward: "+str(node))
                 w_cumm[nodes==path[1]] = w_cumm[nodes==node]+w[np.all(paths==path, axis=1)]
                 node = path[1]
                 idx = np.where(nodes==node)
                 flag[idx] = 1
             
             elif path[1]==node:
-                #print("Backward: "+str(node))
+                print("Backward: "+str(node))
                 w_cumm[nodes==path[0]] = w_cumm[nodes==node]-w[np.all(paths==path, axis=1)]
                 node=path[0]
                 idx = np.where(nodes==node)
                 flag[idx] = 1
             else:
-                #print("Pass: "+str(node))
+                print("Pass: "+str(node))
                 pass
 
     # update pseudotime
@@ -714,10 +715,11 @@ def compute_all_cell_time(load_cellDancer, embedding, cell_embedding,
             n_jobs=n_jobs,
             MAX_ZERO_TIME_CELLS = 0.05)
 
-    print("\nAll intra cluster cell time has been resolved.\n\n\n")
+    print("\n\n\nAll intra cluster cell time has been resolved.\n\n\n")
     
     # inter-cluster time alignment
     resolved_cell_time = cell_time_assignment_intercluster(cell_time_per_cluster, cell_fate, cell_embedding, tau = 0.05)
+    print("\n\nAll inter cluster cell time has been resolved.\n\n\n")
     cell_time = combine_clusters(resolved_cell_time)
     ordered_cell_time = np.array([cell_time[cell] for cell in sorted(cell_time.keys())])
 
@@ -799,7 +801,7 @@ def pseudo_time(load_cellDancer,
         path_clusters, 
         cell_clusters, 
         sorted_traj, 
-        similarity_cutoff=0.2, 
+        similarity_cutoff=0.3, 
         similarity_threshold=0, 
         nkeep=-1)
 
