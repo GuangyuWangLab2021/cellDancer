@@ -24,7 +24,7 @@ else:
 ####### organize code
 
 
-def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,step=(60,60),transfer_mode=None,mode=None,pca_n_components=None,umap_n=None,umap_n_components=None,use_downsampling=True):
+def get_embedding(load_cellDancer,gene_list=None,n_neighbors=200,step=(60,60),transfer_mode=None,mode=None,pca_n_components=None,umap_n=None,umap_n_components=None,use_downsampling=True):
     # mode: [mode='embedding', mode='gene']
     step_i,step_j=step[0],step[1]
 
@@ -97,35 +97,14 @@ def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,s
         return velocity_embedding
 
 
-    def data_reshape(load_cellDancer): # pengzhi version
-        '''
-        load detail file
-        return expression matrix and velocity (ngenes, ncells)
-        '''
-        psc = 1
-        gene_names = load_cellDancer['gene_name'].drop_duplicates().to_list()
-        # PZ uncommented this.
-        cell_number = load_cellDancer[load_cellDancer['gene_name']==gene_names[0]].shape[0]
-        load_cellDancer['index'] = np.tile(range(cell_number),len(gene_names))
-
-        s0_reshape = load_cellDancer.pivot(
-            index='gene_name', values='s0', columns='index')
-        s1_reshape = load_cellDancer.pivot(
-            index='gene_name', values='s1', columns='index')
-        dMatrix = s1_reshape-s0_reshape
-        np_s0_reshape = np.array(s0_reshape)
-        np_dMatrix = np.array(dMatrix)
-        np_dMatrix2 = np.sqrt(np.abs(np_dMatrix) + psc) * \
-            np.sign(np_dMatrix)  # (2159, 18140)
-        return(np_s0_reshape, np_dMatrix2)
-
     if gene_list is None:
-        gene_choice=load_raw_data.gene_name.drop_duplicates()
+        gene_choice=load_cellDancer.gene_name.drop_duplicates()
     else:
         gene_choice=gene_list
 
-    data_df = load_raw_data[['gene_name', 'u0', 's0', 'cellID',
-                                'embedding1', 'embedding2']][load_raw_data.gene_name.isin(gene_choice)]
+    load_cellDancer_input = load_cellDancer[load_cellDancer.gene_name.isin(gene_choice)]
+
+    data_df = load_cellDancer_input[['gene_name', 'u0', 's0', 'cellID','embedding1', 'embedding2']]
     # random.seed(10)
     embedding_downsampling, sampling_ixs, knn_embedding = downsampling_embedding(data_df,
                                                                                     para='neighbors',
@@ -133,32 +112,53 @@ def get_embedding(load_raw_data,load_cellDancer,gene_list=None,n_neighbors=200,s
                                                                                     step_i=step_i,
                                                                                     step_j=step_j,
                                                                                     n_neighbors=n_neighbors,
-                                                                                mode=mode,
-                                                                                 transfer_mode=transfer_mode,
-                                                                                 pca_n_components=pca_n_components,
-                                                                                 umap_n=umap_n,
-                                                                                 umap_n_components=umap_n_components,
-                                                                                use_downsampling=use_downsampling)
-    
-    # print(embedding_downsampling)
-
-    
-    load_cellDancer_input = load_cellDancer[load_cellDancer.gene_name.isin(gene_choice)]
-
+                                                                                    mode=mode,
+                                                                                    transfer_mode=transfer_mode,
+                                                                                    pca_n_components=pca_n_components,
+                                                                                    umap_n=umap_n,
+                                                                                    umap_n_components=umap_n_components,
+                                                                                    use_downsampling=use_downsampling)
     
 
     np_s0_all,np_dMatrix_all= data_reshape(load_cellDancer)
 
-
-    
-
     print(np_dMatrix_all.shape)
     print(np_s0_all.shape)
 
-    embedding = load_raw_data[load_raw_data.gene_name == 
-        load_raw_data.gene_name[0]][['embedding1', 'embedding2']].to_numpy()
+    one_gene = load_cellDancer.gene_name[0]
+    embedding = load_cellDancer[load_cellDancer.gene_name == one_gene][['embedding1', 'embedding2']]
+    embedding = embedding.to_numpy()
+    
+    # mode only provides neighborlist, use embedding(from raw data) to compute cell velocity
+    velocity_embedding = velocity_projection(
+            np_s0_all[:, sampling_ixs], 
+            np_dMatrix_all[:, sampling_ixs], 
+            embedding[sampling_ixs, :], 
+            knn_embedding)
 
-    velocity_embedding = velocity_projection(np_s0_all[:, sampling_ixs], np_dMatrix_all[:, sampling_ixs], embedding[sampling_ixs, :], knn_embedding)
-    
-    
-    return(embedding, sampling_ixs, velocity_embedding)
+    index_gene_choice = load_cellDancer_input[load_cellDancer_input.cellIndex.isin(sampling_ixs)].index
+    load_cellDancer.loc[index_gene_choice,'velocity1'] = np.tile(velocity_embedding[:,0], len(gene_choice))
+    load_cellDancer.loc[index_gene_choice,'velocity2'] = np.tile(velocity_embedding[:,1], len(gene_choice))
+
+
+def data_reshape(load_cellDancer): # pengzhi version
+    '''
+    load detail file
+    return expression matrix and velocity (ngenes, ncells)
+    '''
+    psc = 1
+    gene_names = load_cellDancer['gene_name'].drop_duplicates().to_list()
+    # PZ uncommented this.
+    cell_number = load_cellDancer[load_cellDancer['gene_name']==gene_names[0]].shape[0]
+    load_cellDancer['index'] = np.tile(range(cell_number),len(gene_names))
+
+    s0_reshape = load_cellDancer.pivot(
+        index='gene_name', values='s0', columns='index')
+    s1_reshape = load_cellDancer.pivot(
+        index='gene_name', values='s1', columns='index')
+    dMatrix = s1_reshape-s0_reshape
+    np_s0_reshape = np.array(s0_reshape)
+    np_dMatrix = np.array(dMatrix)
+    np_dMatrix2 = np.sqrt(np.abs(np_dMatrix) + psc) * \
+        np.sign(np_dMatrix)
+    return(np_s0_reshape, np_dMatrix2)
