@@ -545,12 +545,7 @@ class getItem(Dataset): # TO DO: Change to a suitable name
         alpha = np.float32(0)
         beta = np.float32(0)
         gamma = np.float32(0)
-        type = "real"           # delete
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> 173b5c0cf51b00daace54ea5f97fefda2c3bdee4
         # add embedding (Guangyu)
         embedding1 = np.array(data.embedding1.copy().astype(np.float32))
         embedding2 = np.array(data.embedding2.copy().astype(np.float32))
@@ -725,8 +720,10 @@ def _train_thread(datamodule,
     if (os.path.exists(filepath_detail)) :header_detail=False
     else:header_detail=['cellIndex','gene_name','s0','u0','s1','u1','alpha','beta','gamma','cost']
 
-    brief.to_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv')),mode='a',header=header_brief,index=False)
-    detail.to_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv')),mode='a',header=header_detail,index=False)
+    header_detail=['cellIndex','gene_name','s0','u0','s1','u1','alpha','beta','gamma','cost']
+    
+    brief.to_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'_'+this_gene_name+'.csv')),mode='a',header=header_brief,index=False)
+    detail.to_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'_'+this_gene_name+'.csv')),mode='a',header=header_detail,index=False)
 
     return None
 
@@ -886,7 +883,17 @@ def train( # use train_thread # change name to velocity estiminate
                 patience=patience,
                 smooth_weight=smooth_weight)
             for data_index in range(data_len)) #for 循环里执行train_thread
-        
+    
+    import pandas as pd
+    import glob
+    import os
+    detail = os.path.join(result_path, "detail*.csv")
+    detail_files = glob.glob(files)
+
+    brief.to_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'_'+this_gene_name+'.csv')),mode='a',header=header_brief,index=False)
+    detail.to_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'_'+this_gene_name+'.csv')),mode='a',header=header_detail,index=False)
+
+
     brief=pd.read_csv(os.path.join(result_path, ('brief_e'+str(max_epoches)+'.csv')))
     detail=pd.read_csv(os.path.join(result_path, ('detail_e'+str(max_epoches)+'.csv')))
 
