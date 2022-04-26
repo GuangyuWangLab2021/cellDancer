@@ -17,8 +17,6 @@ def scatter_cell(
         ax,
         load_cellDancer, 
         save_path=None,
-        x=None,
-        y=None,
         custom_xlim=None,custom_ylim=None,
         colors=None, 
         alpha=0.5, s = 5,
