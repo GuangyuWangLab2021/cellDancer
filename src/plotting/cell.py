@@ -7,6 +7,7 @@ from matplotlib.pyplot import cm
 from matplotlib.colors import ListedColormap
 
 from scipy.stats import norm as normal
+from sklearn.neighbors import NearestNeighbors
 import bezier
 import numpy as np
 import pandas as pd
