@@ -54,6 +54,7 @@ def scatter_cell(
     `matplotlib.Axis` if `show==False`
     """
 
+    
     #   colors can be one of those:
     #   a dictionary of {cluster:color}
     #   a string of the column attribute (pseudotime, alpha, beta etc)
@@ -69,10 +70,12 @@ def scatter_cell(
     if isinstance(colors, list):
         #print("\nbuild a colormap for a list of clusters as input\n")
         colors = build_colormap(colors)
-    if isinstance(colors, dict):
+    
+    if isinstance(colors, dict):    
+        #print("here's the colors dict", colors)
         attr = 'clusters'
         legend_elements= [gen_Line2D(i, colors[i]) for i in colors]
-        c=np.vectorize(dicts.get)(extract_from_df(load_cellDancer, 'clusters', gene_name))
+        c=np.vectorize(colors.get)(extract_from_df(load_cellDancer, 'clusters', gene_name))
         cmap=ListedColormap(list(colors.keys()))
     elif isinstance(colors, str):
         attr = colors
@@ -93,9 +96,9 @@ def scatter_cell(
         
     
     embedding = extract_from_df(load_cellDancer, ['embedding1', 'embedding2'], gene_name)
-    velocity_embedding= extract_from_df(load_cellDancer, ['velocity_1', 'velocity_2'], gene_name)
+    velocity_embedding= extract_from_df(load_cellDancer, ['velocity1', 'velocity2'], gene_name)
     n_cells = embedding.shape[0]
-    sample_cells = load_cellDancer['velocity_1'][:n_cells].isna()
+    sample_cells = load_cellDancer['velocity1'][:n_cells].isna()
     embedding_ds = embedding[~sample_cells]
     
     ax.scatter(embedding[:, 0],
