@@ -75,18 +75,15 @@ def scatter_cell(
         attr = 'clusters'
         legend_elements= [gen_Line2D(i, colors[i]) for i in colors]
         c=np.vectorize(colors.get)(extract_from_df(load_cellDancer, 'clusters', gene_name))
-        #cmap=ListedColormap(list(colors.keys()))
-        cmap = LinearSegmentedColormap.from_list("mycmap", zissou2)
+        cmap=ListedColormap(list(colors.keys()))
     elif isinstance(colors, str):
         attr = colors
         if colors in ['alpha', 'beta', 'gamma']:
             assert gene_name, '\nError! gene_name is required!\n'
-            #cmap = ListedColormap(zissou2)
             cmap = LinearSegmentedColormap.from_list("mycmap", zissou2)
         if colors in ['spliced', 'unspliced']:
             assert gene_name, '\nError! gene_name is required!\n'
             colors = {'spliced':'s0', 'unspliced':'u0'}[colors]
-            #cmap = ListedColormap(fireworks3)
             cmap = LinearSegmentedColormap.from_list("mycmap", fireworks3)
         if colors in ['pseudotime']:
             cmap = 'viridis'
@@ -112,7 +109,6 @@ def scatter_cell(
                 vmax=vmax,
                 alpha=alpha,
                 edgecolor="none")
-    print("Hi")
 
     if velocity:
         grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass)

@@ -25,7 +25,8 @@ def scatter_gene(
     velocity=False,
     step = (15,15),
     gene_name=None,
-    legend='off'):
+    legend='off',
+    plot_cmap='off'):
     
     def gen_Line2D(label, markerfacecolor):
         return Line2D([0], [0], color='w', marker='o', label=label,
@@ -33,16 +34,26 @@ def scatter_gene(
             markeredgewidth=0,
             markersize=s)
     
-    assert gene_name, '\nError! gene_name is required!\n'
-
     if isinstance(colors, list):
         colors = build_colormap(colors)
 
     if isinstance(colors, dict):
         attr = 'clusters'
         legend_elements= [gen_Line2D(i, colors[i]) for i in colors]
+        if legend is not 'off':
+            lgd=ax.legend(handles=legend_elements,
+                bbox_to_anchor=(1.01, 1),
+                loc='upper left')
+            bbox_extra_artists=(lgd,)
+            if legend is 'only':
+                return lgd
+        else:
+            bbox_extra_artists=None
+
+        assert gene_name, '\nError! gene_name is required!\n'
         c=np.vectorize(colors.get)(extract_from_df(load_cellDancer, 'clusters', gene_name))
         cmap=ListedColormap(list(colors.keys()))
+
     elif isinstance(colors, str):
         attr = colors
         if colors in ['alpha', 'beta', 'gamma']:
@@ -53,6 +64,8 @@ def scatter_gene(
             cmap = ListedColormap(fireworks3)
         if colors in ['pseudotime']:
             cmap = 'viridis'
+
+        assert gene_name, '\nError! gene_name is required!\n'
         c = extract_from_df(load_cellDancer, [colors], gene_name)
     elif colors is None:
         attr = 'basic'
@@ -66,6 +79,7 @@ def scatter_gene(
         y = {'spliced':'s0', 'unspliced':'u0'}[y]
 
 
+    assert gene_name, '\nError! gene_name is required!\n'
     xy = extract_from_df(load_cellDancer, [x, y], gene_name)
     ax.scatter(xy[:, 0],
                xy[:, 1],
@@ -95,14 +109,6 @@ def scatter_gene(
                    u_s_downsample[:, 2]-u_s_downsample[:, 0],
                    angles='xy', clim=(0., 1.))
             
-    if isinstance(colors, dict) and legend in ['on']:
-        lgd=ax.legend(handles=legend_elements,
-                bbox_to_anchor=(1.01, 1),
-                loc='upper left')
-        bbox_extra_artists=(lgd,)
-    else:
-        bbox_extra_artists=None
-
     if save_path is not None:
         file_name_parts = [y+'-'+x, 'coloring-'+attr, gene_name]
         if velocity:

@@ -409,13 +409,26 @@ def cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
     w = list()
     
     # MAX_IGNORED_TIME_SHIFT is set to 50% of the shortest cluster.
-    MAX_IGNORED_TIME_SHIFT = 0.5 * min([max(unresolved_cell_time[cluster].values()) for
-        cluster in clusterIDs])
+    durations = list()
+    for cluster in clusterIDs:
+        time_cluster = unresolved_cell_time[cluster].values()
+        duration_cluster = max(time_cluster)-min(time_cluster)
+        durations.append(duration_cluster)
+    MAX_IGNORED_TIME_SHIFT = 0.5 * min(durations)
+
+    # Always no cycles if n_nodes <=2
+    if n_nodes < 3:
+        MAX_IGNORED_TIME_SHIFT = 0
+
+    # good chance no cycles if n_nodes = 3
+    if n_nodes == 3:
+        MAX_IGNORED_TIME_SHIFT = 0.1 * MAX_IGNORED_TIME_SHIFT
+
     for i,j in itertools.combinations(clusterIDs, 2):
         shiftT, overlap_cells = overlap_intercluster(cell_embedding, cell_fate, 
                 unresolved_cell_time, i, j, cutoff)
 
-        if shiftT:
+        if shiftT is not None:
             shiftT = 0 if abs(shiftT) < MAX_IGNORED_TIME_SHIFT else shiftT
 
             print("shift time is: ", shiftT, ".\nThe overlapping cells are:",
