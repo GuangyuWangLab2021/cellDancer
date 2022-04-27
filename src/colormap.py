@@ -163,3 +163,9 @@ colormap_pancreas={'Ductal':solarExtra02[0],
 'Delta':'green',
 'Epsilon':'#03B3B0'#'#e05780'#'#fcf300'
          }
+
+def build_colormap(cluster_list):
+    from itertools import cycle
+    color_list=grove2
+    colors = dict(zip(cluster_list, cycle(color_list)) if len(cluster_list) > len(color_list) else zip(cycle(cluster_list), color_list))
+    return colors
