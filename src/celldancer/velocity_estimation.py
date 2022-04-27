@@ -852,7 +852,7 @@ def train( # use train_thread # change name to velocity estiminate
     
     from utilities import tqdm_joblib
 
-    with tqdm_joblib(tqdm(desc="My calculation", total=data_len)) as progress_bar:
+    with tqdm_joblib(tqdm(desc="Velocity Estimation", total=data_len)) as progress_bar:
         result = Parallel(n_jobs=n_jobs, backend="loky")(
             delayed(_train_thread)(
                 datamodule = datamodule,
