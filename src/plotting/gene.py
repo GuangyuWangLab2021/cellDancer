@@ -84,7 +84,7 @@ def scatter_gene(
 
                                  
     if velocity:
-        assert (x,y) in [('spliced', 'unspliced'), ('unspliced', 'spliced')]
+        assert (x,y) in [('u0', 's0'), ('s0', 'u0')]
         u_s = extract_from_df(load_cellDancer, ['u0','s0','u1','s1'], gene_name)
         sampling_idx=sampling_neighbors(u_s[:,0:2], step=step, percentile=15) # Sampling
         u_s_downsample = u_s[sampling_idx,0:4]
