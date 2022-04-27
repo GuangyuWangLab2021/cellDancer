@@ -58,7 +58,7 @@ def _non_para_kernel_t4(X,Y,down_sample_idx):
                            )
     #X=merged.time
     #Y=merged.s0
-    print(kde.r_squared())
+    #print(kde.r_squared())
     n=X.shape[0]
 
     estimator = kde.fit(X)
@@ -126,10 +126,11 @@ def get_rsquare(load_cellDancer,gene_list,s0_merged_part_time,s0_merged_part_gen
     # PARALLEL thread
     from joblib import Parallel, delayed
     # run parallel
-    result = Parallel(n_jobs= -1, backend="loky")( # TODO: FIND suitable njobs
-        delayed(_non_para_kernel_t4)(s0_merged_part_time,s0_merged_part_gene[gene_list[gene_index]],sampled_idx)
-        for gene_index in range(0,len(gene_list)))
-    
+    with tqdm_joblib(tqdm(desc="Calculate rsquare", total=len(gene_list))) as progress_bar:
+        result = Parallel(n_jobs= -1, backend="loky")( # TODO: FIND suitable njobs
+            delayed(_non_para_kernel_t4)(s0_merged_part_time,s0_merged_part_gene[gene_list[gene_index]],sampled_idx)
+            for gene_index in range(0,len(gene_list)))
+
     # combine
     r_square_non_para_list_sort,non_para_fit_heat,non_para_fit_list=combine_parallel_result(result,gene_list,sampled_idx,s0_merged_part_time)
     
