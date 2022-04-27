@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from matplotlib.lines import Line2D
 from matplotlib.colors import ListedColormap
-from colormap import *
+from .colormap import *
 from sampling import sampling_neighbors
 from utilities import extract_from_df
 
@@ -25,7 +25,7 @@ def scatter_gene(
     velocity=False,
     step = (15,15),
     gene_name=None,
-    plot_legend='off'):
+    legend='off'):
     
     def gen_Line2D(label, markerfacecolor):
         return Line2D([0], [0], color='w', marker='o', label=label,
@@ -84,7 +84,7 @@ def scatter_gene(
 
                                  
     if velocity:
-        assert (x,y) in [('spliced', 'unspliced'), ('unspliced', 'spliced')]:
+        assert (x,y) in [('spliced', 'unspliced'), ('unspliced', 'spliced')]
         u_s = extract_from_df(load_cellDancer, ['u0','s0','u1','s1'], gene_name)
         sampling_idx=sampling_neighbors(u_s[:,0:2], step=step, percentile=15) # Sampling
         u_s_downsample = u_s[sampling_idx,0:4]
@@ -95,7 +95,7 @@ def scatter_gene(
                    u_s_downsample[:, 2]-u_s_downsample[:, 0],
                    angles='xy', clim=(0., 1.))
             
-    if isinstance(colors, dict) and plot_legend in ['on']:
+    if isinstance(colors, dict) and legend in ['on']:
         lgd=ax.legend(handles=legend_elements,
                 bbox_to_anchor=(1.01, 1),
                 loc='upper left')

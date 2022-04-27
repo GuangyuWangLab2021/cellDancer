@@ -12,14 +12,11 @@ import numpy as np
 if __name__ == "__main__":
     sys.path.append('.')
     from sampling import *
-    from colormap import *
 else:
     try:
         from .sampling import *
-        from .colormap import *
     except ImportError:
         from sampling import *
-        from colormap import *
 
 ####### organize code
 

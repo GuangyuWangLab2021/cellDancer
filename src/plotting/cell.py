@@ -2,25 +2,28 @@ import os
 import sys
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from matplotlib.colors import ListedColormap
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from scipy.stats import norm as normal
 import bezier
 import numpy as np
 import pandas as pd
-from colormap import *
+from .colormap import *
 from utilities import find_nn_neighbors, extract_from_df
 
 def scatter_cell(
         ax,
         load_cellDancer, 
         save_path=None,
-        custom_xlim=None,custom_ylim=None,
+        custom_xlim=None,
+        custom_ylim=None,
+        vmin=None,
+        vmax=None,
         colors=None, 
-        alpha=0.5, s = 5,
+        alpha=0.5, 
+        s = 5,
         velocity=False,
         gene_name=None,
-        #add_amt_gene=2000,
-        #mode='embedding',
+        legend='off',
         min_mass=2,
         grid_steps=(30,30)): 
 
@@ -67,21 +70,24 @@ def scatter_cell(
         #print("\nbuild a colormap for a list of clusters as input\n")
         colors = build_colormap(colors)
     
-    if isinstance(colors, dict):    
+    if isinstance(colors, dict): 
         #print("here's the colors dict", colors)
         attr = 'clusters'
         legend_elements= [gen_Line2D(i, colors[i]) for i in colors]
         c=np.vectorize(colors.get)(extract_from_df(load_cellDancer, 'clusters', gene_name))
-        cmap=ListedColormap(list(colors.keys()))
+        #cmap=ListedColormap(list(colors.keys()))
+        cmap = LinearSegmentedColormap.from_list("mycmap", zissou2)
     elif isinstance(colors, str):
         attr = colors
         if colors in ['alpha', 'beta', 'gamma']:
             assert gene_name, '\nError! gene_name is required!\n'
-            cmap = ListedColormap(zissou2)
+            #cmap = ListedColormap(zissou2)
+            cmap = LinearSegmentedColormap.from_list("mycmap", zissou2)
         if colors in ['spliced', 'unspliced']:
             assert gene_name, '\nError! gene_name is required!\n'
             colors = {'spliced':'s0', 'unspliced':'u0'}[colors]
-            cmap = ListedColormap(fireworks3)
+            #cmap = ListedColormap(fireworks3)
+            cmap = LinearSegmentedColormap.from_list("mycmap", fireworks3)
         if colors in ['pseudotime']:
             cmap = 'viridis'
         c = extract_from_df(load_cellDancer, [colors], gene_name)
@@ -97,13 +103,16 @@ def scatter_cell(
     sample_cells = load_cellDancer['velocity1'][:n_cells].isna()
     embedding_ds = embedding[~sample_cells]
     
-    ax.scatter(embedding[:, 0],
+    im=ax.scatter(embedding[:, 0],
                 embedding[:, 1],
                 c=c,
                 cmap=cmap,
                 s=s,
+                vmin=vmin,
+                vmax=vmax,
                 alpha=alpha,
                 edgecolor="none")
+    print("Hi")
 
     if velocity:
         grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass)
@@ -113,7 +122,7 @@ def scatter_cell(
     if custom_ylim is not None:
         ax.set_ylim(custom_ylim[0], custom_ylim[1])
     
-    if isinstance(colors, dict):
+    if isinstance(colors, dict) and legend is 'on':
         lgd=ax.legend(handles=legend_elements, 
                 bbox_to_anchor=(1.01, 1), 
                 loc='upper left')
@@ -121,7 +130,6 @@ def scatter_cell(
     else:
         bbox_extra_artists=None
     
-
     if save_path is not None:
         file_name_parts = ['embedding', attr, gene_name]
         if velocity:
@@ -134,7 +142,7 @@ def scatter_cell(
                 bbox_inches='tight',
                 bbox_extra_artists=bbox_extra_artists)
         
-    return ax
+    return im
 
 
 # Source - https://github.com/velocyto-team/velocyto.py/blob/0963dd2df0ac802c36404e0f434ba97f07edfe4b/velocyto/analysis.py
@@ -266,7 +274,7 @@ def grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass):
                                         [XYM[i, 1]-UVT[i, 1]-UVT2[i, 1], XYM[i, 1]-UVT[i, 1], XYM[i, 1], XYM[i, 1]+UVH[i, 1], XYM[i, 1]+UVH[i, 1]+UVH2[i, 1]]])
             curve = bezier.Curve(nodes, degree=4)
             curve_dots = curve.evaluate_multi(s_vals)
-            plt.plot(curve_dots[0], curve_dots[1],
+            ax.plot(curve_dots[0], curve_dots[1],
                         linewidth=0.5, color='black', alpha=1)
 
             # normalize the arrow of the last two points at the tail, to let all arrows has the same size in quiver
