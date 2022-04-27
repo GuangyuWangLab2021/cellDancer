@@ -6,6 +6,27 @@ from scipy.sparse import csr_matrix
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 
+# progress bar
+import contextlib
+import joblib
+from tqdm import tqdm
+
+@contextlib.contextmanager
+def tqdm_joblib(tqdm_object):
+    """Context manager to patch joblib to report into tqdm progress bar given as argument"""
+    class TqdmBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
+        def __call__(self, *args, **kwargs):
+            tqdm_object.update(n=self.batch_size)
+            return super().__call__(*args, **kwargs)
+
+    old_batch_callback = joblib.parallel.BatchCompletionCallBack
+    joblib.parallel.BatchCompletionCallBack = TqdmBatchCompletionCallback
+    try:
+        yield tqdm_object
+    finally:
+        joblib.parallel.BatchCompletionCallBack = old_batch_callback
+        tqdm_object.close()
+# end - progress bar
 
 ######### pseudotime rsquare
 
@@ -37,7 +58,7 @@ def _non_para_kernel_t4(X,Y,down_sample_idx):
                            )
     #X=merged.time
     #Y=merged.s0
-    print(kde.r_squared())
+    #print(kde.r_squared())
     n=X.shape[0]
 
     estimator = kde.fit(X)
@@ -57,8 +78,7 @@ def getidx_downSampling_embedding(load_cellDancer,cell_choice=None):
     idx_downSampling_embedding = sampling_embedding(embedding,
                 para='neighbors',
                 target_amount=0,
-                step_i=30,
-                step_j=30 # TODO: default is 30 
+                step=(30,30) # TODO: default is 30 
                 )
     
     if cell_choice is None:
@@ -106,10 +126,11 @@ def get_rsquare(load_cellDancer,gene_list,s0_merged_part_time,s0_merged_part_gen
     # PARALLEL thread
     from joblib import Parallel, delayed
     # run parallel
-    result = Parallel(n_jobs= -1, backend="loky")( # TODO: FIND suitable njobs
-        delayed(_non_para_kernel_t4)(s0_merged_part_time,s0_merged_part_gene[gene_list[gene_index]],sampled_idx)
-        for gene_index in range(0,len(gene_list)))
-    
+    with tqdm_joblib(tqdm(desc="Calculate rsquare", total=len(gene_list))) as progress_bar:
+        result = Parallel(n_jobs= -1, backend="loky")( # TODO: FIND suitable njobs
+            delayed(_non_para_kernel_t4)(s0_merged_part_time,s0_merged_part_gene[gene_list[gene_index]],sampled_idx)
+            for gene_index in range(0,len(gene_list)))
+
     # combine
     r_square_non_para_list_sort,non_para_fit_heat,non_para_fit_list=combine_parallel_result(result,gene_list,sampled_idx,s0_merged_part_time)
     
