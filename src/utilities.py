@@ -6,6 +6,27 @@ from scipy.sparse import csr_matrix
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 
+# progress bar
+import contextlib
+import joblib
+from tqdm import tqdm
+
+@contextlib.contextmanager
+def tqdm_joblib(tqdm_object):
+    """Context manager to patch joblib to report into tqdm progress bar given as argument"""
+    class TqdmBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
+        def __call__(self, *args, **kwargs):
+            tqdm_object.update(n=self.batch_size)
+            return super().__call__(*args, **kwargs)
+
+    old_batch_callback = joblib.parallel.BatchCompletionCallBack
+    joblib.parallel.BatchCompletionCallBack = TqdmBatchCompletionCallback
+    try:
+        yield tqdm_object
+    finally:
+        joblib.parallel.BatchCompletionCallBack = old_batch_callback
+        tqdm_object.close()
+# end - progress bar
 
 ######### pseudotime rsquare
 
@@ -57,8 +78,7 @@ def getidx_downSampling_embedding(load_cellDancer,cell_choice=None):
     idx_downSampling_embedding = sampling_embedding(embedding,
                 para='neighbors',
                 target_amount=0,
-                step_i=30,
-                step_j=30 # TODO: default is 30 
+                step=(30,30) # TODO: default is 30 
                 )
     
     if cell_choice is None:
