@@ -89,7 +89,6 @@ def compute_cell_velocity(load_cellDancer,
         gene_choice=gene_list
 
     load_cellDancer_input = load_cellDancer[load_cellDancer.gene_name.isin(gene_choice)]
-
     data_df = load_cellDancer_input[['gene_name', 'u0', 's0', 'cellID','embedding1', 'embedding2']]
     # random.seed(10)
     embedding_downsampling, sampling_ixs, knn_embedding = downsampling_embedding(data_df,
@@ -120,9 +119,9 @@ def compute_cell_velocity(load_cellDancer,
             embedding[sampling_ixs, :], 
             knn_embedding)
 
-    index_gene_choice = load_cellDancer_input[load_cellDancer_input.cellIndex.isin(sampling_ixs)].index
-    load_cellDancer.loc[index_gene_choice,'velocity1'] = np.tile(velocity_embedding[:,0], len(gene_choice))
-    load_cellDancer.loc[index_gene_choice,'velocity2'] = np.tile(velocity_embedding[:,1], len(gene_choice))
+    sampling_ixs_all_genes = load_cellDancer[load_cellDancer.cellIndex.isin(sampling_ixs)].index
+    load_cellDancer.loc[sampling_ixs_all_genes,'velocity1'] = np.tile(velocity_embedding[:,0], len(gene_choice))
+    load_cellDancer.loc[sampling_ixs_all_genes,'velocity2'] = np.tile(velocity_embedding[:,1], len(gene_choice))
 
 def corr_coeff(ematrix, vmatrix, i):
         '''

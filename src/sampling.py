@@ -6,8 +6,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-
-
 def sampling_neighbors(gene_u0_s0,step=(30,30),percentile=25): # current version will obtain ~100 cells. e.g. Ntrk2:109; Tmem163:104
     #step 250 will got 4000 from den data 
     from scipy.stats import norm

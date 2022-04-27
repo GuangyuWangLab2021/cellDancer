@@ -1,17 +1,14 @@
 import os
 import sys
 import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
-from matplotlib.pyplot import cm
 from matplotlib.colors import ListedColormap
-
 from scipy.stats import norm as normal
-from sklearn.neighbors import NearestNeighbors
 import bezier
 import numpy as np
 import pandas as pd
 from colormap import *
+from utilities import find_nn_neighbors, extract_from_df
 
 def scatter_cell(
         ax,
@@ -140,32 +137,6 @@ def scatter_cell(
     return ax
 
 
-
-# PENGZHI -> Move this to utilities
-def find_neighbors(data, gridpoints_coordinates, n_neighbors, radius=1):
-    nn = NearestNeighbors(n_neighbors=n_neighbors, radius=1, n_jobs=-1)
-    nn.fit(data)
-    dists, neighs = nn.kneighbors(gridpoints_coordinates)
-    return(dists, neighs)
-
-def extract_from_df(load_cellDancer, attr_list, gene_name):
-    ''' 
-    Extract a single copy of a list of columns from the load_cellDancer data frame
-    Returns a numpy array.
-    '''
-    if gene_name is None:
-        gene_name = load_cellDancer.gene_name[0]
-    one_gene_idx = load_cellDancer.gene_name == gene_name
-    data = load_cellDancer[one_gene_idx][attr_list].dropna()
-    return data.to_numpy()
-
-def build_colormap(cluster_list):
-        from itertools import cycle
-        color_list=grove2.copy()
-        colors = dict(zip(cluster_list, cycle(color_list)) if len(cluster_list) > len(color_list) else zip(cycle(cluster_list), color_list))
-        return colors
-
-
 # Source - https://github.com/velocyto-team/velocyto.py/blob/0963dd2df0ac802c36404e0f434ba97f07edfe4b/velocyto/analysis.py
 def grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass):
 # calculate_grid_arrows
@@ -186,9 +157,9 @@ def grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass):
             [i.flat for i in meshes_tuple]).T
 
         n_neighbors = int(velocity_embedding.shape[0]/3)
-        dists_head, neighs_head = find_neighbors(
+        dists_head, neighs_head = find_nn_neighbors(
             embedding_ds, gridpoints_coordinates, n_neighbors, radius=1)
-        dists_tail, neighs_tail = find_neighbors(
+        dists_tail, neighs_tail = find_nn_neighbors(
             embedding_ds+velocity_embedding, gridpoints_coordinates, n_neighbors, radius=1)
         std = np.mean([(g[1] - g[0]) for g in grs])
 
@@ -208,9 +179,9 @@ def grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass):
 
         XY = gridpoints_coordinates
 
-        dists_head2, neighs_head2 = find_neighbors(
+        dists_head2, neighs_head2 = find_nn_neighbors(
             embedding_ds, XY+UZ_head, n_neighbors, radius=1)
-        dists_tail2, neighs_tail2 = find_neighbors(
+        dists_tail2, neighs_tail2 = find_nn_neighbors(
             embedding_ds, XY-UZ_tail, n_neighbors, radius=1)
 
         gaussian_w_head2 = normal.pdf(

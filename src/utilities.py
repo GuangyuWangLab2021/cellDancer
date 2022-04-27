@@ -4,6 +4,7 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 import pandas as pd
+from sklearn.neighbors import NearestNeighbors
 
 
 ######### pseudotime rsquare
@@ -394,6 +395,26 @@ def moments(adata):
     #adata.obs.index.tolist(), adata.var.index.tolist())
     adata.layers["Mu"] = csr_matrix.dot(connect, csr_matrix(adata.layers["unspliced"])).astype(np.float32).A
     adata.layers["Ms"] = csr_matrix.dot(connect, csr_matrix(adata.layers["spliced"])).astype(np.float32).A
+
+
+# PENGZHI -> Moved this to utilities
+def find_nn_neighbors(data, gridpoints_coordinates, n_neighbors, radius=1):
+    nn = NearestNeighbors(n_neighbors=n_neighbors, radius=1, n_jobs=-1)
+    nn.fit(data)
+    dists, neighs = nn.kneighbors(gridpoints_coordinates)
+    return(dists, neighs)
+
+def extract_from_df(load_cellDancer, attr_list, gene_name):
+    '''
+    Extract a single copy of a list of columns from the load_cellDancer data frame
+    Returns a numpy array.
+    '''
+    if gene_name is None:
+        gene_name = load_cellDancer.gene_name[0]
+    one_gene_idx = load_cellDancer.gene_name == gene_name
+    data = load_cellDancer[one_gene_idx][attr_list].dropna()
+    return data.to_numpy()
+
 
 def set_rcParams(fontsize=12): 
     try:
