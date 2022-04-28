@@ -849,31 +849,11 @@ def train( # use train_thread # change name to velocity estiminate
 
     shutil.rmtree(os.path.join(result_path,'TEMP'))
     os.mkdir(os.path.join(result_path,'TEMP'))
-
-    # progress bar
-    import contextlib
-    import joblib
-    from tqdm import tqdm
-
-    @contextlib.contextmanager
-    def tqdm_joblib(tqdm_object):
-        """Context manager to patch joblib to report into tqdm progress bar given as argument"""
-        class TqdmBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
-            def __call__(self, *args, **kwargs):
-                tqdm_object.update(n=self.batch_size)
-                return super().__call__(*args, **kwargs)
-
-        old_batch_callback = joblib.parallel.BatchCompletionCallBack
-        joblib.parallel.BatchCompletionCallBack = TqdmBatchCompletionCallback
-        try:
-            yield tqdm_object
-        finally:
-            joblib.parallel.BatchCompletionCallBack = old_batch_callback
-            tqdm_object.close()
-    # end - progress bar
     
-
-    with tqdm_joblib(tqdm(desc="My calculation", total=data_len)) as progress_bar:
+    from utilities import tqdm_joblib
+    from tqdm import tqdm
+    
+    with tqdm_joblib(tqdm(desc="Velocity Estimation", total=data_len)) as progress_bar:
         result = Parallel(n_jobs=n_jobs, backend="loky")(
             delayed(_train_thread)(
                 datamodule = datamodule,

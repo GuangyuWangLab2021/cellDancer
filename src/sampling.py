@@ -161,7 +161,7 @@ def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,transfe
                     step=step)
     else:
         idx_downSampling_embedding=range(0,embedding.shape[0]) # all cells
-    
+    # TODO GENE MODE TRANSFER
     def transfer(data_df,transfer_mode):
         #print('tranfer mode: '+str(transfer_mode))
         if transfer_mode=='log':

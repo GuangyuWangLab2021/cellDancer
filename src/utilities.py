@@ -137,21 +137,7 @@ def get_rsquare(load_cellDancer,gene_list,s0_merged_part_time,s0_merged_part_gen
     
     return (r_square_non_para_list_sort,non_para_fit_heat,non_para_fit_list,sampled_idx)
 
-def rank_rsquare(load_cellDancer,gene_list=None,cluster_choice=None):
-    cell_time=load_cellDancer[load_cellDancer.gene_name==load_cellDancer.gene_name[0]][['cellIndex','pseudotime']]
-    s0_merged_part_gene,s0_merged_part_time=get_gene_s0_by_time(cell_time,load_cellDancer)
-    
-    onegene=load_cellDancer[load_cellDancer.gene_name==load_cellDancer.gene_name[0]]
-    
-    if cluster_choice is None:
-        cluster_choice=list(onegene.clusters.drop_duplicates())
-    cell_idx=list(onegene[onegene.clusters.isin(cluster_choice)].cellIndex)
-    
-    if gene_list is None:
-        gene_list=s0_merged_part_gene.columns
 
-        r_square_non_para_list_sort,non_para_fit_heat,non_para_fit_list,sampled_idx=get_rsquare(load_cellDancer,gene_list,s0_merged_part_time,s0_merged_part_gene,cell_choice=cell_idx)
-    return(r_square_non_para_list_sort)
 ######### pseudotime rsquare
 
 
@@ -168,6 +154,22 @@ def get_gene_s0_by_time(cell_time,load_cellDancer): # pseudotime
     s0_merged_part_time=s0_merged.loc[:, s0_merged.columns[0:2]]
     
     return(s0_merged_part_gene,s0_merged_part_time)
+
+def rank_rsquare(load_cellDancer,gene_list=None,cluster_choice=None):
+    cell_time=load_cellDancer[load_cellDancer.gene_name==load_cellDancer.gene_name[0]][['cellIndex','pseudotime']]
+    s0_merged_part_gene,s0_merged_part_time=get_gene_s0_by_time(cell_time,load_cellDancer)
+    
+    onegene=load_cellDancer[load_cellDancer.gene_name==load_cellDancer.gene_name[0]]
+    
+    if cluster_choice is None:
+        cluster_choice=list(onegene.clusters.drop_duplicates())
+    cell_idx=list(onegene[onegene.clusters.isin(cluster_choice)].cellIndex)
+    
+    if gene_list is None:
+        gene_list=s0_merged_part_gene.columns
+    r_square_non_para_list_sort,non_para_fit_heat,non_para_fit_list,sampled_idx=get_rsquare(load_cellDancer,gene_list,s0_merged_part_time,s0_merged_part_gene,cell_choice=cell_idx)
+    return(r_square_non_para_list_sort[['gene_name','r_square']].reset_index(drop=True))
+
 
 def adata_to_raw_with_embed(adata,save_path,gene_list=None):
     '''convert adata to raw data format with embedding info

@@ -4,9 +4,32 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 import pandas as pd
+from sklearn.neighbors import NearestNeighbors
 
+# progress bar
+import contextlib
+import joblib
+from tqdm import tqdm
+
+@contextlib.contextmanager
+def tqdm_joblib(tqdm_object):
+    """Context manager to patch joblib to report into tqdm progress bar given as argument"""
+    class TqdmBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
+        def __call__(self, *args, **kwargs):
+            tqdm_object.update(n=self.batch_size)
+            return super().__call__(*args, **kwargs)
+
+    old_batch_callback = joblib.parallel.BatchCompletionCallBack
+    joblib.parallel.BatchCompletionCallBack = TqdmBatchCompletionCallback
+    try:
+        yield tqdm_object
+    finally:
+        joblib.parallel.BatchCompletionCallBack = old_batch_callback
+        tqdm_object.close()
+# end - progress bar
 
 ######### pseudotime rsquare
+from statsmodels.nonparametric.kernel_regression import KernelReg
 
 def _non_para_kernel_t4(X,Y,down_sample_idx):
     # (no first cls),pseudotime r square calculation
@@ -26,46 +49,46 @@ def _non_para_kernel_t4(X,Y,down_sample_idx):
     # Y = pd.DataFrame(np.sin(X)+np.random.normal(loc = 0, scale = 0.5, size = (100,1)))
     from statsmodels.nonparametric.kernel_regression import KernelReg
     import matplotlib.pyplot as plt
-    Y=Y[X['index'].isin(down_sample_idx)]
-    X=X[X['index'].isin(down_sample_idx)].time
-    kde=KernelReg(endog=Y,
-                           exog=X,
+    print('_non_para_kernel_t4')
+    Y_sampled=Y[X['index'].isin(down_sample_idx)]
+    X_sampled=X[X['index'].isin(down_sample_idx)].time
+    kde=KernelReg(endog=Y_sampled,
+                           exog=X_sampled,
                            var_type='c',#变量的类型
                            #ckertype='gaussian',#用于连续变量的内核
                            #bw='cv_ls'#带宽，数值：指定带宽； ‘cv_ls’：最小二乘交叉验证； ‘aic’：AIC Hurvich带宽估计
                            )
     #X=merged.time
     #Y=merged.s0
-    print(kde.r_squared())
-    n=X.shape[0]
+    #print(kde.r_squared())
+    n=X_sampled.shape[0]
 
-    estimator = kde.fit(X)
+    estimator = kde.fit(X_sampled)
     estimator = np.reshape(estimator[0],[n,1])
 
     return(estimator,kde.r_squared())
 
 def getidx_downSampling_embedding(load_cellDancer,cell_choice=None):
     # find the origional id
+
     if cell_choice is not None:
         load_cellDancer=load_cellDancer[load_cellDancer.cellIndex.isin(cell_choice)]
         
     embedding=load_cellDancer.loc[load_cellDancer.gene_name==list(load_cellDancer.gene_name)[0]][['embedding1','embedding2']]
-    
+
     # get transfer id
     from sampling import sampling_embedding
     idx_downSampling_embedding = sampling_embedding(embedding,
                 para='neighbors',
                 target_amount=0,
-                step_i=30,
-                step_j=30 # TODO: default is 30 
+                step=(30,30) # TODO: default is 30 
                 )
-    
     if cell_choice is None:
         return(idx_downSampling_embedding)
     else:
         # transfer to the id of origional all detail list
-        onegene=load_cellDancer[load_cellDancer.gene_name==list(load_cellDancer.gene_name)[0]]
-        onegene.loc[:,['transfer_id']]=range(len(onegene))
+        onegene=load_cellDancer[load_cellDancer.gene_name==list(load_cellDancer.gene_name)[0]].copy()
+        onegene.loc[:,'transfer_id']=range(len(onegene))
         sampled_left=onegene[onegene.transfer_id.isin(idx_downSampling_embedding)]
         transfered_index=sampled_left.cellIndex
         return(transfered_index)
@@ -101,18 +124,20 @@ def get_rsquare(load_cellDancer,gene_list,s0_merged_part_time,s0_merged_part_gen
     # downsample
     sampled_idx=getidx_downSampling_embedding(load_cellDancer,cell_choice=cell_choice)
     
-    
     # PARALLEL thread
     from joblib import Parallel, delayed
     # run parallel
-    result = Parallel(n_jobs= -1, backend="loky")( # TODO: FIND suitable njobs
-        delayed(_non_para_kernel_t4)(s0_merged_part_time,s0_merged_part_gene[gene_list[gene_index]],sampled_idx)
-        for gene_index in range(0,len(gene_list)))
-    
+    with tqdm_joblib(tqdm(desc="Calculate rsquare", total=len(gene_list))) as progress_bar:
+        result = Parallel(n_jobs= -1, backend="loky")( # TODO: FIND suitable njobs
+            delayed(_non_para_kernel_t4)(s0_merged_part_time,s0_merged_part_gene[gene_list[gene_index]],sampled_idx)
+            for gene_index in range(0,len(gene_list)))
+
     # combine
     r_square_non_para_list_sort,non_para_fit_heat,non_para_fit_list=combine_parallel_result(result,gene_list,sampled_idx,s0_merged_part_time)
     
     return (r_square_non_para_list_sort,non_para_fit_heat,non_para_fit_list,sampled_idx)
+
+
 ######### pseudotime rsquare
 
 
@@ -129,6 +154,22 @@ def get_gene_s0_by_time(cell_time,load_cellDancer): # pseudotime
     s0_merged_part_time=s0_merged.loc[:, s0_merged.columns[0:2]]
     
     return(s0_merged_part_gene,s0_merged_part_time)
+
+def rank_rsquare(load_cellDancer,gene_list=None,cluster_choice=None):
+    cell_time=load_cellDancer[load_cellDancer.gene_name==load_cellDancer.gene_name[0]][['cellIndex','pseudotime']]
+    s0_merged_part_gene,s0_merged_part_time=get_gene_s0_by_time(cell_time,load_cellDancer)
+    
+    onegene=load_cellDancer[load_cellDancer.gene_name==load_cellDancer.gene_name[0]]
+    
+    if cluster_choice is None:
+        cluster_choice=list(onegene.clusters.drop_duplicates())
+    cell_idx=list(onegene[onegene.clusters.isin(cluster_choice)].cellIndex)
+    
+    if gene_list is None:
+        gene_list=s0_merged_part_gene.columns
+    r_square_non_para_list_sort,non_para_fit_heat,non_para_fit_list,sampled_idx=get_rsquare(load_cellDancer,gene_list,s0_merged_part_time,s0_merged_part_gene,cell_choice=cell_idx)
+    return(r_square_non_para_list_sort[['gene_name','r_square']].reset_index(drop=True))
+
 
 def adata_to_raw_with_embed(adata,save_path,gene_list=None):
     '''convert adata to raw data format with embedding info
@@ -394,6 +435,26 @@ def moments(adata):
     #adata.obs.index.tolist(), adata.var.index.tolist())
     adata.layers["Mu"] = csr_matrix.dot(connect, csr_matrix(adata.layers["unspliced"])).astype(np.float32).A
     adata.layers["Ms"] = csr_matrix.dot(connect, csr_matrix(adata.layers["spliced"])).astype(np.float32).A
+
+
+# PENGZHI -> Moved this to utilities
+def find_nn_neighbors(data, gridpoints_coordinates, n_neighbors, radius=1):
+    nn = NearestNeighbors(n_neighbors=n_neighbors, radius=1, n_jobs=-1)
+    nn.fit(data)
+    dists, neighs = nn.kneighbors(gridpoints_coordinates)
+    return(dists, neighs)
+
+def extract_from_df(load_cellDancer, attr_list, gene_name):
+    '''
+    Extract a single copy of a list of columns from the load_cellDancer data frame
+    Returns a numpy array.
+    '''
+    if gene_name is None:
+        gene_name = load_cellDancer.gene_name[0]
+    one_gene_idx = load_cellDancer.gene_name == gene_name
+    data = load_cellDancer[one_gene_idx][attr_list].dropna()
+    return data.to_numpy()
+
 
 def set_rcParams(fontsize=12): 
     try:
