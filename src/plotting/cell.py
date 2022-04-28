@@ -344,7 +344,3 @@ def plot_para_umap(ax,para,load_cellDancer,gene_name=None,umap_n=25,cluster_map=
         plt.savefig(save_path,bbox_inches='tight',bbox_extra_artists=(lgd,))
     umap_df=pd.concat([pd.DataFrame({'umap1':umap_para[:,0],'umap2':umap_para[:,1]})],axis=1)
     return(umap_df,ax)
-<<<<<<< HEAD
-    
-=======
->>>>>>> bd7f71358cd415aae17af6c57d29b64c1116ca69
