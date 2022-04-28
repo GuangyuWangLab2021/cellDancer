@@ -3,6 +3,7 @@ import sys
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 from scipy.stats import norm as normal
 import bezier
 import numpy as np
@@ -24,6 +25,7 @@ def scatter_cell(
         velocity=False,
         gene_name=None,
         legend='off',
+        colorbar='on',
         min_mass=2,
         grid_steps=(30,30)): 
 
@@ -97,6 +99,7 @@ def scatter_cell(
         if colors in ['pseudotime']:
             cmap = 'viridis'
         c = extract_from_df(load_cellDancer, [colors], gene_name)
+        
     elif colors is None:
         attr = 'basic'
         cmap = None
@@ -117,6 +120,12 @@ def scatter_cell(
                 vmax=vmax,
                 alpha=alpha,
                 edgecolor="none")
+    if colorbar is 'on' and  isinstance(colors, str):
+        ax_divider = make_axes_locatable(ax)
+        cax = ax_divider.append_axes("top", size="5%", pad="-5%")
+
+        cbar = plt.colorbar(im, cax=cax, orientation="horizontal", shrink=0.1)
+        cbar.set_ticks([])
 
     if velocity:
         velocity_embedding= extract_from_df(load_cellDancer, ['velocity1', 'velocity2'], gene_name)
@@ -127,13 +136,6 @@ def scatter_cell(
     if custom_ylim is not None:
         ax.set_ylim(custom_ylim[0], custom_ylim[1])
     
-    if isinstance(colors, dict) and legend is 'on':
-        lgd=ax.legend(handles=legend_elements, 
-                bbox_to_anchor=(1.01, 1), 
-                loc='upper left')
-        bbox_extra_artists=(lgd,)
-    else:
-        bbox_extra_artists=None
     
     if save_path is not None:
         file_name_parts = ['embedding', attr, gene_name]
@@ -143,8 +145,9 @@ def scatter_cell(
         save_file_name = os.path.join(save_path, "_".join(file_name_parts)+'.pdf')
         
         print("saved the file as", save_file_name)
+        extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
         plt.savefig(save_file_name, 
-                bbox_inches='tight',
+                bbox_inches=extent,
                 bbox_extra_artists=bbox_extra_artists)
         
     return im
@@ -272,7 +275,6 @@ def grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass):
     UVH2 = UZ_head2_filtered * norm_ratio
 
     def plot_cell_velocity_curve(XYM, UVT, UVH, UVT2, UVH2, s_vals):
-        #plt.axis('equal')
         # TO DO: add 'colorful cell velocity' to here, now there is only curve arrows
         for i in range(n_curves):
             nodes = np.asfortranarray([[XYM[i, 0]-UVT[i, 0]-UVT2[i, 0], XYM[i, 0]-UVT[i, 0], XYM[i, 0], XYM[i, 0]+UVH[i, 0], XYM[i, 0]+UVH[i, 0]+UVH2[i, 0]],
