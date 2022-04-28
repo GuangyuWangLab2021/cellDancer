@@ -70,10 +70,19 @@ def scatter_cell(
         #print("\nbuild a colormap for a list of clusters as input\n")
         colors = build_colormap(colors)
     
-    if isinstance(colors, dict): 
-        #print("here's the colors dict", colors)
+    if isinstance(colors, dict):
         attr = 'clusters'
         legend_elements= [gen_Line2D(i, colors[i]) for i in colors]
+        if legend is not 'off':
+            lgd=ax.legend(handles=legend_elements,
+                bbox_to_anchor=(1.01, 1),
+                loc='upper left')
+            bbox_extra_artists=(lgd,)
+            if legend is 'only':
+                return lgd
+        else:
+            bbox_extra_artists=None
+
         c=np.vectorize(colors.get)(extract_from_df(load_cellDancer, 'clusters', gene_name))
         cmap=ListedColormap(list(colors.keys()))
     elif isinstance(colors, str):
@@ -95,7 +104,6 @@ def scatter_cell(
         
     
     embedding = extract_from_df(load_cellDancer, ['embedding1', 'embedding2'], gene_name)
-    velocity_embedding= extract_from_df(load_cellDancer, ['velocity1', 'velocity2'], gene_name)
     n_cells = embedding.shape[0]
     sample_cells = load_cellDancer['velocity1'][:n_cells].isna()
     embedding_ds = embedding[~sample_cells]
@@ -111,6 +119,7 @@ def scatter_cell(
                 edgecolor="none")
 
     if velocity:
+        velocity_embedding= extract_from_df(load_cellDancer, ['velocity1', 'velocity2'], gene_name)
         grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass)
 
     if custom_xlim is not None:

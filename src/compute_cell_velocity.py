@@ -119,6 +119,7 @@ def compute_cell_velocity(load_cellDancer,
     sampling_ixs_all_genes = load_cellDancer[load_cellDancer.cellIndex.isin(sampling_ixs)].index
     load_cellDancer.loc[sampling_ixs_all_genes,'velocity1'] = np.tile(velocity_embedding[:,0], len(gene_choice))
     load_cellDancer.loc[sampling_ixs_all_genes,'velocity2'] = np.tile(velocity_embedding[:,1], len(gene_choice))
+    print("after downsampling, there are ", len(sampling_ixs), "cells.")
 
 def corr_coeff(ematrix, vmatrix, i):
         '''

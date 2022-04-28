@@ -254,7 +254,7 @@ def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,transfe
         #         elif i=='log10'
     
 
-    n_neighbors = min((embedding_downsampling.shape[0]-1), n_neighbors)
+    n_neighbors = min(int((embedding_downsampling.shape[0])/4), n_neighbors)
     nn = NearestNeighbors(n_neighbors=n_neighbors) #modify
     nn.fit(embedding_downsampling)  # NOTE should support knn in high dimensions
     embedding_knn = nn.kneighbors_graph(mode="connectivity")
