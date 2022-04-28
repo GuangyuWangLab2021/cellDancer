@@ -293,13 +293,21 @@ def grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass):
     plot_cell_velocity_curve(XYM, UVT, UVH, UVT2, UVH2, s_vals)
     ############ end --- plot the curve arrow for cell velocity ############
 
-def plot_para_umap(ax,para_df,load_cellDancer,umap_n=25,colormap=None,save_path=None,title=None,legend_annotation=False):
+def plot_para_umap(ax,para,load_cellDancer,gene_name=None,umap_n=25,cluster_map=None,save_path=None,title=None,legend_annotation=False):
+    
     
     import umap
-    # cellID = data_df.loc[data_df['gene_list']==gene]['cellID']
-    # data_df_pivot=data_df.pivot(index='cellID', columns='gene_list', values='s0').reindex(cellID)
-    # embedding_downsampling_0 = data_df_pivot.iloc[idx_downSampling_embedding]
     
+    if para=='alpha' or para=='beta' or para=='gamma':
+        para_df=load_cellDancer.pivot(index='cellIndex', columns='gene_name', values=para)
+    elif para=='alpha_beta_gamma':
+        alpha_df=load_cellDancer.pivot(index='cellIndex', columns='gene_name', values='alpha')
+        beta_df=load_cellDancer.pivot(index='cellIndex', columns='gene_name', values='beta')
+        gamma_df=load_cellDancer.pivot(index='cellIndex', columns='gene_name', values='gamma')
+        para_df=pd.concat([alpha_df,beta_df,gamma_df],axis=1)
+    else:
+        print('para should be set in one of alpha, beta, gamma, or alpha_beta_gamma.')
+
     def get_umap(df,n_neighbors=umap_n, min_dist=0.1, n_components=2, metric='euclidean'): 
         fit = umap.UMAP(
             n_neighbors=n_neighbors,
@@ -311,22 +319,32 @@ def plot_para_umap(ax,para_df,load_cellDancer,umap_n=25,colormap=None,save_path=
         return(embed)
     umap_para=get_umap(para_df)
     
+    
     onegene_cluster_info=load_cellDancer[load_cellDancer.gene_name==load_cellDancer.gene_name[0]].clusters
-    
-    if colormap is None:
-        colormap=build_colormap(onegene_cluster_info)
-    
-    colors = list(map(lambda x: colormap.get(x, 'black'), onegene_cluster_info))
-    
+
+    if cluster_map is None:
+        from plotting.colormap import build_colormap
+        cluster_map=build_colormap(onegene_cluster_info)
+
+    colors = list(map(lambda x: cluster_map.get(x, 'black'), onegene_cluster_info))
+
     if legend_annotation:
-        markers = [plt.Line2D([0,0],[0,0],color=color, marker='o', linestyle='') for color in colormap.values()]
-        lgd=plt.legend(markers, colormap.keys(), numpoints=1,loc='upper left',bbox_to_anchor=(1.01, 1))
+        markers = [plt.Line2D([0,0],[0,0],color=color, marker='o', linestyle='') for color in cluster_map.values()]
+        lgd=plt.legend(markers, cluster_map.keys(), numpoints=1,loc='upper left',bbox_to_anchor=(1.01, 1))
 
-    ax.scatter(umap_para[:,0], umap_para[:,1],c=colors,s=15,alpha=0.5,edgecolor="none")
+    plt.scatter(umap_para[:,0], umap_para[:,1],c=colors,s=15,alpha=0.5,edgecolor="none")
     
-
+    if gene_name is not None:
+        onegene=load_cellDancer[load_cellDancer.gene_name==gene_name]
+        plt.figure()
+        plt.scatter(umap_para[:,0], umap_para[:,1],c=np.log(onegene.s0+0.0001),s=15,alpha=1,edgecolor="none")
+        plt.colorbar(label=gene_name+" s0")
+        
     if save_path is not None:
         plt.savefig(save_path,bbox_inches='tight',bbox_extra_artists=(lgd,))
-    umap_df=pd.concat([pd.DataFrame({'umap1':umap_para[:,0],'umap2':umap_para[:,1]}),onegene_cluster_info],axis=1)
+    umap_df=pd.concat([pd.DataFrame({'umap1':umap_para[:,0],'umap2':umap_para[:,1]})],axis=1)
     return(umap_df,ax)
+<<<<<<< HEAD
     
+=======
+>>>>>>> bd7f71358cd415aae17af6c57d29b64c1116ca69
