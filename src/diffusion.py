@@ -56,14 +56,13 @@ def velocity_normalization(downsampled_vel, all_vel=None, mode="max", NORM_ALL_C
     since the data are free of extreme outliers.
      
     '''
-    dummy = 1
     # add v_prime to vel of each cell without changing their directions.
     v_mag = np.linalg.norm(downsampled_vel, axis=1)
+    v_prime = np.std(v_mag)
 
     # for 0 velocity cell, nothing changed.
-    v_mag[np.where(v_mag==0)]=dummy
-    v_prime = np.std(v_mag)
-    downsampled_vel = downsampled_vel*(v_prime/v_mag+1)[:,None]
+    v_prime = np.divide(v_prime, v_mag, where=v_mag > 0)
+    downsampled_vel = downsampled_vel*(v_prime + 1)[:,None]
 
     if mode in ['max', 'maximum', 'maxabs']:
         transformer = preprocessing.MaxAbsScaler().fit(downsampled_vel)

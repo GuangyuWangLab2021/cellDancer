@@ -224,13 +224,13 @@ def closest_distance_between_two_paths(path1, path2, cell_embedding):
         pair = np.unravel_index(np.argmin(A), A.shape)
         print("The closest distance is ", np.sqrt(A[pair]))
         print("Between dot", pair[1], " from refPath1 and dot", pair[0], "from refPath2.")
-        #fig, ax = plt.subplots(figsize=(6, 6))
-        #plt.scatter(cell_embedding[:,0], cell_embedding[:,1], alpha = 0.3)
-        #plt.scatter(path1[:,0], path1[:,1], c=range(len(path1)), s=5)
-        #plt.text(path1[-1,0], path1[-1,1], "refPath"+str(1), fontsize=12)
-        #plt.text(path2[-1,0], path2[-1,1], "refPath"+str(2), fontsize=12)        
-        #plt.scatter(path2[:,0], path2[:,1], c=range(len(path2)), s=5)
-        #plt.show()
+        fig, ax = plt.subplots(figsize=(6, 6))
+        plt.scatter(cell_embedding[:,0], cell_embedding[:,1], alpha = 0.3)
+        plt.scatter(path1[:,0], path1[:,1], c=range(len(path1)), s=5)
+        plt.text(path1[-1,0], path1[-1,1], "refPath"+str(1), fontsize=12)
+        plt.text(path2[-1,0], path2[-1,1], "refPath"+str(2), fontsize=12)        
+        plt.scatter(path2[:,0], path2[:,1], c=range(len(path2)), s=5)
+        plt.show()
         return np.sqrt(A[pair]), pair[::-1]
     else:
         return np.Inf,(np.nan,np.nan)
@@ -299,22 +299,21 @@ def recursive_cell_time_assignment_intracluster(
         sub_grid_density[i] = grid_density[i]
     
     # sanity check
-    # cells = [_ for _ in unresolved_cell_time_cluster[cluster]]
+    cells = [_ for _ in unresolved_cell_time_cluster[cluster]]
+    fig, axes = plt.subplots(nrows=1, ncols=2,
+            gridspec_kw={'width_ratios':[1,1]}, figsize=(12,6))
+    axes[0].scatter(cell_embedding[:,0], cell_embedding[:,1], s=5, alpha=0.1)
+    axes[0].scatter(cell_embedding[cells,0],
+            cell_embedding[cells,1], s=5, alpha=0.5)
+    axes[0].scatter(sub_embedding[:,0], sub_embedding[:,1], s=5, c='k')
+    axes[0].title.set_text("spread of the zero time cells")
 
-    # fig, axes = plt.subplots(nrows=1, ncols=2,
-    #         gridspec_kw={'width_ratios':[1,1]}, figsize=(12,6))
-    # axes[0].scatter(cell_embedding[:,0], cell_embedding[:,1], s=5, alpha=0.1)
-    # axes[0].scatter(cell_embedding[cells,0],
-    #         cell_embedding[cells,1], s=5, alpha=0.5)
-    # axes[0].scatter(sub_embedding[:,0], sub_embedding[:,1], s=5, c='k')
-    # axes[0].title.set_text("spread of the zero time cells")
-
-    # cmap = sns.cubehelix_palette(start=2, rot=0., dark=0.2, light=1, as_cmap=True)
-    # axes[1].imshow(grid_density.T, interpolation=None, origin='lower', cmap="Greys")
-    # axes[1].imshow(sub_grid_density.T, interpolation=None,
-    #         origin='lower',cmap=cmap, alpha=0.3)
-    # axes[1].title.set_text("cell density for generating new trajectories")
-    # plt.show()
+    cmap = sns.cubehelix_palette(start=2, rot=0., dark=0.2, light=1, as_cmap=True)
+    axes[1].imshow(grid_density.T, interpolation=None, origin='lower', cmap="Greys")
+    axes[1].imshow(sub_grid_density.T, interpolation=None,
+            origin='lower',cmap=cmap, alpha=0.3)
+    axes[1].title.set_text("cell density for generating new trajectories")
+    plt.show()
     
     # generating new trajectories for the zero-time cells
     print("Sampling new trajectories for zero-time cells in cluster ", cluster, "  ...")
@@ -373,9 +372,8 @@ def cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
     between cells from any two clusters.
 
     Assumption: No cyclic behavior between clusters. Else, return None.
-    We construct a directed graph: 
+    We construct a directed graph to detect cycles.
     CT --> inter-cluster time gap (transfer)
-    to detect cycles.
 
     Parameters
     ----------
@@ -727,6 +725,14 @@ def compute_all_cell_time(load_cellDancer, embedding, cell_embedding,
             n_repeats=n_repeats, 
             n_jobs=n_jobs,
             MAX_ZERO_TIME_CELLS = 0.05)
+
+        print("\n Display reference paths for cluster .", i)
+        plt.scatter(cell_embedding[:,0], cell_embedding[:,1], alpha = 0.3)
+        for j in range(len(refPaths)):
+            path = refPaths[j]
+            plt.scatter(path[:,0], path[:,1], c=range(len(path)), s=5)
+            plt.text(path[-1,0], path[-1,1], "refPath"+str(j), fontsize=12)
+        plt.show()
 
     print("\n\n\nAll intra cluster cell time has been resolved.\n\n\n")
     

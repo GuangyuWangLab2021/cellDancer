@@ -144,7 +144,7 @@ def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,transfe
     '''
     Guangyu
     sampling cells by embedding
-    data—df: load_raw_data
+    data—df: from load_cellDancer
     para:
     
     return: sampled embedding, the indexs of sampled cells, and the neighbors of sampled cells
@@ -163,7 +163,7 @@ def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,transfe
         idx_downSampling_embedding=range(0,embedding.shape[0]) # all cells
     # TODO GENE MODE TRANSFER
     def transfer(data_df,transfer_mode):
-        #print('tranfer mode: '+str(transfer_mode))
+        print('tranfer mode: '+str(transfer_mode))
         if transfer_mode=='log':
             data_df.s0=np.log(data_df.s0+0.000001)
             data_df.u0=np.log(data_df.u0+0.000001)
