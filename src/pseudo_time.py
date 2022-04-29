@@ -25,10 +25,12 @@ def compute_trajectory_displacement(traj):
     traj = np.array(traj)
     return np.linalg.norm(traj[-1,:] - traj[0,:])
 
+
 def compute_trajectory_length(traj1):
     temp = traj1[:-1,:] - traj1[1:,:]
     length = np.sum(np.sqrt(np.sum(temp**2, axis=1)))
     return length
+
 
 def compute_trajectory_similarity(traj1, traj2, numPicks=10):
     '''
@@ -46,7 +48,7 @@ def compute_trajectory_similarity(traj1, traj2, numPicks=10):
         print("empty trajectory here!")
         raise 
 
-    # pick N points evenly from traj2
+    # pick numPicks points evenly from traj2
     idx = np.round(np.linspace(0, len(traj2) - 1, numPicks)).astype(int)
     
     # in the case the shorter trajectory is less than numPicks timesteps
@@ -80,7 +82,7 @@ def truncate_end_state_stuttering(paths, cell_embedding):
 
 def extract_representative_long_trajectories(path_clusters, cell_clusters, paths, similarity_cutoff, similarity_threshold, nkeep=10):
     '''
-    a method to find representative paths and group similar paths.
+    a recursive method to find representative paths and group similar paths.
     
     Parameters
     ----------
@@ -392,7 +394,7 @@ def cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
     '''
 
     clusterIDs = sorted(np.unique(cell_fate))
-    cutoff = overlap_crit_intra_cluster(cell_embedding, cell_fate, tau)
+    cutoff = overlap_crit_intracluster(cell_embedding, cell_fate, tau)
 
     CT = nx.DiGraph()
     for cluster in clusterIDs:
@@ -558,8 +560,10 @@ def export_cell_time(cell_time, cell_fate, sampling_ixs, filename):
     df.to_csv(filename, index=False)
         
 
-def overlap_crit_intra_cluster(cell_embedding, cell_fate, quant):
+def overlap_crit_intracluster(cell_embedding, cell_fate, quant):
     cutoff = list()
+    assert cell_embedding.shape[0] == len(cell_fate), \
+            '\nError! gene_name is required!\n'
     for cluster_ID in np.unique(cell_fate):
         cell_cluster = cell_embedding[cell_fate == cluster_ID]
         temp1 = cell_cluster - cell_cluster[:,None]
@@ -734,6 +738,11 @@ def compute_all_cell_time(load_cellDancer, embedding, cell_embedding,
             plt.text(path[-1,0], path[-1,1], "refPath"+str(j), fontsize=12)
         plt.show()
 
+        # Need to do intercluster adjustment for all the subclusters in a cluster
+        # cell_time_per_cluster for subclusters!
+        # cell_fate for subclusters!
+        # cell_embedding for subclusters!
+
     print("\n\n\nAll intra cluster cell time has been resolved.\n\n\n")
     
     # inter-cluster time alignment
@@ -862,7 +871,6 @@ def pseudo_time(load_cellDancer,
         load_cellDancer.to_csv(outfile, index=False)
 
     
-
 
 
 # TOREMOVE
