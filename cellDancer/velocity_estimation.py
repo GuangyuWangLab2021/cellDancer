@@ -966,10 +966,8 @@ def select_initial_net(gene, gene_downsampling, data_df):
     if gene_u_s_full.loc[gene_u_s_full['color']=='red'].shape[0]>0.001*gene_u_s_full.shape[0]:
         # model in circle shape
         model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'circle.pt')).name
-        print('circle')
     else:
         # model in seperated branch shape
         model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'branch.pt')).name
-        print('branch')
     return(model_path)
 
