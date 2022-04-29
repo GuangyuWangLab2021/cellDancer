@@ -92,7 +92,7 @@ def discretize(coordinate, xmin, xmax, steps, capping=False):
 
 def generate_grid(cell_embedding, embedding, velocity_embedding, steps):
     '''
-    the original embedding is used to generate the density
+    the original embedding is used to generate the mass
     '''
 
     def array_to_tuple(arr):
@@ -131,17 +131,17 @@ def generate_grid(cell_embedding, embedding, velocity_embedding, steps):
     #plt.show()
     
     # The actual steps need to allow a leeway +1 in each dimension.
-    density = np.zeros(steps+1)
+    mass = np.zeros(steps+1)
     all_grid_idx, all_grid_coor = discretize(embedding, xmin=xmin, xmax=xmax, steps=steps)
     for index in range(all_grid_idx.shape[0]):
         all_grid_index = all_grid_idx[index]
         
-        # outside density is not needed.
+        # outside mass is not needed.
         if np.any(all_grid_index > steps) or np.any(all_grid_index < 0):
             continue
         all_grid_index = array_to_tuple(all_grid_index)
-        density[all_grid_index] += 1
-    return mesh, density, cell_grid_idx, cell_grid_coor, all_grid_idx, all_grid_coor
+        mass[all_grid_index] += 1
+    return mesh, mass, cell_grid_idx, cell_grid_coor, all_grid_idx, all_grid_coor
 
 
 def plot_velocity(embedding, velocity_embedding):
@@ -151,7 +151,7 @@ def plot_velocity(embedding, velocity_embedding):
               color='Blue')
     plt.show()
 
-def plot_mesh_velocity(mesh, grid_density):
+def plot_mesh_velocity(mesh, grid_mass):
     x=list()
     y=list()
     vx=list()
@@ -164,7 +164,7 @@ def plot_mesh_velocity(mesh, grid_density):
             vy.append(mesh[i,j][1])
     fig, ax = plt.subplots(figsize=(6, 6))
     ax.quiver(x,y,vx,vy,color='red',scale = 10)
-    plt.imshow(grid_density.T, interpolation=None, origin='lower',cmap="Greys")
+    plt.imshow(grid_mass.T, interpolation=None, origin='lower',cmap="Greys")
     plt.show()
 
 def velocity_add_random(velocity, theta):
@@ -228,7 +228,7 @@ def diffusion_off_grid_wallbound(
         cell_embedding, 
         vel, 
         init, 
-        grid_density,
+        grid_mass,
         dt=0.001, 
         t_total=10000, 
         eps = 1e-5):
@@ -240,7 +240,7 @@ def diffusion_off_grid_wallbound(
     The diffusion is stopped by any of the criteria:
     1. reach t_total
     2. the magnitude of the velocity is less than eps.
-    3. the cell goes to places where the cell density = 0 even after turning.
+    3. the cell goes to places where the cell mass = 0 even after turning.
     4. the cell is out of the simulation box
 
     Parameters
@@ -261,8 +261,8 @@ def diffusion_off_grid_wallbound(
     t_total: int
         Total number of time steps
 
-    grid_density: numpy ndarray (n_grids x n_dims)
-        Density of cells.
+    grid_mass: numpy ndarray (n_grids x n_dims)
+        mass of cells.
 
     eps 
         Criterion to stop a trajectory before t_total (v_net < eps)
@@ -280,17 +280,17 @@ def diffusion_off_grid_wallbound(
     XMAX = np.max(cell_embedding, axis=0)
     STEPS=(vel.shape[0]-1,vel.shape[1]-1)
 
-    # lower 5% nonzero density set to 0.
-    MAX_IGNORED_DENSITY= np.percentile(grid_density[grid_density>0],5)
+    # lower 5% nonzero mass set to 0.
+    MAX_IGNORED_MASS= np.percentile(grid_mass[grid_mass>0],5)
     
     def no_cells_around(xcur, xcur_d, vcur):
         xnxt = xcur + vcur*dt
         xnxt_d, dummy = discretize(xnxt, xmin=XMIN, xmax=XMAX, steps=STEPS)
         try:
-            density = grid_density[xnxt_d[0], xnxt_d[1]]
+            mass = grid_mass[xnxt_d[0], xnxt_d[1]]
         except IndexError:
             return True
-        return density <= MAX_IGNORED_DENSITY
+        return mass <= MAX_IGNORED_MASS
    
     x0 = init
     x0_d, dummy = discretize(x0, xmin=XMIN, xmax=XMAX, steps=STEPS)
@@ -321,7 +321,7 @@ def diffusion_off_grid_wallbound(
             x_d, dummy = discretize(x, xmin=XMIN, xmax=XMAX, steps=STEPS)
             try:
                 v = vel[x_d[0],x_d[1]]
-                density = grid_density[x_d[0],x_d[1]]
+                mass = grid_mass[x_d[0],x_d[1]]
                 v = velocity_add_random(v, THETA)
             except IndexError:
                 break
@@ -337,7 +337,7 @@ def diffusion_on_grid_wallbound(
         cell_embedding, 
         vel, 
         init, 
-        grid_density,
+        grid_mass,
         dt=0.001, 
         t_total=10000, 
         eps = 1e-5):
@@ -349,7 +349,7 @@ def diffusion_on_grid_wallbound(
     The diffusion is stopped by any of the criteria:
     1. reach t_total
     2. the magnitude of the velocity is less than eps.
-    3. the cell goes to places where the cell density = 0 even after turning.
+    3. the cell goes to places where the cell mass = 0 even after turning.
     4. the cell is out of the simulation box
 
     Parameters
@@ -370,8 +370,8 @@ def diffusion_on_grid_wallbound(
     t_total: int
         Total number of time steps
 
-    grid_density: numpy ndarray (n_grids x n_dims)
-        Density of cells.
+    grid_mass: numpy ndarray (n_grids x n_dims)
+        mass of cells.
 
     eps 
         Criterion to stop a trajectory before t_total (v_net < eps)
@@ -389,17 +389,17 @@ def diffusion_on_grid_wallbound(
     XMAX = np.max(cell_embedding, axis=0)
     STEPS=(vel.shape[0]-1,vel.shape[1]-1)
     
-    # lower 5% nonzero density set to 0.
-    MAX_IGNORED_DENSITY= np.percentile(grid_density[grid_density>0],5)
+    # lower 5% nonzero mass set to 0.
+    MAX_IGNORED_MASS= np.percentile(grid_mass[grid_mass>0],5)
 
     def no_cells_around(xcur, xcur_d, vcur):
         xnxt = xcur + vcur*dt
         xnxt_d, dummy = discretize(xnxt, xmin=XMIN, xmax=XMAX, steps=STEPS)
         try:
-            density = grid_density[xnxt_d[0], xnxt_d[1]]
+            mass = grid_mass[xnxt_d[0], xnxt_d[1]]
         except IndexError:
             return True
-        return density < MAX_IGNORED_DENSITY
+        return mass < MAX_IGNORED_MASS
    
     x0 = init
     x0_d, x0_d_coor = discretize(x0, xmin=XMIN, xmax=XMAX, steps=STEPS)
@@ -442,7 +442,7 @@ def diffusion_on_grid_wallbound(
     return np.array(trajectory)
 
 
-def run_diffusion(cell_embedding, vel, grid_density, dt, t_total = 10000, eps = 1e-5, 
+def run_diffusion(cell_embedding, vel, grid_mass, dt, t_total = 10000, eps = 1e-5, 
                   off_cell_init = False, init_cell = [], n_repeats = 10, n_jobs = 8):    
     '''
     Simulation of diffusion of a cell in the velocity field (on grid), 
@@ -505,7 +505,7 @@ def run_diffusion(cell_embedding, vel, grid_density, dt, t_total = 10000, eps = 
                 init_position = cell_embedding[i] + grid_size * np.random.uniform(-0.5,0.5,2)
             else:
                 init_position = cell_embedding[i]
-            TASKS.append((cell_embedding, vel, init_position, grid_density, dt, t_total))
+            TASKS.append((cell_embedding, vel, init_position, grid_mass, dt, t_total))
     
     with mp.Pool(n_jobs) as pool:
         paths = pool.starmap(diffusion_off_grid_wallbound, TASKS)
