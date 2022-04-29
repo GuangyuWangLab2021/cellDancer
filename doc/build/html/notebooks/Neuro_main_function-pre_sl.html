@@ -1,0 +1,3625 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Case Study: Dentate Gyrus &mdash; celldancer  documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+        <link rel="author" title="About these documents"
+              href="../about.html"/>
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="celldancer  documentation" href="../index.html"/>
+        <link rel="next" title="Proprocessing" href="Preprocessing.html"/>
+        <link rel="prev" title="Case Study: Pancreatic Endocrinogenesis" href="Pancreas_main_function_pre_sl.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> celldancer
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption" role="heading"><span class="caption-text">celldancer</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About celldancer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../API.html">API - CellDancer key applications</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tutorials:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Quick%20Start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Gastrulation_main_function-Copy2.html">Case Study: Gastrulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pancreas_main_function_pre_sl.html">Case Study: Pancreatic Endocrinogenesis</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Case Study: Dentate Gyrus</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#velocity-estimation">velocity estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Set-Parameters">Set Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Load-detail">Load detail</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Estimate-pseudotime">Estimate pseudotime</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Rsquare-rank">Rsquare rank</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#UMAP-using-alpha,-beta,-and-gamma">UMAP using alpha, beta, and gamma</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Preprocessing.html">Proprocessing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Tunning.html">Tunning</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">celldancer</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Case Study: Dentate Gyrus</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/notebooks/Neuro_main_function-pre_sl.ipynb.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    /*background: #f5f5f5;*/
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+    margin: 0;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt .copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+</style>
+<section id="Case-Study:-Dentate-Gyrus">
+<h1>Case Study: Dentate Gyrus<a class="headerlink" href="#Case-Study:-Dentate-Gyrus" title="Permalink to this headline">¶</a></h1>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[81]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="c1"># import from absolute directory</span>
+<span class="n">srcdir</span> <span class="o">=</span> <span class="s1">&#39;/Users/pengzhizhang/cellDancer/src&#39;</span>
+<span class="n">srcdir</span> <span class="o">=</span> <span class="s1">&#39;/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/bin/cellDancer_polish/src&#39;</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">srcdir</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">cdplt</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[58]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
+<span class="n">is_NaN</span> <span class="o">=</span> <span class="n">test</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span>
+<span class="n">row_has_NaN</span> <span class="o">=</span> <span class="n">is_NaN</span><span class="o">.</span> <span class="nb">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">rows_with_NaN</span> <span class="o">=</span> <span class="n">test</span><span class="p">[</span><span class="n">row_has_NaN</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">rows_with_NaN</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+         Unnamed: 0  model gene_name  type        s0        u0        u1  \
+0                 0  Sulf2     Clspn  real  0.000000  0.000000  0.033454
+1                 1  Sulf2     Clspn  real  0.000000  0.000000  0.033454
+2                 2  Sulf2     Clspn  real  0.000000  0.000000  0.033454
+3                 3  Sulf2     Clspn  real  0.000000  0.000000  0.033454
+4                 4  Sulf2     Clspn  real  0.002013  0.002773  0.035766
+...             ...    ...       ...   ...       ...       ...       ...
+3609855       18135  Sulf2     Dapk2  real  0.002642  0.000000  0.004488
+3609856       18136  Sulf2     Dapk2  real  0.000000  0.000534  0.004920
+3609857       18137  Sulf2     Dapk2  real  0.027004  0.017119  0.017297
+3609858       18138  Sulf2     Dapk2  real  0.000000  0.000000  0.004513
+3609859       18139  Sulf2     Dapk2  real  0.000000  0.000000  0.004513
+
+               s1     alpha      beta     gamma      cost  \
+0        0.000000  0.066909  0.734711  0.242738  0.074689
+1        0.000000  0.066909  0.734711  0.242738  0.074689
+2        0.000000  0.066909  0.734711  0.242738  0.074689
+3        0.000000  0.066909  0.734711  0.242738  0.074689
+4        0.002787  0.068022  0.734180  0.242857  0.074689
+...           ...       ...       ...       ...       ...
+3609855  0.002144  0.008977  0.524452  0.376725  0.033982
+3609856  0.000140  0.009051  0.524355  0.376590  0.033982
+3609857  0.026393  0.009318  0.523459  0.377111  0.033982
+3609858  0.000000  0.009026  0.524401  0.376611  0.033982
+3609859  0.000000  0.009026  0.524401  0.376611  0.033982
+
+         backgroud_true_cost  alpha_label
+0                   0.000000            0
+1                   0.000000            0
+2                   0.000000            0
+3                   0.000000            0
+4                   1.822803            0
+...                      ...          ...
+3609855             0.889820            0
+3609856             1.999490            0
+3609857             0.339810            0
+3609858             0.000000            0
+3609859             0.000000            0
+
+[3609860 rows x 14 columns]
+         Unnamed: 0  model gene_name  type        s0        u0  u1  s1  alpha  \
+2775420           0  Sulf2      Cst3  real  2.221109  0.002119 NaN NaN    NaN
+2775421           1  Sulf2      Cst3  real  2.268577  0.002119 NaN NaN    NaN
+2775422           2  Sulf2      Cst3  real  2.531328  0.001129 NaN NaN    NaN
+2775423           3  Sulf2      Cst3  real  1.363056  0.000000 NaN NaN    NaN
+2775424           4  Sulf2      Cst3  real  1.373362  0.001890 NaN NaN    NaN
+...             ...    ...       ...   ...       ...       ...  ..  ..    ...
+2793555       18135  Sulf2      Cst3  real  1.668613  0.000000 NaN NaN    NaN
+2793556       18136  Sulf2      Cst3  real  3.562136  0.007961 NaN NaN    NaN
+2793557       18137  Sulf2      Cst3  real  3.237749  0.000000 NaN NaN    NaN
+2793558       18138  Sulf2      Cst3  real  2.059480  0.000000 NaN NaN    NaN
+2793559       18139  Sulf2      Cst3  real  2.484473  0.000000 NaN NaN    NaN
+
+         beta  gamma  cost  backgroud_true_cost  alpha_label
+2775420   NaN    NaN   NaN                  NaN            0
+2775421   NaN    NaN   NaN                  NaN            0
+2775422   NaN    NaN   NaN                  NaN            0
+2775423   NaN    NaN   NaN                  NaN            0
+2775424   NaN    NaN   NaN                  NaN            0
+...       ...    ...   ...                  ...          ...
+2793555   NaN    NaN   NaN                  NaN            0
+2793556   NaN    NaN   NaN                  NaN            0
+2793557   NaN    NaN   NaN                  NaN            0
+2793558   NaN    NaN   NaN                  NaN            0
+2793559   NaN    NaN   NaN                  NaN            0
+
+[18140 rows x 14 columns]
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">raw_data_path</span> <span class="o">=</span> <span class="s2">&quot;/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/raw_data/DentateGyrus.csv&quot;</span>
+<span class="n">load_raw_data</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">raw_data_path</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[114]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_raw_data</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[114]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>gene_name</th>
+      <th>u0</th>
+      <th>s0</th>
+      <th>clusters</th>
+      <th>cellID</th>
+      <th>embedding1</th>
+      <th>embedding2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Rgs20</td>
+      <td>0.069478</td>
+      <td>0.021971</td>
+      <td>ImmGranule2</td>
+      <td>10X83_2:AAACGGGGTCTCTTTAx</td>
+      <td>18.931086</td>
+      <td>-1.862429</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Rgs20</td>
+      <td>0.085834</td>
+      <td>0.016256</td>
+      <td>ImmGranule2</td>
+      <td>10X83_2:AACCATGGTTCAACCAx</td>
+      <td>18.419891</td>
+      <td>-1.282895</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Rgs20</td>
+      <td>0.068644</td>
+      <td>0.047774</td>
+      <td>CA2-3-4</td>
+      <td>10X83_2:AACACGTTCTGAAAGAx</td>
+      <td>2.369887</td>
+      <td>16.868419</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Rgs20</td>
+      <td>0.045387</td>
+      <td>0.018101</td>
+      <td>CA</td>
+      <td>10X83_2:AAAGATGCATTGAGCTx</td>
+      <td>-5.351040</td>
+      <td>10.676485</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Rgs20</td>
+      <td>0.040457</td>
+      <td>0.012846</td>
+      <td>CA1-Sub</td>
+      <td>10X83_2:AACCATGTCTACTTACx</td>
+      <td>-6.189126</td>
+      <td>11.754900</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>39164255</th>
+      <td>Gpm6b</td>
+      <td>0.876650</td>
+      <td>1.276089</td>
+      <td>ImmGranule1</td>
+      <td>10X84_3:TTTCCTCCACCATCCTx</td>
+      <td>10.812611</td>
+      <td>-2.487668</td>
+    </tr>
+    <tr>
+      <th>39164256</th>
+      <td>Gpm6b</td>
+      <td>2.024897</td>
+      <td>5.152006</td>
+      <td>CA2-3-4</td>
+      <td>10X84_3:TTTGTCACATGAAGTAx</td>
+      <td>8.246204</td>
+      <td>23.482788</td>
+    </tr>
+    <tr>
+      <th>39164257</th>
+      <td>Gpm6b</td>
+      <td>1.848051</td>
+      <td>1.491445</td>
+      <td>nIPC</td>
+      <td>10X84_3:TTTCCTCCACGGTAAGx</td>
+      <td>-3.441272</td>
+      <td>-4.917364</td>
+    </tr>
+    <tr>
+      <th>39164258</th>
+      <td>Gpm6b</td>
+      <td>0.696361</td>
+      <td>1.189091</td>
+      <td>ImmGranule2</td>
+      <td>10X84_3:TTTGTCAAGCGTCAAGx</td>
+      <td>16.394199</td>
+      <td>-6.143549</td>
+    </tr>
+    <tr>
+      <th>39164259</th>
+      <td>Gpm6b</td>
+      <td>0.739348</td>
+      <td>1.239052</td>
+      <td>ImmGranule2</td>
+      <td>10X84_3:TTTCCTCGTGAAAGAGx</td>
+      <td>17.490857</td>
+      <td>-4.130190</td>
+    </tr>
+  </tbody>
+</table>
+<p>39164260 rows × 7 columns</p>
+</div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">detail_result_path</span> <span class="o">=</span> <span class="s1">&#39;/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/velocyto/neuro/result_detailcsv/cost_v1_all_gene_denGyrLr0.001Costv1C1r0.5C2cf0.3Downneighbors0_200_200Ratio0.125N30OAdam/combined&#39;</span>
+<span class="n">output_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+<span class="n">detail_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">detail_result_path</span><span class="p">,</span><span class="s1">&#39;combined_detail.csv&#39;</span><span class="p">)</span>
+<span class="n">load_cellDancer</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">detail_file</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[73]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+<section id="velocity-estimation">
+<h2>velocity estimation<a class="headerlink" href="#velocity-estimation" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[115]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># import celldancer.velocity_estimation as calc_velocity</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="n">srcdir</span> <span class="o">=</span> <span class="s1">&#39;/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/bin/cellDancer_polish/src&#39;</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">srcdir</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">plotting</span> <span class="kn">import</span> <span class="n">gene</span> <span class="k">as</span> <span class="n">cdpl_gene</span>
+<span class="kn">from</span> <span class="nn">plotting</span> <span class="kn">import</span> <span class="n">gene</span> <span class="k">as</span> <span class="n">cdpl_cell</span>
+<span class="kn">from</span> <span class="nn">plotting.colormap</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">celldancer</span> <span class="kn">import</span> <span class="n">velocity_estimation</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[149]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="n">gene_list</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Dcx&#39;</span><span class="p">,</span><span class="s1">&#39;Rimbp2&#39;</span><span class="p">,</span><span class="s1">&#39;Dctn3&#39;</span><span class="p">,</span><span class="s1">&#39;Psd3&#39;</span><span class="p">,</span><span class="s1">&#39;Ntrk2&#39;</span><span class="p">,</span><span class="s1">&#39;Pfkp&#39;</span><span class="p">,</span><span class="s1">&#39;Gnao1&#39;</span><span class="p">,</span><span class="s1">&#39;Ncald&#39;</span><span class="p">,</span><span class="s1">&#39;Klf7&#39;</span><span class="p">,</span><span class="s1">&#39;Slc4a10&#39;</span><span class="p">,</span><span class="s1">&#39;Nav1&#39;</span><span class="p">,</span><span class="s1">&#39;Elavl4&#39;</span><span class="p">,</span><span class="s1">&#39;Gpc6&#39;</span><span class="p">,</span><span class="s1">&#39;Cdh13&#39;</span><span class="p">,</span><span class="s1">&#39;Ppfia2&#39;</span><span class="p">]</span>
+<span class="n">result_path</span> <span class="o">=</span> <span class="s1">&#39;/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/velocyto/neuro/result_detailcsv/polish/&#39;</span>
+<span class="c1"># brief, load_cellDancer=velocity_estimation.train(load_raw_data,gene_choice=gene_list,max_epoches=300,result_path=result_path,n_jobs=8,cost_type=&#39;average&#39;,auto_norm_u_s=False) #01</span>
+<span class="n">brief</span><span class="p">,</span> <span class="n">load_cellDancer</span><span class="o">=</span><span class="n">velocity_estimation</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">load_raw_data</span><span class="p">,</span><span class="n">gene_choice</span><span class="o">=</span><span class="n">gene_list</span><span class="p">,</span><span class="n">max_epoches</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span><span class="n">result_path</span><span class="o">=</span><span class="n">result_path</span><span class="p">,</span><span class="n">n_jobs</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span><span class="n">cost_type</span><span class="o">=</span><span class="s1">&#39;average&#39;</span><span class="p">,</span><span class="n">auto_norm_u_s</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">check_n_epoch</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">auto_downsample</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="c1">#02</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Using /Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/velocyto/neuro/result_detailcsv/polish/cell_dancer_velocity_2022-04-29 11-40-07 as the output path.
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+circle
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+Velocity Estimation:   0%|                               | 0/15 [00:00&lt;?, ?it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:   7%|█▌                     | 1/15 [00:20&lt;04:41, 20.12s/it]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  13%|███                    | 2/15 [00:22&lt;02:04,  9.56s/it]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  20%|████▌                  | 3/15 [00:26&lt;01:27,  7.33s/it]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  27%|██████▏                | 4/15 [00:35&lt;01:26,  7.89s/it]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  33%|███████▋               | 5/15 [00:36&lt;00:53,  5.39s/it]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  40%|█████████▏             | 6/15 [00:37&lt;00:34,  3.79s/it]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  47%|██████████▋            | 7/15 [00:42&lt;00:32,  4.11s/it]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation: 100%|██████████████████████| 15/15 [01:36&lt;00:00,  6.43s/it]
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+branch
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+branch
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+circle
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+circle
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+circle
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+circle
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+branch
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+circle
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+circle
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+circle
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+circle
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+circle
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+branch
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+circle
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+branch
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+</pre></div></div>
+</div>
+</section>
+<section id="Set-Parameters">
+<h2>Set Parameters<a class="headerlink" href="#Set-Parameters" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[106]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">n_neighbors</span><span class="o">=</span><span class="mi">100</span> <span class="c1">#100</span>
+<span class="n">downsample_step</span><span class="o">=</span><span class="p">(</span><span class="mi">60</span><span class="p">,</span><span class="mi">60</span><span class="p">)</span>
+
+<span class="n">grid</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="mf">0.01</span>
+<span class="n">t_total</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="n">n_repeats</span> <span class="o">=</span> <span class="mi">10</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Load-detail">
+<h2>Load detail<a class="headerlink" href="#Load-detail" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">detail_result_path</span> <span class="o">=</span> <span class="s1">&#39;/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/Gastrulation/velocity_result/result_detailcsv/2000genes_with_bin_and_smooth/combined_detail&#39;</span>
+<span class="n">output_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+<span class="n">detail_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">detail_result_path</span><span class="p">,</span><span class="s1">&#39;combined_detail.csv&#39;</span><span class="p">)</span>
+<span class="n">load_cellDancer</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">detail_file</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[67]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">compute_cell_velocity</span> <span class="kn">import</span> <span class="n">compute_cell_velocity</span>
+
+
+
+<span class="n">gene_choice</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">gene_name</span><span class="p">))</span>
+<span class="n">compute_cell_velocity</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">,</span>
+              <span class="n">gene_list</span><span class="o">=</span><span class="n">gene_choice</span><span class="p">,</span>
+              <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;gene&quot;</span><span class="p">,</span>
+              <span class="n">transfer_mode</span><span class="o">=</span><span class="s1">&#39;power10&#39;</span><span class="p">,</span>
+              <span class="n">n_neighbors</span><span class="o">=</span><span class="n">n_neighbors</span><span class="p">,</span>
+              <span class="n">step</span><span class="o">=</span><span class="n">downsample_step</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/shengyuli/anaconda3/envs/celldancer_env/lib/python3.7/site-packages/pandas/core/generic.py:5516: SettingWithCopyWarning:
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  self[name] = value
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(2145, 18140)
+(2145, 18140)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/bin/cellDancer_polish/src/compute_cell_velocity.py:142: RuntimeWarning: invalid value encountered in true_divide
+  np.sqrt(np.dot(ematrix_ss[:, None], vmatrix_ss[None]))
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+after downsampling, there are  893 cells.
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[68]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_cellDancer</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[68]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>cellIndex</th>
+      <th>gene_name</th>
+      <th>s0</th>
+      <th>u0</th>
+      <th>s1</th>
+      <th>u1</th>
+      <th>alpha</th>
+      <th>beta</th>
+      <th>gamma</th>
+      <th>cost</th>
+      <th>cellID</th>
+      <th>clusters</th>
+      <th>embedding1</th>
+      <th>embedding2</th>
+      <th>index</th>
+      <th>velocity1</th>
+      <th>velocity2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0</td>
+      <td>0610007P14Rik</td>
+      <td>1.232261</td>
+      <td>0.072207</td>
+      <td>1.259473</td>
+      <td>0.074903</td>
+      <td>0.064000</td>
+      <td>0.811681</td>
+      <td>0.003397</td>
+      <td>0.060301</td>
+      <td>10X83_2:AAACGGGGTCTCTTTAx</td>
+      <td>ImmGranule2</td>
+      <td>18.931086</td>
+      <td>-1.862429</td>
+      <td>0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>0610007P14Rik</td>
+      <td>1.133782</td>
+      <td>0.078814</td>
+      <td>1.163397</td>
+      <td>0.078786</td>
+      <td>0.063456</td>
+      <td>0.805846</td>
+      <td>0.003776</td>
+      <td>0.060301</td>
+      <td>10X83_2:AACCATGGTTCAACCAx</td>
+      <td>ImmGranule2</td>
+      <td>18.419891</td>
+      <td>-1.282895</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2</td>
+      <td>0610007P14Rik</td>
+      <td>1.514005</td>
+      <td>0.135724</td>
+      <td>1.567264</td>
+      <td>0.119788</td>
+      <td>0.078587</td>
+      <td>0.813846</td>
+      <td>0.002602</td>
+      <td>0.060301</td>
+      <td>10X83_2:AACACGTTCTGAAAGAx</td>
+      <td>CA2-3-4</td>
+      <td>2.369887</td>
+      <td>16.868419</td>
+      <td>2</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>3</td>
+      <td>0610007P14Rik</td>
+      <td>0.694710</td>
+      <td>0.067970</td>
+      <td>0.719411</td>
+      <td>0.068489</td>
+      <td>0.054528</td>
+      <td>0.786969</td>
+      <td>0.005885</td>
+      <td>0.060301</td>
+      <td>10X83_2:AAAGATGCATTGAGCTx</td>
+      <td>CA</td>
+      <td>-5.351040</td>
+      <td>10.676485</td>
+      <td>3</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>4</td>
+      <td>0610007P14Rik</td>
+      <td>0.892577</td>
+      <td>0.113096</td>
+      <td>0.934898</td>
+      <td>0.100961</td>
+      <td>0.064767</td>
+      <td>0.787270</td>
+      <td>0.004924</td>
+      <td>0.060301</td>
+      <td>10X83_2:AACCATGTCTACTTACx</td>
+      <td>CA1-Sub</td>
+      <td>-6.189126</td>
+      <td>11.754900</td>
+      <td>4</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>38964715</th>
+      <td>18135</td>
+      <td>Zwint</td>
+      <td>0.628872</td>
+      <td>0.102383</td>
+      <td>0.661537</td>
+      <td>0.112521</td>
+      <td>0.107899</td>
+      <td>0.855837</td>
+      <td>0.035450</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTCCTCCACCATCCTx</td>
+      <td>ImmGranule1</td>
+      <td>10.812611</td>
+      <td>-2.487668</td>
+      <td>18135</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>38964716</th>
+      <td>18136</td>
+      <td>Zwint</td>
+      <td>2.242793</td>
+      <td>0.237419</td>
+      <td>2.335716</td>
+      <td>0.236443</td>
+      <td>0.224360</td>
+      <td>0.953217</td>
+      <td>0.018043</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTGTCACATGAAGTAx</td>
+      <td>CA2-3-4</td>
+      <td>8.246204</td>
+      <td>23.482788</td>
+      <td>18136</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>38964717</th>
+      <td>18137</td>
+      <td>Zwint</td>
+      <td>0.279290</td>
+      <td>0.154337</td>
+      <td>0.335284</td>
+      <td>0.164991</td>
+      <td>0.144815</td>
+      <td>0.800248</td>
+      <td>0.041252</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTCCTCCACGGTAAGx</td>
+      <td>nIPC</td>
+      <td>-3.441272</td>
+      <td>-4.917364</td>
+      <td>18137</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>38964718</th>
+      <td>18138</td>
+      <td>Zwint</td>
+      <td>0.697305</td>
+      <td>0.128248</td>
+      <td>0.740287</td>
+      <td>0.132708</td>
+      <td>0.119159</td>
+      <td>0.859578</td>
+      <td>0.034811</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTGTCAAGCGTCAAGx</td>
+      <td>ImmGranule2</td>
+      <td>16.394199</td>
+      <td>-6.143549</td>
+      <td>18138</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>38964719</th>
+      <td>18139</td>
+      <td>Zwint</td>
+      <td>0.786592</td>
+      <td>0.127584</td>
+      <td>0.828834</td>
+      <td>0.131926</td>
+      <td>0.119557</td>
+      <td>0.869013</td>
+      <td>0.033548</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTCCTCGTGAAAGAGx</td>
+      <td>ImmGranule2</td>
+      <td>17.490857</td>
+      <td>-4.130190</td>
+      <td>18139</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+<p>38910300 rows × 17 columns</p>
+</div></div>
+</div>
+</section>
+<section id="Estimate-pseudotime">
+<h2>Estimate pseudotime<a class="headerlink" href="#Estimate-pseudotime" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[107]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#import importlib</span>
+<span class="c1">#importlib.reload(sys.modules[&#39;pseudo_time&#39;])</span>
+<span class="kn">from</span> <span class="nn">pseudo_time</span> <span class="kn">import</span> <span class="n">pseudo_time</span>
+
+
+<span class="n">cell_time</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="mf">0.01</span>
+<span class="n">t_total</span> <span class="o">=</span> <span class="p">{</span><span class="n">dt</span><span class="p">:</span><span class="nb">int</span><span class="p">(</span><span class="mi">10</span><span class="o">/</span><span class="n">dt</span><span class="p">)}</span>
+<span class="n">n_repeats</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">grid</span> <span class="o">=</span> <span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">pseudo_time</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="p">,</span> <span class="n">grid</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">t_total</span><span class="p">[</span><span class="n">dt</span><span class="p">],</span> <span class="n">n_repeats</span><span class="p">,</span> <span class="n">downsample_step</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+There are 4 clusters.
+They are:  [0 1 2 3]
+
+
+
+cluster  0
+MAX allowed zero time cells are:  29
+144  Cells left.
+Sampling new trajectories for zero-time cells in cluster  0   ...
+The closest distance is  0.052360854509681004
+Between dot 3  from refPath1 and dot 0 from refPath2.
+now the cell time is updated for cluster:  0
+shifting ref_path2 by time  3
+
+
+
+cluster  0
+MAX allowed zero time cells are:  29
+Only  1  Cells left. Stopping.
+
+
+
+cluster  1
+MAX allowed zero time cells are:  11
+Only  0  Cells left. Stopping.
+
+
+
+cluster  2
+MAX allowed zero time cells are:  10
+Only  0  Cells left. Stopping.
+
+
+
+cluster  3
+MAX allowed zero time cells are:  10
+Only  0  Cells left. Stopping.
+
+
+
+All intra cluster cell time has been resolved.
+
+
+
+
+Consolidating time between clusters  0  and  1 ..
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_18_1.png" src="../_images/notebooks_Neuro_main_function-pre_sl_18_1.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+shift time is:  0 .
+The overlapping cells are:
+cell  409  from cluster  0  and  784  from cluster  1
+
+Consolidating time between clusters  0  and  2 ..
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_18_3.png" src="../_images/notebooks_Neuro_main_function-pre_sl_18_3.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+shift time is:  0 .
+The overlapping cells are:
+cell  838  from cluster  0  and  484  from cluster  2
+
+Consolidating time between clusters  0  and  3 ..
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_18_5.png" src="../_images/notebooks_Neuro_main_function-pre_sl_18_5.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+shift time is:  140 .
+The overlapping cells are:
+cell  17  from cluster  0  and  411  from cluster  3
+
+Consolidating time between clusters  1  and  2 ..
+No close cells between clusters  (1, 2)
+
+Consolidating time between clusters  1  and  3 ..
+No close cells between clusters  (1, 3)
+
+Consolidating time between clusters  2  and  3 ..
+No close cells between clusters  (2, 3)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_18_7.png" src="../_images/notebooks_Neuro_main_function-pre_sl_18_7.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Forward: 0
+
+
+All inter cluster cell time has been resolved.
+
+
+
+There are 18140 cells.
+--- 83.1069507598877 seconds ---
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[108]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_cellDancer</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[108]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>cellIndex</th>
+      <th>gene_name</th>
+      <th>s0</th>
+      <th>u0</th>
+      <th>s1</th>
+      <th>u1</th>
+      <th>alpha</th>
+      <th>beta</th>
+      <th>gamma</th>
+      <th>cost</th>
+      <th>cellID</th>
+      <th>clusters</th>
+      <th>embedding1</th>
+      <th>embedding2</th>
+      <th>index</th>
+      <th>velocity1</th>
+      <th>velocity2</th>
+      <th>pseudotime</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0</td>
+      <td>0610007P14Rik</td>
+      <td>1.232261</td>
+      <td>0.072207</td>
+      <td>1.259473</td>
+      <td>0.074903</td>
+      <td>0.064000</td>
+      <td>0.811681</td>
+      <td>0.003397</td>
+      <td>0.060301</td>
+      <td>10X83_2:AAACGGGGTCTCTTTAx</td>
+      <td>ImmGranule2</td>
+      <td>18.931086</td>
+      <td>-1.862429</td>
+      <td>0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.459466</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>0610007P14Rik</td>
+      <td>1.133782</td>
+      <td>0.078814</td>
+      <td>1.163397</td>
+      <td>0.078786</td>
+      <td>0.063456</td>
+      <td>0.805846</td>
+      <td>0.003776</td>
+      <td>0.060301</td>
+      <td>10X83_2:AACCATGGTTCAACCAx</td>
+      <td>ImmGranule2</td>
+      <td>18.419891</td>
+      <td>-1.282895</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.461165</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2</td>
+      <td>0610007P14Rik</td>
+      <td>1.514005</td>
+      <td>0.135724</td>
+      <td>1.567264</td>
+      <td>0.119788</td>
+      <td>0.078587</td>
+      <td>0.813846</td>
+      <td>0.002602</td>
+      <td>0.060301</td>
+      <td>10X83_2:AACACGTTCTGAAAGAx</td>
+      <td>CA2-3-4</td>
+      <td>2.369887</td>
+      <td>16.868419</td>
+      <td>2</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.830583</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>3</td>
+      <td>0610007P14Rik</td>
+      <td>0.694710</td>
+      <td>0.067970</td>
+      <td>0.719411</td>
+      <td>0.068489</td>
+      <td>0.054528</td>
+      <td>0.786969</td>
+      <td>0.005885</td>
+      <td>0.060301</td>
+      <td>10X83_2:AAAGATGCATTGAGCTx</td>
+      <td>CA</td>
+      <td>-5.351040</td>
+      <td>10.676485</td>
+      <td>3</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.709709</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>4</td>
+      <td>0610007P14Rik</td>
+      <td>0.892577</td>
+      <td>0.113096</td>
+      <td>0.934898</td>
+      <td>0.100961</td>
+      <td>0.064767</td>
+      <td>0.787270</td>
+      <td>0.004924</td>
+      <td>0.060301</td>
+      <td>10X83_2:AACCATGTCTACTTACx</td>
+      <td>CA1-Sub</td>
+      <td>-6.189126</td>
+      <td>11.754900</td>
+      <td>4</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.755825</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>38964715</th>
+      <td>18135</td>
+      <td>Zwint</td>
+      <td>0.628872</td>
+      <td>0.102383</td>
+      <td>0.661537</td>
+      <td>0.112521</td>
+      <td>0.107899</td>
+      <td>0.855837</td>
+      <td>0.035450</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTCCTCCACCATCCTx</td>
+      <td>ImmGranule1</td>
+      <td>10.812611</td>
+      <td>-2.487668</td>
+      <td>18135</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.179612</td>
+    </tr>
+    <tr>
+      <th>38964716</th>
+      <td>18136</td>
+      <td>Zwint</td>
+      <td>2.242793</td>
+      <td>0.237419</td>
+      <td>2.335716</td>
+      <td>0.236443</td>
+      <td>0.224360</td>
+      <td>0.953217</td>
+      <td>0.018043</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTGTCACATGAAGTAx</td>
+      <td>CA2-3-4</td>
+      <td>8.246204</td>
+      <td>23.482788</td>
+      <td>18136</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>1.000000</td>
+    </tr>
+    <tr>
+      <th>38964717</th>
+      <td>18137</td>
+      <td>Zwint</td>
+      <td>0.279290</td>
+      <td>0.154337</td>
+      <td>0.335284</td>
+      <td>0.164991</td>
+      <td>0.144815</td>
+      <td>0.800248</td>
+      <td>0.041252</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTCCTCCACGGTAAGx</td>
+      <td>nIPC</td>
+      <td>-3.441272</td>
+      <td>-4.917364</td>
+      <td>18137</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.347573</td>
+    </tr>
+    <tr>
+      <th>38964718</th>
+      <td>18138</td>
+      <td>Zwint</td>
+      <td>0.697305</td>
+      <td>0.128248</td>
+      <td>0.740287</td>
+      <td>0.132708</td>
+      <td>0.119159</td>
+      <td>0.859578</td>
+      <td>0.034811</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTGTCAAGCGTCAAGx</td>
+      <td>ImmGranule2</td>
+      <td>16.394199</td>
+      <td>-6.143549</td>
+      <td>18138</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.350000</td>
+    </tr>
+    <tr>
+      <th>38964719</th>
+      <td>18139</td>
+      <td>Zwint</td>
+      <td>0.786592</td>
+      <td>0.127584</td>
+      <td>0.828834</td>
+      <td>0.131926</td>
+      <td>0.119557</td>
+      <td>0.869013</td>
+      <td>0.033548</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTCCTCGTGAAAGAGx</td>
+      <td>ImmGranule2</td>
+      <td>17.490857</td>
+      <td>-4.130190</td>
+      <td>18139</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.383252</td>
+    </tr>
+  </tbody>
+</table>
+<p>38910300 rows × 18 columns</p>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[78]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cdplt</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">ncols</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">25</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+<span class="n">gene</span> <span class="o">=</span> <span class="s1">&#39;Dcx&#39;</span>
+<span class="n">cdplt</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">scatter_cell</span><span class="p">(</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">load_cellDancer</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s1">&#39;alpha&#39;</span><span class="p">,</span>
+             <span class="n">gene_name</span><span class="o">=</span><span class="n">gene</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">cdplt</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">scatter_cell</span><span class="p">(</span><span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">load_cellDancer</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s1">&#39;beta&#39;</span><span class="p">,</span>
+             <span class="n">gene_name</span><span class="o">=</span><span class="n">gene</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">cdplt</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">scatter_cell</span><span class="p">(</span><span class="n">ax</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">load_cellDancer</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s1">&#39;gamma&#39;</span><span class="p">,</span>
+             <span class="n">gene_name</span><span class="o">=</span><span class="n">gene</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">cdplt</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">scatter_cell</span><span class="p">(</span><span class="n">ax</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="n">load_cellDancer</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s1">&#39;spliced&#39;</span><span class="p">,</span>
+             <span class="n">gene_name</span><span class="o">=</span><span class="n">gene</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">cdplt</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">scatter_cell</span><span class="p">(</span><span class="n">ax</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span><span class="n">load_cellDancer</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s1">&#39;unspliced&#39;</span><span class="p">,</span>
+             <span class="n">gene_name</span><span class="o">=</span><span class="n">gene</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;alpha-&#39;</span><span class="o">+</span><span class="n">gene</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;beta-&#39;</span><span class="o">+</span><span class="n">gene</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;gamma-&#39;</span><span class="o">+</span><span class="n">gene</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;spliced-&#39;</span><span class="o">+</span><span class="n">gene</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;unspliced-&#39;</span><span class="o">+</span><span class="n">gene</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_20_0.png" src="../_images/notebooks_Neuro_main_function-pre_sl_20_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[105]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">plotting</span> <span class="kn">import</span> <span class="n">colormap</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">))</span>
+<span class="n">clusters</span> <span class="o">=</span> <span class="n">load_cellDancer</span><span class="p">[</span><span class="s1">&#39;clusters&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">()</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
+<span class="n">cdplt</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">scatter_cell</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_neuro</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+             <span class="n">gene_name</span><span class="o">=</span><span class="n">gene</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">legend</span><span class="o">=</span><span class="s1">&#39;on&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_21_0.png" src="../_images/notebooks_Neuro_main_function-pre_sl_21_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[110]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">clusters</span> <span class="o">=</span> <span class="n">load_cellDancer</span><span class="p">[</span><span class="s1">&#39;clusters&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">()</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
+<span class="n">cdplt</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">scatter_cell</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s1">&#39;pseudotime&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+             <span class="n">gene_name</span><span class="o">=</span><span class="n">gene</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_23_0.png" src="../_images/notebooks_Neuro_main_function-pre_sl_23_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[112]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">plotting</span> <span class="kn">import</span> <span class="n">colormap</span>
+<span class="n">ncols</span><span class="o">=</span><span class="mi">5</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">12</span><span class="p">))</span>
+
+<span class="n">load_cellDancer</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)):</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)</span><span class="o">/</span><span class="n">ncols</span><span class="p">),</span> <span class="n">ncols</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">cdplt</span><span class="o">.</span><span class="n">gene</span><span class="o">.</span><span class="n">scatter_gene</span><span class="p">(</span>
+        <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+        <span class="n">x</span><span class="o">=</span><span class="s1">&#39;pseudotime&#39;</span><span class="p">,</span>
+        <span class="n">y</span><span class="o">=</span><span class="s1">&#39;s0&#39;</span><span class="p">,</span>
+        <span class="n">load_cellDancer</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">,</span>
+        <span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_xlim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_ylim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">colors</span><span class="o">=</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_neuro</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">velocity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">gene_name</span><span class="o">=</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_24_0.png" src="../_images/notebooks_Neuro_main_function-pre_sl_24_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_cellDancer_TEST</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">[</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">clusters</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s1">&#39;Blood progenitors 2&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;Blood progenitors 1&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;Erythroid1&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;Erythroid2&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;Erythroid3&#39;</span><span class="p">])]</span>
+<span class="n">load_cellDancer_TEST</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>cellIndex</th>
+      <th>gene_name</th>
+      <th>s0</th>
+      <th>u0</th>
+      <th>s1</th>
+      <th>u1</th>
+      <th>alpha</th>
+      <th>beta</th>
+      <th>gamma</th>
+      <th>cost</th>
+      <th>clusters</th>
+      <th>cellID</th>
+      <th>embedding1</th>
+      <th>embedding2</th>
+      <th>index</th>
+      <th>velocity1</th>
+      <th>velocity2</th>
+      <th>pseudotime</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0</td>
+      <td>2810025M15Rik</td>
+      <td>1.515440</td>
+      <td>0.000000</td>
+      <td>1.514860</td>
+      <td>0.000022</td>
+      <td>0.001560</td>
+      <td>0.022612</td>
+      <td>0.005908</td>
+      <td>0.087183</td>
+      <td>Blood progenitors 2</td>
+      <td>cell_363</td>
+      <td>3.460521</td>
+      <td>15.574629</td>
+      <td>0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.696326</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>2810025M15Rik</td>
+      <td>1.574459</td>
+      <td>0.000000</td>
+      <td>1.573860</td>
+      <td>0.000022</td>
+      <td>0.001522</td>
+      <td>0.022650</td>
+      <td>0.005876</td>
+      <td>0.087183</td>
+      <td>Blood progenitors 2</td>
+      <td>cell_382</td>
+      <td>2.490433</td>
+      <td>14.971734</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.652742</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2</td>
+      <td>2810025M15Rik</td>
+      <td>1.744201</td>
+      <td>0.000000</td>
+      <td>1.743548</td>
+      <td>0.000020</td>
+      <td>0.001426</td>
+      <td>0.022751</td>
+      <td>0.005787</td>
+      <td>0.087183</td>
+      <td>Blood progenitors 2</td>
+      <td>cell_385</td>
+      <td>2.351203</td>
+      <td>15.267069</td>
+      <td>2</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.655512</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>3</td>
+      <td>2810025M15Rik</td>
+      <td>1.332406</td>
+      <td>0.000000</td>
+      <td>1.331888</td>
+      <td>0.000024</td>
+      <td>0.001682</td>
+      <td>0.022495</td>
+      <td>0.006009</td>
+      <td>0.087183</td>
+      <td>Blood progenitors 2</td>
+      <td>cell_393</td>
+      <td>5.899098</td>
+      <td>14.388825</td>
+      <td>3</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.803618</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>4</td>
+      <td>2810025M15Rik</td>
+      <td>1.261786</td>
+      <td>0.000000</td>
+      <td>1.261292</td>
+      <td>0.000025</td>
+      <td>0.001732</td>
+      <td>0.022449</td>
+      <td>0.006049</td>
+      <td>0.087183</td>
+      <td>Blood progenitors 2</td>
+      <td>cell_398</td>
+      <td>4.823139</td>
+      <td>15.374831</td>
+      <td>4</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.788581</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>24657995</th>
+      <td>12324</td>
+      <td>Zrsr2</td>
+      <td>0.255452</td>
+      <td>0.030816</td>
+      <td>0.323642</td>
+      <td>0.022484</td>
+      <td>0.005919</td>
+      <td>0.101278</td>
+      <td>0.144163</td>
+      <td>0.126370</td>
+      <td>Erythroid3</td>
+      <td>cell_139318</td>
+      <td>8.032358</td>
+      <td>7.603037</td>
+      <td>12324</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.982363</td>
+    </tr>
+    <tr>
+      <th>24657996</th>
+      <td>12325</td>
+      <td>Zrsr2</td>
+      <td>0.204272</td>
+      <td>0.049630</td>
+      <td>0.322781</td>
+      <td>0.036203</td>
+      <td>0.008434</td>
+      <td>0.100651</td>
+      <td>0.142879</td>
+      <td>0.126370</td>
+      <td>Erythroid3</td>
+      <td>cell_139321</td>
+      <td>10.352904</td>
+      <td>6.446736</td>
+      <td>12325</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.994347</td>
+    </tr>
+    <tr>
+      <th>24657997</th>
+      <td>12326</td>
+      <td>Zrsr2</td>
+      <td>0.230350</td>
+      <td>0.050146</td>
+      <td>0.349145</td>
+      <td>0.036532</td>
+      <td>0.008174</td>
+      <td>0.100769</td>
+      <td>0.143180</td>
+      <td>0.126370</td>
+      <td>Erythroid3</td>
+      <td>cell_139326</td>
+      <td>9.464873</td>
+      <td>7.261099</td>
+      <td>12326</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.983041</td>
+    </tr>
+    <tr>
+      <th>24657998</th>
+      <td>12327</td>
+      <td>Zrsr2</td>
+      <td>0.236227</td>
+      <td>0.052799</td>
+      <td>0.361591</td>
+      <td>0.038445</td>
+      <td>0.008380</td>
+      <td>0.100769</td>
+      <td>0.143180</td>
+      <td>0.126370</td>
+      <td>Erythroid3</td>
+      <td>cell_139327</td>
+      <td>9.990495</td>
+      <td>7.243880</td>
+      <td>12327</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.979536</td>
+    </tr>
+    <tr>
+      <th>24657999</th>
+      <td>12328</td>
+      <td>Zrsr2</td>
+      <td>0.234467</td>
+      <td>0.057909</td>
+      <td>0.372997</td>
+      <td>0.042155</td>
+      <td>0.008959</td>
+      <td>0.100709</td>
+      <td>0.143022</td>
+      <td>0.126370</td>
+      <td>Erythroid3</td>
+      <td>cell_139330</td>
+      <td>8.260699</td>
+      <td>7.935455</td>
+      <td>12328</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.969927</td>
+    </tr>
+  </tbody>
+</table>
+<p>19630000 rows × 18 columns</p>
+</div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[88]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="n">load_cellDancer</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[88]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>cellIndex</th>
+      <th>gene_name</th>
+      <th>s0</th>
+      <th>u0</th>
+      <th>s1</th>
+      <th>u1</th>
+      <th>alpha</th>
+      <th>beta</th>
+      <th>gamma</th>
+      <th>cost</th>
+      <th>cellID</th>
+      <th>clusters</th>
+      <th>embedding1</th>
+      <th>embedding2</th>
+      <th>index</th>
+      <th>velocity1</th>
+      <th>velocity2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0</td>
+      <td>0610007P14Rik</td>
+      <td>1.232261</td>
+      <td>0.072207</td>
+      <td>1.259473</td>
+      <td>0.074903</td>
+      <td>0.064000</td>
+      <td>0.811681</td>
+      <td>0.003397</td>
+      <td>0.060301</td>
+      <td>10X83_2:AAACGGGGTCTCTTTAx</td>
+      <td>ImmGranule2</td>
+      <td>18.931086</td>
+      <td>-1.862429</td>
+      <td>0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>0610007P14Rik</td>
+      <td>1.133782</td>
+      <td>0.078814</td>
+      <td>1.163397</td>
+      <td>0.078786</td>
+      <td>0.063456</td>
+      <td>0.805846</td>
+      <td>0.003776</td>
+      <td>0.060301</td>
+      <td>10X83_2:AACCATGGTTCAACCAx</td>
+      <td>ImmGranule2</td>
+      <td>18.419891</td>
+      <td>-1.282895</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2</td>
+      <td>0610007P14Rik</td>
+      <td>1.514005</td>
+      <td>0.135724</td>
+      <td>1.567264</td>
+      <td>0.119788</td>
+      <td>0.078587</td>
+      <td>0.813846</td>
+      <td>0.002602</td>
+      <td>0.060301</td>
+      <td>10X83_2:AACACGTTCTGAAAGAx</td>
+      <td>CA2-3-4</td>
+      <td>2.369887</td>
+      <td>16.868419</td>
+      <td>2</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>3</td>
+      <td>0610007P14Rik</td>
+      <td>0.694710</td>
+      <td>0.067970</td>
+      <td>0.719411</td>
+      <td>0.068489</td>
+      <td>0.054528</td>
+      <td>0.786969</td>
+      <td>0.005885</td>
+      <td>0.060301</td>
+      <td>10X83_2:AAAGATGCATTGAGCTx</td>
+      <td>CA</td>
+      <td>-5.351040</td>
+      <td>10.676485</td>
+      <td>3</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>4</td>
+      <td>0610007P14Rik</td>
+      <td>0.892577</td>
+      <td>0.113096</td>
+      <td>0.934898</td>
+      <td>0.100961</td>
+      <td>0.064767</td>
+      <td>0.787270</td>
+      <td>0.004924</td>
+      <td>0.060301</td>
+      <td>10X83_2:AACCATGTCTACTTACx</td>
+      <td>CA1-Sub</td>
+      <td>-6.189126</td>
+      <td>11.754900</td>
+      <td>4</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>38964715</th>
+      <td>18135</td>
+      <td>Zwint</td>
+      <td>0.628872</td>
+      <td>0.102383</td>
+      <td>0.661537</td>
+      <td>0.112521</td>
+      <td>0.107899</td>
+      <td>0.855837</td>
+      <td>0.035450</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTCCTCCACCATCCTx</td>
+      <td>ImmGranule1</td>
+      <td>10.812611</td>
+      <td>-2.487668</td>
+      <td>18135</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>38964716</th>
+      <td>18136</td>
+      <td>Zwint</td>
+      <td>2.242793</td>
+      <td>0.237419</td>
+      <td>2.335716</td>
+      <td>0.236443</td>
+      <td>0.224360</td>
+      <td>0.953217</td>
+      <td>0.018043</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTGTCACATGAAGTAx</td>
+      <td>CA2-3-4</td>
+      <td>8.246204</td>
+      <td>23.482788</td>
+      <td>18136</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>38964717</th>
+      <td>18137</td>
+      <td>Zwint</td>
+      <td>0.279290</td>
+      <td>0.154337</td>
+      <td>0.335284</td>
+      <td>0.164991</td>
+      <td>0.144815</td>
+      <td>0.800248</td>
+      <td>0.041252</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTCCTCCACGGTAAGx</td>
+      <td>nIPC</td>
+      <td>-3.441272</td>
+      <td>-4.917364</td>
+      <td>18137</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>38964718</th>
+      <td>18138</td>
+      <td>Zwint</td>
+      <td>0.697305</td>
+      <td>0.128248</td>
+      <td>0.740287</td>
+      <td>0.132708</td>
+      <td>0.119159</td>
+      <td>0.859578</td>
+      <td>0.034811</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTGTCAAGCGTCAAGx</td>
+      <td>ImmGranule2</td>
+      <td>16.394199</td>
+      <td>-6.143549</td>
+      <td>18138</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>38964719</th>
+      <td>18139</td>
+      <td>Zwint</td>
+      <td>0.786592</td>
+      <td>0.127584</td>
+      <td>0.828834</td>
+      <td>0.131926</td>
+      <td>0.119557</td>
+      <td>0.869013</td>
+      <td>0.033548</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTCCTCGTGAAAGAGx</td>
+      <td>ImmGranule2</td>
+      <td>17.490857</td>
+      <td>-4.130190</td>
+      <td>18139</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+<p>38910300 rows × 17 columns</p>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[104]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ncols</span><span class="o">=</span><span class="mi">5</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">12</span><span class="p">))</span>
+<span class="n">gene_list</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Rimbp2&#39;</span><span class="p">,</span><span class="s1">&#39;Elavl4&#39;</span><span class="p">,</span><span class="s1">&#39;Dctn3&#39;</span><span class="p">,</span><span class="s1">&#39;Psd3&#39;</span><span class="p">,</span><span class="s1">&#39;Ntrk2&#39;</span><span class="p">,</span><span class="s1">&#39;Pfkp&#39;</span><span class="p">,</span><span class="s1">&#39;Gnao1&#39;</span><span class="p">,</span><span class="s1">&#39;Ncald&#39;</span><span class="p">,</span><span class="s1">&#39;Klf7&#39;</span><span class="p">,</span><span class="s1">&#39;Slc4a10&#39;</span><span class="p">,</span><span class="s1">&#39;Nav1&#39;</span><span class="p">,</span><span class="s1">&#39;Gpc6&#39;</span><span class="p">,</span><span class="s1">&#39;Cdh13&#39;</span><span class="p">,</span><span class="s1">&#39;Ppfia2&#39;</span><span class="p">]</span>
+
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)):</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)</span><span class="o">/</span><span class="n">ncols</span><span class="p">),</span> <span class="n">ncols</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">cdplt</span><span class="o">.</span><span class="n">gene</span><span class="o">.</span><span class="n">scatter_gene</span><span class="p">(</span>
+        <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+        <span class="n">x</span><span class="o">=</span><span class="s1">&#39;spliced&#39;</span><span class="p">,</span>
+        <span class="n">y</span><span class="o">=</span><span class="s1">&#39;unspliced&#39;</span><span class="p">,</span>
+        <span class="n">load_cellDancer</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">,</span>
+        <span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_xlim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_ylim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">colors</span><span class="o">=</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_neuro</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">velocity</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">gene_name</span><span class="o">=</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_28_0.png" src="../_images/notebooks_Neuro_main_function-pre_sl_28_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[117]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ncols</span><span class="o">=</span><span class="mi">5</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">12</span><span class="p">))</span>
+<span class="n">gene_list</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Rimbp2&#39;</span><span class="p">,</span><span class="s1">&#39;Elavl4&#39;</span><span class="p">,</span><span class="s1">&#39;Dctn3&#39;</span><span class="p">,</span><span class="s1">&#39;Psd3&#39;</span><span class="p">,</span><span class="s1">&#39;Ntrk2&#39;</span><span class="p">,</span><span class="s1">&#39;Pfkp&#39;</span><span class="p">,</span><span class="s1">&#39;Gnao1&#39;</span><span class="p">,</span><span class="s1">&#39;Ncald&#39;</span><span class="p">,</span><span class="s1">&#39;Klf7&#39;</span><span class="p">,</span><span class="s1">&#39;Slc4a10&#39;</span><span class="p">,</span><span class="s1">&#39;Nav1&#39;</span><span class="p">,</span><span class="s1">&#39;Gpc6&#39;</span><span class="p">,</span><span class="s1">&#39;Cdh13&#39;</span><span class="p">,</span><span class="s1">&#39;Ppfia2&#39;</span><span class="p">]</span>
+
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)):</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)</span><span class="o">/</span><span class="n">ncols</span><span class="p">),</span> <span class="n">ncols</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">cdplt</span><span class="o">.</span><span class="n">gene</span><span class="o">.</span><span class="n">scatter_gene</span><span class="p">(</span>
+        <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+        <span class="n">x</span><span class="o">=</span><span class="s1">&#39;spliced&#39;</span><span class="p">,</span>
+        <span class="n">y</span><span class="o">=</span><span class="s1">&#39;unspliced&#39;</span><span class="p">,</span>
+        <span class="n">load_cellDancer</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">,</span>
+        <span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_xlim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_ylim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">colors</span><span class="o">=</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_neuro</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">velocity</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">gene_name</span><span class="o">=</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_29_0.png" src="../_images/notebooks_Neuro_main_function-pre_sl_29_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[125]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># brief, load_cellDancer=velocity_estimation.train(load_raw_data,gene_choice=gene_list,max_epoches=300,result_path=result_path,n_jobs=8,cost_type=&#39;average&#39;,auto_norm_u_s=False) #01</span>
+
+<span class="n">ncols</span><span class="o">=</span><span class="mi">5</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">12</span><span class="p">))</span>
+<span class="n">gene_list</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Rimbp2&#39;</span><span class="p">,</span><span class="s1">&#39;Elavl4&#39;</span><span class="p">,</span><span class="s1">&#39;Dctn3&#39;</span><span class="p">,</span><span class="s1">&#39;Psd3&#39;</span><span class="p">,</span><span class="s1">&#39;Ntrk2&#39;</span><span class="p">,</span><span class="s1">&#39;Pfkp&#39;</span><span class="p">,</span><span class="s1">&#39;Gnao1&#39;</span><span class="p">,</span><span class="s1">&#39;Ncald&#39;</span><span class="p">,</span><span class="s1">&#39;Klf7&#39;</span><span class="p">,</span><span class="s1">&#39;Slc4a10&#39;</span><span class="p">,</span><span class="s1">&#39;Nav1&#39;</span><span class="p">,</span><span class="s1">&#39;Gpc6&#39;</span><span class="p">,</span><span class="s1">&#39;Cdh13&#39;</span><span class="p">,</span><span class="s1">&#39;Ppfia2&#39;</span><span class="p">]</span>
+
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)):</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)</span><span class="o">/</span><span class="n">ncols</span><span class="p">),</span> <span class="n">ncols</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">cdplt</span><span class="o">.</span><span class="n">gene</span><span class="o">.</span><span class="n">scatter_gene</span><span class="p">(</span>
+        <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+        <span class="n">x</span><span class="o">=</span><span class="s1">&#39;spliced&#39;</span><span class="p">,</span>
+        <span class="n">y</span><span class="o">=</span><span class="s1">&#39;unspliced&#39;</span><span class="p">,</span>
+        <span class="n">load_cellDancer</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">,</span>
+        <span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_xlim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_ylim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">colors</span><span class="o">=</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_neuro</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">velocity</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">gene_name</span><span class="o">=</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_30_0.png" src="../_images/notebooks_Neuro_main_function-pre_sl_30_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[127]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># brief, load_cellDancer=velocity_estimation.train(load_raw_data,gene_choice=gene_list,max_epoches=300,result_path=result_path,n_jobs=8,cost_type=&#39;average&#39;,auto_norm_u_s=False,check_n_epoch=10) #02</span>
+
+<span class="n">ncols</span><span class="o">=</span><span class="mi">5</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">12</span><span class="p">))</span>
+<span class="n">gene_list</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Rimbp2&#39;</span><span class="p">,</span><span class="s1">&#39;Elavl4&#39;</span><span class="p">,</span><span class="s1">&#39;Dctn3&#39;</span><span class="p">,</span><span class="s1">&#39;Psd3&#39;</span><span class="p">,</span><span class="s1">&#39;Ntrk2&#39;</span><span class="p">,</span><span class="s1">&#39;Pfkp&#39;</span><span class="p">,</span><span class="s1">&#39;Gnao1&#39;</span><span class="p">,</span><span class="s1">&#39;Ncald&#39;</span><span class="p">,</span><span class="s1">&#39;Klf7&#39;</span><span class="p">,</span><span class="s1">&#39;Slc4a10&#39;</span><span class="p">,</span><span class="s1">&#39;Nav1&#39;</span><span class="p">,</span><span class="s1">&#39;Gpc6&#39;</span><span class="p">,</span><span class="s1">&#39;Cdh13&#39;</span><span class="p">,</span><span class="s1">&#39;Ppfia2&#39;</span><span class="p">]</span>
+
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)):</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)</span><span class="o">/</span><span class="n">ncols</span><span class="p">),</span> <span class="n">ncols</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">cdplt</span><span class="o">.</span><span class="n">gene</span><span class="o">.</span><span class="n">scatter_gene</span><span class="p">(</span>
+        <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+        <span class="n">x</span><span class="o">=</span><span class="s1">&#39;spliced&#39;</span><span class="p">,</span>
+        <span class="n">y</span><span class="o">=</span><span class="s1">&#39;unspliced&#39;</span><span class="p">,</span>
+        <span class="n">load_cellDancer</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">,</span>
+        <span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_xlim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_ylim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">colors</span><span class="o">=</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_neuro</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">velocity</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">gene_name</span><span class="o">=</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_31_0.png" src="../_images/notebooks_Neuro_main_function-pre_sl_31_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[148]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<span class="o">%</span><span class="k">autoreload</span> 2
+
+<span class="n">gene_list</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Rimbp2&#39;</span><span class="p">,</span><span class="s1">&#39;Dcx&#39;</span><span class="p">,</span><span class="s1">&#39;Elavl4&#39;</span><span class="p">,</span><span class="s1">&#39;Dctn3&#39;</span><span class="p">,</span><span class="s1">&#39;Psd3&#39;</span><span class="p">,</span><span class="s1">&#39;Ntrk2&#39;</span><span class="p">,</span><span class="s1">&#39;Pfkp&#39;</span><span class="p">,</span><span class="s1">&#39;Gnao1&#39;</span><span class="p">,</span><span class="s1">&#39;Ncald&#39;</span><span class="p">,</span><span class="s1">&#39;Klf7&#39;</span><span class="p">,</span><span class="s1">&#39;Slc4a10&#39;</span><span class="p">,</span><span class="s1">&#39;Nav1&#39;</span><span class="p">,</span><span class="s1">&#39;Gpc6&#39;</span><span class="p">,</span><span class="s1">&#39;Cdh13&#39;</span><span class="p">,</span><span class="s1">&#39;Ppfia2&#39;</span><span class="p">]</span>
+<span class="n">gene_list</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Dcx&#39;</span><span class="p">,</span><span class="s1">&#39;Elavl4&#39;</span><span class="p">,</span><span class="s1">&#39;Nav1&#39;</span><span class="p">]</span>
+
+<span class="n">brief</span><span class="p">,</span> <span class="n">load_cellDancer</span><span class="o">=</span><span class="n">velocity_estimation</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">load_raw_data</span><span class="p">,</span><span class="n">gene_choice</span><span class="o">=</span><span class="n">gene_list</span><span class="p">,</span><span class="n">max_epoches</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span><span class="n">result_path</span><span class="o">=</span><span class="n">result_path</span><span class="p">,</span><span class="n">n_jobs</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span><span class="n">cost_type</span><span class="o">=</span><span class="s1">&#39;average&#39;</span><span class="p">,</span><span class="n">auto_norm_u_s</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">check_n_epoch</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="c1">#03</span>
+
+
+<span class="n">ncols</span><span class="o">=</span><span class="mi">5</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">12</span><span class="p">))</span>
+
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)):</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)</span><span class="o">/</span><span class="n">ncols</span><span class="p">),</span> <span class="n">ncols</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">cdplt</span><span class="o">.</span><span class="n">gene</span><span class="o">.</span><span class="n">scatter_gene</span><span class="p">(</span>
+        <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+        <span class="n">x</span><span class="o">=</span><span class="s1">&#39;spliced&#39;</span><span class="p">,</span>
+        <span class="n">y</span><span class="o">=</span><span class="s1">&#39;unspliced&#39;</span><span class="p">,</span>
+        <span class="n">load_cellDancer</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">,</span>
+        <span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_xlim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_ylim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">colors</span><span class="o">=</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_neuro</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">velocity</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">gene_name</span><span class="o">=</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+The autoreload extension is already loaded. To reload it, use:
+  %reload_ext autoreload
+Using /Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/velocyto/neuro/result_detailcsv/polish/cell_dancer_velocity_2022-04-28 19-22-39 as the output path.
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+circle
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+Velocity Estimation:   0%|                                | 0/3 [00:00&lt;?, ?it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation: 100%|████████████████████████| 3/3 [00:07&lt;00:00,  2.57s/it]
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_32_4.png" src="../_images/notebooks_Neuro_main_function-pre_sl_32_4.png" />
+</div>
+</div>
+</section>
+<section id="Rsquare-rank">
+<h2>Rsquare rank<a class="headerlink" href="#Rsquare-rank" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<span class="o">%</span><span class="k">autoreload</span> 2
+
+<span class="kn">from</span> <span class="nn">utilities</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">cluster_choice</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Blood progenitors 1&#39;</span><span class="p">,</span><span class="s1">&#39;Blood progenitors 2&#39;</span><span class="p">,</span><span class="s1">&#39;Erythroid1&#39;</span><span class="p">,</span><span class="s1">&#39;Erythroid2&#39;</span><span class="p">,</span><span class="s1">&#39;Erythroid3&#39;</span><span class="p">]</span>
+<span class="n">rsquare_rank</span><span class="o">=</span><span class="n">rank_rsquare</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">gene_list</span><span class="o">=</span><span class="n">gene_list</span><span class="p">,</span><span class="n">cluster_choice</span><span class="o">=</span><span class="n">cluster_choice</span><span class="p">)</span>
+<span class="n">rsquare_rank</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+The autoreload extension is already loaded. To reload it, use:
+  %reload_ext autoreload
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+Calculate rsquare: 100%|████████████████████████| 13/13 [00:08&lt;00:00,  1.52it/s]
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>gene_name</th>
+      <th>r_square</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Hba-x</td>
+      <td>0.992753</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Blvrb</td>
+      <td>0.992749</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mllt3</td>
+      <td>0.982714</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Smim1</td>
+      <td>0.977385</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Skap1</td>
+      <td>0.940685</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Snca</td>
+      <td>0.866329</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Smarca2</td>
+      <td>0.844709</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>Yipf5</td>
+      <td>0.840429</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>Nfkb1</td>
+      <td>0.804476</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Phc2</td>
+      <td>0.711426</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Coro2b</td>
+      <td>0.711294</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>Myo1b</td>
+      <td>0.694352</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>Sulf2</td>
+      <td>0.657642</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="UMAP-using-alpha,-beta,-and-gamma">
+<h2>UMAP using alpha, beta, and gamma<a class="headerlink" href="#UMAP-using-alpha,-beta,-and-gamma" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_cellDancer_valid</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">[</span><span class="o">~</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">gene_name</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s1">&#39;Cst3&#39;</span><span class="p">,</span><span class="s1">&#39;Scd2&#39;</span><span class="p">,</span><span class="s1">&#39;Fth1&#39;</span><span class="p">])]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_cellDancer_bkup</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[63]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_cellDancer</span><span class="o">=</span><span class="n">load_cellDancer_valid</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_cellDancer</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>cellIndex</th>
+      <th>gene_name</th>
+      <th>s0</th>
+      <th>u0</th>
+      <th>s1</th>
+      <th>u1</th>
+      <th>alpha</th>
+      <th>beta</th>
+      <th>gamma</th>
+      <th>cost</th>
+      <th>cellID</th>
+      <th>clusters</th>
+      <th>embedding1</th>
+      <th>embedding2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0</td>
+      <td>0610007P14Rik</td>
+      <td>1.232261</td>
+      <td>0.072207</td>
+      <td>1.259473</td>
+      <td>0.074903</td>
+      <td>0.064000</td>
+      <td>0.811681</td>
+      <td>0.003397</td>
+      <td>0.060301</td>
+      <td>10X83_2:AAACGGGGTCTCTTTAx</td>
+      <td>ImmGranule2</td>
+      <td>18.931086</td>
+      <td>-1.862429</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>0610007P14Rik</td>
+      <td>1.133782</td>
+      <td>0.078814</td>
+      <td>1.163397</td>
+      <td>0.078786</td>
+      <td>0.063456</td>
+      <td>0.805846</td>
+      <td>0.003776</td>
+      <td>0.060301</td>
+      <td>10X83_2:AACCATGGTTCAACCAx</td>
+      <td>ImmGranule2</td>
+      <td>18.419891</td>
+      <td>-1.282895</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2</td>
+      <td>0610007P14Rik</td>
+      <td>1.514005</td>
+      <td>0.135724</td>
+      <td>1.567264</td>
+      <td>0.119788</td>
+      <td>0.078587</td>
+      <td>0.813846</td>
+      <td>0.002602</td>
+      <td>0.060301</td>
+      <td>10X83_2:AACACGTTCTGAAAGAx</td>
+      <td>CA2-3-4</td>
+      <td>2.369887</td>
+      <td>16.868419</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>3</td>
+      <td>0610007P14Rik</td>
+      <td>0.694710</td>
+      <td>0.067970</td>
+      <td>0.719411</td>
+      <td>0.068489</td>
+      <td>0.054528</td>
+      <td>0.786969</td>
+      <td>0.005885</td>
+      <td>0.060301</td>
+      <td>10X83_2:AAAGATGCATTGAGCTx</td>
+      <td>CA</td>
+      <td>-5.351040</td>
+      <td>10.676485</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>4</td>
+      <td>0610007P14Rik</td>
+      <td>0.892577</td>
+      <td>0.113096</td>
+      <td>0.934898</td>
+      <td>0.100961</td>
+      <td>0.064767</td>
+      <td>0.787270</td>
+      <td>0.004924</td>
+      <td>0.060301</td>
+      <td>10X83_2:AACCATGTCTACTTACx</td>
+      <td>CA1-Sub</td>
+      <td>-6.189126</td>
+      <td>11.754900</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>38964715</th>
+      <td>18135</td>
+      <td>Zwint</td>
+      <td>0.628872</td>
+      <td>0.102383</td>
+      <td>0.661537</td>
+      <td>0.112521</td>
+      <td>0.107899</td>
+      <td>0.855837</td>
+      <td>0.035450</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTCCTCCACCATCCTx</td>
+      <td>ImmGranule1</td>
+      <td>10.812611</td>
+      <td>-2.487668</td>
+    </tr>
+    <tr>
+      <th>38964716</th>
+      <td>18136</td>
+      <td>Zwint</td>
+      <td>2.242793</td>
+      <td>0.237419</td>
+      <td>2.335716</td>
+      <td>0.236443</td>
+      <td>0.224360</td>
+      <td>0.953217</td>
+      <td>0.018043</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTGTCACATGAAGTAx</td>
+      <td>CA2-3-4</td>
+      <td>8.246204</td>
+      <td>23.482788</td>
+    </tr>
+    <tr>
+      <th>38964717</th>
+      <td>18137</td>
+      <td>Zwint</td>
+      <td>0.279290</td>
+      <td>0.154337</td>
+      <td>0.335284</td>
+      <td>0.164991</td>
+      <td>0.144815</td>
+      <td>0.800248</td>
+      <td>0.041252</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTCCTCCACGGTAAGx</td>
+      <td>nIPC</td>
+      <td>-3.441272</td>
+      <td>-4.917364</td>
+    </tr>
+    <tr>
+      <th>38964718</th>
+      <td>18138</td>
+      <td>Zwint</td>
+      <td>0.697305</td>
+      <td>0.128248</td>
+      <td>0.740287</td>
+      <td>0.132708</td>
+      <td>0.119159</td>
+      <td>0.859578</td>
+      <td>0.034811</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTGTCAAGCGTCAAGx</td>
+      <td>ImmGranule2</td>
+      <td>16.394199</td>
+      <td>-6.143549</td>
+    </tr>
+    <tr>
+      <th>38964719</th>
+      <td>18139</td>
+      <td>Zwint</td>
+      <td>0.786592</td>
+      <td>0.127584</td>
+      <td>0.828834</td>
+      <td>0.131926</td>
+      <td>0.119557</td>
+      <td>0.869013</td>
+      <td>0.033548</td>
+      <td>0.062125</td>
+      <td>10X84_3:TTTCCTCGTGAAAGAGx</td>
+      <td>ImmGranule2</td>
+      <td>17.490857</td>
+      <td>-4.130190</td>
+    </tr>
+  </tbody>
+</table>
+<p>38910300 rows × 14 columns</p>
+</div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">calculate_para_umap</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">para</span><span class="p">,</span><span class="n">umap_n</span><span class="o">=</span><span class="mi">25</span><span class="p">):</span>
+
+    <span class="kn">import</span> <span class="nn">umap</span>
+    <span class="k">if</span> <span class="p">[(</span><span class="n">para</span><span class="o">+</span><span class="s1">&#39;_umap1&#39;</span><span class="p">),(</span><span class="n">para</span><span class="o">+</span><span class="s1">&#39;_umap2&#39;</span><span class="p">)]</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
+        <span class="n">load_cellDancer</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[(</span><span class="n">para</span><span class="o">+</span><span class="s1">&#39;_umap1&#39;</span><span class="p">),(</span><span class="n">para</span><span class="o">+</span><span class="s1">&#39;_umap2&#39;</span><span class="p">)])</span>
+
+    <span class="k">if</span> <span class="n">para</span><span class="o">==</span><span class="s1">&#39;alpha&#39;</span> <span class="ow">or</span> <span class="n">para</span><span class="o">==</span><span class="s1">&#39;beta&#39;</span> <span class="ow">or</span> <span class="n">para</span><span class="o">==</span><span class="s1">&#39;gamma&#39;</span><span class="p">:</span>
+        <span class="n">para_df</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">pivot</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s1">&#39;cellIndex&#39;</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="s1">&#39;gene_name&#39;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">para</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">para</span><span class="o">==</span><span class="s1">&#39;alpha_beta_gamma&#39;</span><span class="p">:</span>
+        <span class="n">alpha_df</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">pivot</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s1">&#39;cellIndex&#39;</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="s1">&#39;gene_name&#39;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="s1">&#39;alpha&#39;</span><span class="p">)</span>
+        <span class="n">beta_df</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">pivot</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s1">&#39;cellIndex&#39;</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="s1">&#39;gene_name&#39;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="s1">&#39;beta&#39;</span><span class="p">)</span>
+        <span class="n">gamma_df</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">pivot</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s1">&#39;cellIndex&#39;</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="s1">&#39;gene_name&#39;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="s1">&#39;gamma&#39;</span><span class="p">)</span>
+        <span class="n">para_df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">alpha_df</span><span class="p">,</span><span class="n">beta_df</span><span class="p">,</span><span class="n">gamma_df</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;para should be set in one of alpha, beta, gamma, or alpha_beta_gamma.&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_umap</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">n_neighbors</span><span class="o">=</span><span class="n">umap_n</span><span class="p">,</span> <span class="n">min_dist</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s1">&#39;euclidean&#39;</span><span class="p">):</span>
+        <span class="n">fit</span> <span class="o">=</span> <span class="n">umap</span><span class="o">.</span><span class="n">UMAP</span><span class="p">(</span>
+            <span class="n">n_neighbors</span><span class="o">=</span><span class="n">n_neighbors</span><span class="p">,</span>
+            <span class="n">min_dist</span><span class="o">=</span><span class="n">min_dist</span><span class="p">,</span>
+            <span class="n">n_components</span><span class="o">=</span><span class="n">n_components</span><span class="p">,</span>
+            <span class="n">metric</span><span class="o">=</span><span class="n">metric</span>
+        <span class="p">)</span>
+        <span class="n">embed</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">df</span><span class="p">);</span>
+        <span class="k">return</span><span class="p">(</span><span class="n">embed</span><span class="p">)</span>
+    <span class="n">umap_para</span><span class="o">=</span><span class="n">get_umap</span><span class="p">(</span><span class="n">para_df</span><span class="p">)</span>
+    <span class="n">umap_info</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">umap_para</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="p">[(</span><span class="n">para</span><span class="o">+</span><span class="s1">&#39;_umap1&#39;</span><span class="p">),(</span><span class="n">para</span><span class="o">+</span><span class="s1">&#39;_umap2&#39;</span><span class="p">)])</span>
+
+    <span class="n">gene_amt</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">gene_name</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">())</span>
+    <span class="n">umap_col</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">umap_info</span><span class="p">]</span><span class="o">*</span><span class="n">gene_amt</span><span class="p">)</span>
+    <span class="n">umap_col</span><span class="o">.</span><span class="n">index</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">index</span>
+    <span class="n">load_cellDancer</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">umap_col</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[61]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">set</span><span class="p">([</span><span class="s1">&#39;u0&#39;</span><span class="p">,</span><span class="s1">&#39;s0&#39;</span><span class="p">,</span><span class="s1">&#39;1&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[61]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+False
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[51]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">test</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">[[</span><span class="s1">&#39;s0&#39;</span><span class="p">,</span><span class="s1">&#39;u0&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[53]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[53]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>u0</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0.072207</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>0.078814</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>0.135724</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>0.067970</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>0.113096</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>38964715</th>
+      <td>0.102383</td>
+    </tr>
+    <tr>
+      <th>38964716</th>
+      <td>0.237419</td>
+    </tr>
+    <tr>
+      <th>38964717</th>
+      <td>0.154337</td>
+    </tr>
+    <tr>
+      <th>38964718</th>
+      <td>0.128248</td>
+    </tr>
+    <tr>
+      <th>38964719</th>
+      <td>0.127584</td>
+    </tr>
+  </tbody>
+</table>
+<p>38910300 rows × 1 columns</p>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[54]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">test</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[54]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>s0</th>
+      <th>u0</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1.232261</td>
+      <td>0.072207</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1.133782</td>
+      <td>0.078814</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>1.514005</td>
+      <td>0.135724</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>0.694710</td>
+      <td>0.067970</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>0.892577</td>
+      <td>0.113096</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>38964715</th>
+      <td>0.628872</td>
+      <td>0.102383</td>
+    </tr>
+    <tr>
+      <th>38964716</th>
+      <td>2.242793</td>
+      <td>0.237419</td>
+    </tr>
+    <tr>
+      <th>38964717</th>
+      <td>0.279290</td>
+      <td>0.154337</td>
+    </tr>
+    <tr>
+      <th>38964718</th>
+      <td>0.697305</td>
+      <td>0.128248</td>
+    </tr>
+    <tr>
+      <th>38964719</th>
+      <td>0.786592</td>
+      <td>0.127584</td>
+    </tr>
+  </tbody>
+</table>
+<p>38910300 rows × 2 columns</p>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_cellDancer</span><span class="o">=</span><span class="n">calculate_para_umap</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="s1">&#39;alpha&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+OMP: Info #271: omp_set_nested routine deprecated, please use omp_set_max_active_levels instead.
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_cellDancer</span><span class="o">=</span><span class="n">calculate_para_umap</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="s1">&#39;beta&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_cellDancer</span><span class="o">=</span><span class="n">calculate_para_umap</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="s1">&#39;gamma&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_cellDancer</span><span class="o">=</span><span class="n">calculate_para_umap</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="s1">&#39;alpha_beta_gamma&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plot_para_umap</span><span class="p">(</span><span class="n">para</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">gene_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">umap_n</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">legend_annotation</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+    <span class="n">onegene</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">[</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">gene_name</span><span class="o">==</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">gene_name</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="n">umap_para</span><span class="o">=</span><span class="n">onegene</span><span class="p">[[(</span><span class="n">para</span><span class="o">+</span><span class="s1">&#39;_umap1&#39;</span><span class="p">),(</span><span class="n">para</span><span class="o">+</span><span class="s1">&#39;_umap2&#39;</span><span class="p">)]]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+    <span class="n">onegene_cluster_info</span><span class="o">=</span><span class="n">onegene</span><span class="o">.</span><span class="n">clusters</span>
+
+    <span class="k">if</span> <span class="n">gene_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cluster_map</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">plotting.colormap</span> <span class="kn">import</span> <span class="n">build_colormap</span>
+            <span class="n">cluster_map</span><span class="o">=</span><span class="n">build_colormap</span><span class="p">(</span><span class="n">onegene_cluster_info</span><span class="p">)</span>
+
+        <span class="n">colors</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">cluster_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;black&#39;</span><span class="p">),</span> <span class="n">onegene_cluster_info</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">legend_annotation</span><span class="p">:</span>
+            <span class="n">markers</span> <span class="o">=</span> <span class="p">[</span><span class="n">plt</span><span class="o">.</span><span class="n">Line2D</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span><span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">color</span> <span class="ow">in</span> <span class="n">cluster_map</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+            <span class="n">lgd</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">markers</span><span class="p">,</span> <span class="n">cluster_map</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">numpoints</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;upper left&#39;</span><span class="p">,</span><span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">1.01</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">umap_para</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">umap_para</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span><span class="n">c</span><span class="o">=</span><span class="n">colors</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">edgecolor</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">onegene</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">[</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">gene_name</span><span class="o">==</span><span class="n">gene_name</span><span class="p">]</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">umap_para</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">umap_para</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span><span class="n">c</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">onegene</span><span class="o">.</span><span class="n">s0</span><span class="o">+</span><span class="mf">0.0001</span><span class="p">),</span><span class="n">s</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">edgecolor</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">gene_name</span><span class="o">+</span><span class="s2">&quot; s0&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">save_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span><span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span><span class="n">bbox_extra_artists</span><span class="o">=</span><span class="p">(</span><span class="n">lgd</span><span class="p">,))</span>
+    <span class="n">umap_df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;umap1&#39;</span><span class="p">:</span><span class="n">umap_para</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span><span class="s1">&#39;umap2&#39;</span><span class="p">:</span><span class="n">umap_para</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]})],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_para_umap</span><span class="p">(</span><span class="s1">&#39;alpha&#39;</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="n">cdplt</span><span class="o">.</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_neuro</span> <span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">plot_para_umap</span><span class="p">(</span><span class="s1">&#39;alpha&#39;</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">gene_name</span><span class="o">=</span><span class="s1">&#39;Sulf2&#39;</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="n">cdplt</span><span class="o">.</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_neuro</span> <span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_51_0.png" src="../_images/notebooks_Neuro_main_function-pre_sl_51_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_51_1.png" src="../_images/notebooks_Neuro_main_function-pre_sl_51_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_para_umap</span><span class="p">(</span><span class="s1">&#39;beta&#39;</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="n">cdplt</span><span class="o">.</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_neuro</span> <span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">plot_para_umap</span><span class="p">(</span><span class="s1">&#39;beta&#39;</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">gene_name</span><span class="o">=</span><span class="s1">&#39;Sulf2&#39;</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="n">cdplt</span><span class="o">.</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_neuro</span> <span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_52_0.png" src="../_images/notebooks_Neuro_main_function-pre_sl_52_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_52_1.png" src="../_images/notebooks_Neuro_main_function-pre_sl_52_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_para_umap</span><span class="p">(</span><span class="s1">&#39;gamma&#39;</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="n">cdplt</span><span class="o">.</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_neuro</span> <span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">plot_para_umap</span><span class="p">(</span><span class="s1">&#39;gamma&#39;</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">gene_name</span><span class="o">=</span><span class="s1">&#39;Sulf2&#39;</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="n">cdplt</span><span class="o">.</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_neuro</span> <span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_53_0.png" src="../_images/notebooks_Neuro_main_function-pre_sl_53_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_53_1.png" src="../_images/notebooks_Neuro_main_function-pre_sl_53_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[40]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_para_umap</span><span class="p">(</span><span class="s1">&#39;alpha_beta_gamma&#39;</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="n">cdplt</span><span class="o">.</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_neuro</span> <span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">plot_para_umap</span><span class="p">(</span><span class="s1">&#39;alpha_beta_gamma&#39;</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">gene_name</span><span class="o">=</span><span class="s1">&#39;Elavl4&#39;</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="n">cdplt</span><span class="o">.</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_neuro</span> <span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_54_0.png" src="../_images/notebooks_Neuro_main_function-pre_sl_54_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_54_1.png" src="../_images/notebooks_Neuro_main_function-pre_sl_54_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[42]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_para_umap</span><span class="p">(</span><span class="s1">&#39;alpha_beta_gamma&#39;</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">gene_name</span><span class="o">=</span><span class="s1">&#39;Rimbp2&#39;</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="n">cdplt</span><span class="o">.</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_neuro</span> <span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Neuro_main_function-pre_sl_55_0.png" src="../_images/notebooks_Neuro_main_function-pre_sl_55_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Preprocessing.html" class="btn btn-neutral float-right" title="Proprocessing" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="Pancreas_main_function_pre_sl.html" class="btn btn-neutral" title="Case Study: Pancreatic Endocrinogenesis" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2022, 1.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Sphinx-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script type="text/javascript" src="../None"></script>
+      <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

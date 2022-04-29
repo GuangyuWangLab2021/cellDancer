@@ -12,8 +12,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../src/celldancer'))
-sys.path.insert(0, os.path.abspath('../../src/plotting'))
+sys.path.insert(0, os.path.abspath('../../src'))
+#sys.path.insert(0, os.path.abspath('../../src/plotting'))
 
 
 # -- Project information -----------------------------------------------------
@@ -37,8 +37,9 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
 	'sphinx.ext.autosummary', 
-	'sphinx_autopackagesummary']
-
+	'sphinx_autopackagesummary',
+    'nbsphinx']
+    
 autosummary_generate = True
 
 # Add any paths that contain templates here, relative to this directory.

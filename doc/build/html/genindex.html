@@ -34,6 +34,8 @@
   
 
   
+        <link rel="author" title="About these documents"
+              href="about.html"/>
         <link rel="index" title="Index"
               href="#"/>
         <link rel="search" title="Search" href="search.html"/>
@@ -83,8 +85,21 @@
           
             
             
-                <!-- Local TOC -->
-                <div class="local-toc"></div>
+                <p class="caption" role="heading"><span class="caption-text">celldancer</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About celldancer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="API.html">API - CellDancer key applications</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tutorials:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/Quick%20Start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/Gastrulation_main_function-Copy2.html">Case Study: Gastrulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/Pancreas_main_function_pre_sl.html">Case Study: Pancreatic Endocrinogenesis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/Neuro_main_function-pre_sl.html">Case Study: Dentate Gyrus</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/Preprocessing.html">Proprocessing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/Tunning.html">Tunning</a></li>
+</ul>
+
             
           
         </div>
@@ -148,83 +163,52 @@
 <h1 id="index">Index</h1>
 
 <div class="genindex-jumpbox">
- <a href="#G"><strong>G</strong></a>
- | <a href="#M"><strong>M</strong></a>
+ <a href="#C"><strong>C</strong></a>
  | <a href="#P"><strong>P</strong></a>
+ | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
- | <a href="#V"><strong>V</strong></a>
  
 </div>
-<h2 id="G">G</h2>
+<h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="plotting.html#plotting.gene.gene_list_pseudotime">gene_list_pseudotime() (in module plotting.gene)</a>
+      <li><a href="plotting.cell.calculate_para_umap.html#plotting.cell.calculate_para_umap">calculate_para_umap() (in module plotting.cell)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="plotting.html#plotting.gene.gene_pseudotime">gene_pseudotime() (in module plotting.gene)</a>
+      <li><a href="plotting.compute_cell_velocity.compute_cell_velocity.html#plotting.compute_cell_velocity.compute_cell_velocity">compute_cell_velocity() (in module plotting.compute_cell_velocity)</a>
 </li>
-  </ul></td>
-</tr></table>
-
-<h2 id="M">M</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li>
-    module
-
-      <ul>
-        <li><a href="plotting.html#module-plotting">plotting</a>
-</li>
-        <li><a href="plotting.html#module-plotting.colormap">plotting.colormap</a>
-</li>
-        <li><a href="plotting.html#module-plotting.gene">plotting.gene</a>
-</li>
-      </ul></li>
   </ul></td>
 </tr></table>
 
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li>
-    plotting
-
-      <ul>
-        <li><a href="plotting.html#module-plotting">module</a>
+      <li><a href="plotting.cell.plot_para_umap.html#plotting.cell.plot_para_umap">plot_para_umap() (in module plotting.cell)</a>
 </li>
-      </ul></li>
-      <li>
-    plotting.colormap
-
-      <ul>
-        <li><a href="plotting.html#module-plotting.colormap">module</a>
-</li>
-      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li>
-    plotting.gene
-
-      <ul>
-        <li><a href="plotting.html#module-plotting.gene">module</a>
+      <li><a href="plotting.pseudo_time.pseudo_time.html#plotting.pseudo_time.pseudo_time">pseudo_time() (in module plotting.pseudo_time)</a>
 </li>
-      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="S">S</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="plotting.cell.scatter_cell.html#plotting.cell.scatter_cell">scatter_cell() (in module plotting.cell)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="gene/plotting.gene.scatter_gene.html#plotting.gene.scatter_gene">scatter_gene() (in module plotting.gene)</a>, <a href="plotting.gene.scatter_gene.html#plotting.gene.scatter_gene">[1]</a>
+</li>
   </ul></td>
 </tr></table>
 
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="celldancer/velocity_estimation.train.html#velocity_estimation.train">train() (in module velocity_estimation)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="V">V</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="plotting.html#plotting.gene.velocity_gene">velocity_gene() (in module plotting.gene)</a>
+      <li><a href="celldancer.velocity_estimation.train.html#celldancer.velocity_estimation.train">train() (in module celldancer.velocity_estimation)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -273,6 +257,7 @@
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
 
   
 
