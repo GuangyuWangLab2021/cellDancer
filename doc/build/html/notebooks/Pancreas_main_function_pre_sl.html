@@ -1,0 +1,1922 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Case Study: Pancreatic Endocrinogenesis &mdash; celldancer  documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+        <link rel="author" title="About these documents"
+              href="../about.html"/>
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="celldancer  documentation" href="../index.html"/>
+        <link rel="next" title="Case Study: Dentate Gyrus" href="Neuro_main_function-pre_sl.html"/>
+        <link rel="prev" title="Case Study: Gastrulation" href="Gastrulation_main_function-Copy2.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> celldancer
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption" role="heading"><span class="caption-text">celldancer</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About celldancer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../API.html">API - CellDancer key applications</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tutorials:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Quick%20Start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Gastrulation_main_function-Copy2.html">Case Study: Gastrulation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Case Study: Pancreatic Endocrinogenesis</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#velocity-estimation">velocity estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Set-Parameters">Set Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Load-detail">Load detail</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Estimate-pseudotime">Estimate pseudotime</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Rsquare-rank">Rsquare rank</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#UMAP-using-alpha,-beta,-and-gamma">UMAP using alpha, beta, and gamma</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Neuro_main_function-pre_sl.html">Case Study: Dentate Gyrus</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Preprocessing.html">Proprocessing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Tunning.html">Tunning</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">celldancer</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Case Study: Pancreatic Endocrinogenesis</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/notebooks/Pancreas_main_function_pre_sl.ipynb.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    /*background: #f5f5f5;*/
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+    margin: 0;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt .copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+</style>
+<section id="Case-Study:-Pancreatic-Endocrinogenesis">
+<h1>Case Study: Pancreatic Endocrinogenesis<a class="headerlink" href="#Case-Study:-Pancreatic-Endocrinogenesis" title="Permalink to this headline">¶</a></h1>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="c1"># import from absolute directory</span>
+<span class="n">srcdir</span> <span class="o">=</span> <span class="s1">&#39;/Users/pengzhizhang/cellDancer/src&#39;</span>
+<span class="n">srcdir</span> <span class="o">=</span> <span class="s1">&#39;/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/bin/cellDancer_polish/src&#39;</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">srcdir</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">cdplt</span>
+<br/></pre></div>
+</div>
+</div>
+<section id="velocity-estimation">
+<h2>velocity estimation<a class="headerlink" href="#velocity-estimation" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># import celldancer.velocity_estimation as calc_velocity</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="n">srcdir</span> <span class="o">=</span> <span class="s1">&#39;/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/bin/cellDancer_polish/src&#39;</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">srcdir</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">plotting</span> <span class="kn">import</span> <span class="n">gene</span> <span class="k">as</span> <span class="n">cdpl_gene</span>
+<span class="kn">from</span> <span class="nn">plotting</span> <span class="kn">import</span> <span class="n">gene</span> <span class="k">as</span> <span class="n">cdpl_cell</span>
+<span class="kn">from</span> <span class="nn">plotting.colormap</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">celldancer</span> <span class="kn">import</span> <span class="n">velocity_estimation</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">raw_path</span><span class="o">=</span><span class="s1">&#39;/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/raw_data/pancreatic_endocrinogenesis.csv&#39;</span>
+<span class="n">load_raw_data</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">raw_path</span><span class="p">)</span>
+<span class="n">load_raw_data</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>gene_name</th>
+      <th>u0</th>
+      <th>s0</th>
+      <th>cellID</th>
+      <th>clusters</th>
+      <th>embedding1</th>
+      <th>embedding2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Sntg1</td>
+      <td>0.045809</td>
+      <td>0.000000</td>
+      <td>Pre-endocrine</td>
+      <td>AAACCTGAGAGGGATA</td>
+      <td>6.143066</td>
+      <td>-0.063644</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Sntg1</td>
+      <td>0.058600</td>
+      <td>0.000000</td>
+      <td>Ductal</td>
+      <td>AAACCTGAGCCTTGAT</td>
+      <td>-9.906417</td>
+      <td>0.197778</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Sntg1</td>
+      <td>0.058696</td>
+      <td>0.000000</td>
+      <td>Alpha</td>
+      <td>AAACCTGAGGCAATTA</td>
+      <td>7.559791</td>
+      <td>0.583762</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Sntg1</td>
+      <td>0.198549</td>
+      <td>0.000000</td>
+      <td>Ductal</td>
+      <td>AAACCTGCATCATCCC</td>
+      <td>-11.283765</td>
+      <td>4.218998</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Sntg1</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>Ngn3 high EP</td>
+      <td>AAACCTGGTAAGTGGC</td>
+      <td>1.721565</td>
+      <td>-4.753407</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>7391995</th>
+      <td>Erdr1</td>
+      <td>0.461130</td>
+      <td>0.505213</td>
+      <td>Pre-endocrine</td>
+      <td>TTTGTCAAGTGACATA</td>
+      <td>4.768472</td>
+      <td>-1.388353</td>
+    </tr>
+    <tr>
+      <th>7391996</th>
+      <td>Erdr1</td>
+      <td>0.643907</td>
+      <td>0.531752</td>
+      <td>Ngn3 high EP</td>
+      <td>TTTGTCAAGTGTGGCA</td>
+      <td>-1.873335</td>
+      <td>-4.182650</td>
+    </tr>
+    <tr>
+      <th>7391997</th>
+      <td>Erdr1</td>
+      <td>0.626258</td>
+      <td>0.406073</td>
+      <td>Ductal</td>
+      <td>TTTGTCAGTTGTTTGG</td>
+      <td>-9.882250</td>
+      <td>-0.105594</td>
+    </tr>
+    <tr>
+      <th>7391998</th>
+      <td>Erdr1</td>
+      <td>0.409493</td>
+      <td>0.514864</td>
+      <td>Alpha</td>
+      <td>TTTGTCATCGAATGCT</td>
+      <td>6.612424</td>
+      <td>4.531895</td>
+    </tr>
+    <tr>
+      <th>7391999</th>
+      <td>Erdr1</td>
+      <td>0.305068</td>
+      <td>0.359560</td>
+      <td>Epsilon</td>
+      <td>TTTGTCATCTGTTTGT</td>
+      <td>3.071044</td>
+      <td>1.120432</td>
+    </tr>
+  </tbody>
+</table>
+<p>7392000 rows × 7 columns</p>
+</div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">gene_list</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Ank&quot;</span><span class="p">,</span><span class="s2">&quot;Abcc8&quot;</span><span class="p">,</span><span class="s2">&quot;Tcp11&quot;</span><span class="p">,</span><span class="s2">&quot;Nfib&quot;</span><span class="p">,</span><span class="s2">&quot;Ppp3ca&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Rbfox3&quot;</span><span class="p">,</span><span class="s2">&quot;Cdk1&quot;</span><span class="p">,</span><span class="s2">&quot;Gng12&quot;</span><span class="p">,</span><span class="s2">&quot;Map1b&quot;</span><span class="p">,</span><span class="s2">&quot;Cpe&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Gnao1&quot;</span><span class="p">,</span><span class="s2">&quot;Pcsk2&quot;</span><span class="p">,</span><span class="s2">&quot;Tmem163&quot;</span><span class="p">,</span><span class="s2">&quot;Pak3&quot;</span><span class="p">,</span><span class="s2">&quot;Wfdc15b&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Nnat&quot;</span><span class="p">,</span><span class="s2">&quot;Anxa4&quot;</span><span class="p">,</span><span class="s2">&quot;Actn4&quot;</span><span class="p">,</span><span class="s2">&quot;Btbd17&quot;</span><span class="p">,</span><span class="s2">&quot;Dcdc2a&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Adk&quot;</span><span class="p">,</span><span class="s2">&quot;Smoc1&quot;</span><span class="p">,</span><span class="s2">&quot;Mapre3&quot;</span><span class="p">,</span><span class="s2">&quot;Pim2&quot;</span><span class="p">,</span><span class="s2">&quot;Tspan7&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Top2a&quot;</span><span class="p">,</span><span class="s2">&quot;Rap1b&quot;</span><span class="p">,</span><span class="s2">&quot;Sulf2&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">result_path</span> <span class="o">=</span> <span class="s1">&#39;/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/pancreas/velocity_result/polish/&#39;</span>
+<span class="n">brief</span><span class="p">,</span> <span class="n">load_cellDancer</span><span class="o">=</span><span class="n">velocity_estimation</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">load_raw_data</span><span class="p">,</span><span class="n">gene_choice</span><span class="o">=</span><span class="n">gene_list</span><span class="p">,</span><span class="n">result_path</span><span class="o">=</span><span class="n">result_path</span><span class="p">,</span><span class="n">n_jobs</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Using /Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/pancreas/velocity_result/polish/cell_dancer_velocity_2022-04-28 12-37-28 as the output path.
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+--------------------------------------------------------------------------------
+DATALOADER:0 TEST RESULTS
+{}
+--------------------------------------------------------------------------------
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+Velocity Estimation:   0%|                               | 0/28 [00:00&lt;?, ?it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:   4%|▊                      | 1/28 [00:01&lt;00:43,  1.61s/it]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:   7%|█▋                     | 2/28 [00:02&lt;00:24,  1.07it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  14%|███▎                   | 4/28 [00:02&lt;00:13,  1.74it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  21%|████▉                  | 6/28 [00:03&lt;00:08,  2.55it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  25%|█████▊                 | 7/28 [00:03&lt;00:06,  3.01it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  29%|██████▌                | 8/28 [00:03&lt;00:08,  2.49it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  32%|███████▍               | 9/28 [00:04&lt;00:09,  2.05it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  36%|███████▊              | 10/28 [00:05&lt;00:08,  2.15it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  43%|█████████▍            | 12/28 [00:05&lt;00:05,  2.84it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  46%|██████████▏           | 13/28 [00:05&lt;00:04,  3.27it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  50%|███████████           | 14/28 [00:05&lt;00:04,  3.41it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  54%|███████████▊          | 15/28 [00:06&lt;00:05,  2.41it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  57%|████████████▌         | 16/28 [00:07&lt;00:05,  2.01it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  61%|█████████████▎        | 17/28 [00:07&lt;00:05,  2.06it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  64%|██████████████▏       | 18/28 [00:08&lt;00:05,  1.99it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  68%|██████████████▉       | 19/28 [00:08&lt;00:03,  2.27it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation:  71%|███████████████▋      | 20/28 [00:08&lt;00:02,  2.71it/s]GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+Velocity Estimation: 100%|██████████████████████| 28/28 [00:13&lt;00:00,  2.03it/s]
+</pre></div></div>
+</div>
+</section>
+<section id="Set-Parameters">
+<h2>Set Parameters<a class="headerlink" href="#Set-Parameters" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">n_neighbors</span><span class="o">=</span><span class="mi">100</span> <span class="c1">#100</span>
+<span class="n">downsample_step</span><span class="o">=</span><span class="p">(</span><span class="mi">60</span><span class="p">,</span><span class="mi">60</span><span class="p">)</span>
+
+<span class="n">grid</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="mf">0.01</span>
+<span class="n">t_total</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="n">n_repeats</span> <span class="o">=</span> <span class="mi">10</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Load-detail">
+<h2>Load detail<a class="headerlink" href="#Load-detail" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">detail_result_path</span> <span class="o">=</span> <span class="s1">&#39;/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/pancreas/velocity_result/velocity_result_all_genes_with_bin/2000_smooth/combined_detail&#39;</span>
+<span class="n">output_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+<span class="n">detail_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">detail_result_path</span><span class="p">,</span><span class="s1">&#39;combined_detail.csv&#39;</span><span class="p">)</span>
+<span class="n">load_cellDancer</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">detail_file</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">compute_cell_velocity</span> <span class="kn">import</span> <span class="n">compute_cell_velocity</span>
+
+<span class="n">gene_choice</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">gene_name</span><span class="p">))</span>
+<span class="n">compute_cell_velocity</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">,</span>
+              <span class="n">gene_list</span><span class="o">=</span><span class="n">gene_choice</span><span class="p">,</span>
+              <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;gene&quot;</span><span class="p">,</span>
+              <span class="n">transfer_mode</span><span class="o">=</span><span class="s1">&#39;power10&#39;</span><span class="p">,</span>
+              <span class="n">n_neighbors</span><span class="o">=</span><span class="n">n_neighbors</span><span class="p">,</span>
+              <span class="n">step</span><span class="o">=</span><span class="n">downsample_step</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/shengyuli/anaconda3/envs/celldancer_env/lib/python3.7/site-packages/pandas/core/generic.py:5516: SettingWithCopyWarning:
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  self[name] = value
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(2000, 3696)
+(2000, 3696)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/bin/cellDancer_polish/src/compute_cell_velocity.py:142: RuntimeWarning: invalid value encountered in true_divide
+  np.sqrt(np.dot(ematrix_ss[:, None], vmatrix_ss[None]))
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+after downsampling, there are  846 cells.
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_cellDancer</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>cellIndex</th>
+      <th>gene_name</th>
+      <th>s0</th>
+      <th>u0</th>
+      <th>s1</th>
+      <th>u1</th>
+      <th>alpha</th>
+      <th>beta</th>
+      <th>gamma</th>
+      <th>cost</th>
+      <th>clusters</th>
+      <th>cellID</th>
+      <th>embedding1</th>
+      <th>embedding2</th>
+      <th>index</th>
+      <th>velocity1</th>
+      <th>velocity2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0</td>
+      <td>2010107G23Rik</td>
+      <td>0.645871</td>
+      <td>0.000000</td>
+      <td>0.631752</td>
+      <td>0.000444</td>
+      <td>0.004090</td>
+      <td>0.033074</td>
+      <td>0.143236</td>
+      <td>0.085577</td>
+      <td>Pre-endocrine</td>
+      <td>AAACCTGAGAGGGATA</td>
+      <td>6.143066</td>
+      <td>-0.063644</td>
+      <td>0</td>
+      <td>-0.018067</td>
+      <td>0.207249</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>2010107G23Rik</td>
+      <td>0.659958</td>
+      <td>0.050844</td>
+      <td>0.667935</td>
+      <td>0.049499</td>
+      <td>0.002315</td>
+      <td>0.013641</td>
+      <td>0.159593</td>
+      <td>0.085577</td>
+      <td>Ductal</td>
+      <td>AAACCTGAGCCTTGAT</td>
+      <td>-9.906417</td>
+      <td>0.197778</td>
+      <td>1</td>
+      <td>-0.194755</td>
+      <td>-0.393044</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2</td>
+      <td>2010107G23Rik</td>
+      <td>0.536477</td>
+      <td>0.031027</td>
+      <td>0.543241</td>
+      <td>0.030047</td>
+      <td>0.002852</td>
+      <td>0.018068</td>
+      <td>0.154822</td>
+      <td>0.085577</td>
+      <td>Alpha</td>
+      <td>AAACCTGAGGCAATTA</td>
+      <td>7.559791</td>
+      <td>0.583762</td>
+      <td>2</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>3</td>
+      <td>2010107G23Rik</td>
+      <td>0.172749</td>
+      <td>0.000000</td>
+      <td>0.168829</td>
+      <td>0.000422</td>
+      <td>0.003884</td>
+      <td>0.025258</td>
+      <td>0.148675</td>
+      <td>0.085577</td>
+      <td>Ductal</td>
+      <td>AAACCTGCATCATCCC</td>
+      <td>-11.283765</td>
+      <td>4.218998</td>
+      <td>3</td>
+      <td>-0.288228</td>
+      <td>0.513889</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>4</td>
+      <td>2010107G23Rik</td>
+      <td>2.669759</td>
+      <td>0.024144</td>
+      <td>2.671663</td>
+      <td>0.020978</td>
+      <td>0.003705</td>
+      <td>0.064247</td>
+      <td>0.127344</td>
+      <td>0.085577</td>
+      <td>Ngn3 high EP</td>
+      <td>AAACCTGGTAAGTGGC</td>
+      <td>1.721565</td>
+      <td>-4.753407</td>
+      <td>4</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>7391995</th>
+      <td>3691</td>
+      <td>Zfp949</td>
+      <td>0.175796</td>
+      <td>0.175190</td>
+      <td>0.163429</td>
+      <td>0.174457</td>
+      <td>0.209083</td>
+      <td>0.203498</td>
+      <td>0.271190</td>
+      <td>0.043265</td>
+      <td>Pre-endocrine</td>
+      <td>TTTGTCAAGTGACATA</td>
+      <td>4.768472</td>
+      <td>-1.388353</td>
+      <td>3691</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>7391996</th>
+      <td>3692</td>
+      <td>Zfp949</td>
+      <td>0.078194</td>
+      <td>0.130215</td>
+      <td>0.086273</td>
+      <td>0.142232</td>
+      <td>0.216891</td>
+      <td>0.203658</td>
+      <td>0.268408</td>
+      <td>0.043265</td>
+      <td>Ngn3 high EP</td>
+      <td>TTTGTCAAGTGTGGCA</td>
+      <td>-1.873335</td>
+      <td>-4.182650</td>
+      <td>3692</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>7391997</th>
+      <td>3693</td>
+      <td>Zfp949</td>
+      <td>0.000000</td>
+      <td>0.044002</td>
+      <td>0.011225</td>
+      <td>0.076212</td>
+      <td>0.210932</td>
+      <td>0.204190</td>
+      <td>0.266029</td>
+      <td>0.043265</td>
+      <td>Ductal</td>
+      <td>TTTGTCAGTTGTTTGG</td>
+      <td>-9.882250</td>
+      <td>-0.105594</td>
+      <td>3693</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>7391998</th>
+      <td>3694</td>
+      <td>Zfp949</td>
+      <td>0.041343</td>
+      <td>0.086365</td>
+      <td>0.050158</td>
+      <td>0.108793</td>
+      <td>0.214619</td>
+      <td>0.203931</td>
+      <td>0.267263</td>
+      <td>0.043265</td>
+      <td>Alpha</td>
+      <td>TTTGTCATCGAATGCT</td>
+      <td>6.612424</td>
+      <td>4.531895</td>
+      <td>3694</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>7391999</th>
+      <td>3695</td>
+      <td>Zfp949</td>
+      <td>0.085127</td>
+      <td>0.232572</td>
+      <td>0.116726</td>
+      <td>0.219691</td>
+      <td>0.218535</td>
+      <td>0.202875</td>
+      <td>0.269143</td>
+      <td>0.043265</td>
+      <td>Epsilon</td>
+      <td>TTTGTCATCTGTTTGT</td>
+      <td>3.071044</td>
+      <td>1.120432</td>
+      <td>3695</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+<p>7392000 rows × 17 columns</p>
+</div></div>
+</div>
+</section>
+<section id="Estimate-pseudotime">
+<h2>Estimate pseudotime<a class="headerlink" href="#Estimate-pseudotime" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#import importlib</span>
+<span class="c1">#importlib.reload(sys.modules[&#39;pseudo_time&#39;])</span>
+<span class="kn">from</span> <span class="nn">pseudo_time</span> <span class="kn">import</span> <span class="n">pseudo_time</span>
+
+
+<span class="n">cell_time</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="mf">0.01</span>
+<span class="n">t_total</span> <span class="o">=</span> <span class="p">{</span><span class="n">dt</span><span class="p">:</span><span class="nb">int</span><span class="p">(</span><span class="mi">10</span><span class="o">/</span><span class="n">dt</span><span class="p">)}</span>
+<span class="n">n_repeats</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">grid</span> <span class="o">=</span> <span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">pseudo_time</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="p">,</span> <span class="n">grid</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">t_total</span><span class="p">[</span><span class="n">dt</span><span class="p">],</span> <span class="n">n_repeats</span><span class="p">,</span> <span class="n">downsample_step</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_cellDancer</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cdplt</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">ncols</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
+<span class="n">gene</span> <span class="o">=</span> <span class="s1">&#39;Sulf2&#39;</span>
+<span class="n">cdplt</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">scatter_cell</span><span class="p">(</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">load_cellDancer</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s1">&#39;alpha&#39;</span><span class="p">,</span>
+             <span class="n">gene_name</span><span class="o">=</span><span class="n">gene</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">cdplt</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">scatter_cell</span><span class="p">(</span><span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">load_cellDancer</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s1">&#39;beta&#39;</span><span class="p">,</span>
+             <span class="n">gene_name</span><span class="o">=</span><span class="n">gene</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">cdplt</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">scatter_cell</span><span class="p">(</span><span class="n">ax</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">load_cellDancer</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s1">&#39;gamma&#39;</span><span class="p">,</span>
+             <span class="n">gene_name</span><span class="o">=</span><span class="n">gene</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">cdplt</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">scatter_cell</span><span class="p">(</span><span class="n">ax</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="n">load_cellDancer</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s1">&#39;spliced&#39;</span><span class="p">,</span>
+             <span class="n">gene_name</span><span class="o">=</span><span class="n">gene</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">cdplt</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">scatter_cell</span><span class="p">(</span><span class="n">ax</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span><span class="n">load_cellDancer</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s1">&#39;unspliced&#39;</span><span class="p">,</span>
+             <span class="n">gene_name</span><span class="o">=</span><span class="n">gene</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;alpha-&#39;</span><span class="o">+</span><span class="n">gene</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;beta-&#39;</span><span class="o">+</span><span class="n">gene</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;gamma-&#39;</span><span class="o">+</span><span class="n">gene</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;spliced-&#39;</span><span class="o">+</span><span class="n">gene</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;unspliced-&#39;</span><span class="o">+</span><span class="n">gene</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Pancreas_main_function_pre_sl_16_0.png" src="../_images/notebooks_Pancreas_main_function_pre_sl_16_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">clusters</span> <span class="o">=</span> <span class="n">load_cellDancer</span><span class="p">[</span><span class="s1">&#39;clusters&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">()</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
+<span class="n">cdplt</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">scatter_cell</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="n">colormap_pancreas</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+             <span class="n">gene_name</span><span class="o">=</span><span class="n">gene</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Pancreas_main_function_pre_sl_17_0.png" src="../_images/notebooks_Pancreas_main_function_pre_sl_17_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">clusters</span> <span class="o">=</span> <span class="n">load_cellDancer</span><span class="p">[</span><span class="s1">&#39;clusters&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">()</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
+<span class="n">cdplt</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">scatter_cell</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s1">&#39;pseudotime&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+             <span class="n">gene_name</span><span class="o">=</span><span class="n">gene</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">custom_xlim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">11</span><span class="p">),</span> <span class="n">custom_ylim</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">18</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">plotting</span> <span class="kn">import</span> <span class="n">colormap</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="n">ncols</span><span class="o">=</span><span class="mi">5</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">12</span><span class="p">))</span>
+<span class="n">gene_list</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Ank&quot;</span><span class="p">,</span><span class="s2">&quot;Abcc8&quot;</span><span class="p">,</span><span class="s2">&quot;Tcp11&quot;</span><span class="p">,</span><span class="s2">&quot;Nfib&quot;</span><span class="p">,</span><span class="s2">&quot;Ppp3ca&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Rbfox3&quot;</span><span class="p">,</span><span class="s2">&quot;Cdk1&quot;</span><span class="p">,</span><span class="s2">&quot;Gng12&quot;</span><span class="p">,</span><span class="s2">&quot;Map1b&quot;</span><span class="p">,</span><span class="s2">&quot;Cpe&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Gnao1&quot;</span><span class="p">,</span><span class="s2">&quot;Pcsk2&quot;</span><span class="p">,</span><span class="s2">&quot;Tmem163&quot;</span><span class="p">,</span><span class="s2">&quot;Pak3&quot;</span><span class="p">,</span><span class="s2">&quot;Wfdc15b&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Nnat&quot;</span><span class="p">,</span><span class="s2">&quot;Anxa4&quot;</span><span class="p">,</span><span class="s2">&quot;Actn4&quot;</span><span class="p">,</span><span class="s2">&quot;Btbd17&quot;</span><span class="p">,</span><span class="s2">&quot;Dcdc2a&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Adk&quot;</span><span class="p">,</span><span class="s2">&quot;Smoc1&quot;</span><span class="p">,</span><span class="s2">&quot;Mapre3&quot;</span><span class="p">,</span><span class="s2">&quot;Pim2&quot;</span><span class="p">,</span><span class="s2">&quot;Tspan7&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Top2a&quot;</span><span class="p">,</span><span class="s2">&quot;Rap1b&quot;</span><span class="p">,</span><span class="s2">&quot;Sulf2&quot;</span><span class="p">]</span>
+<span class="n">load_cellDancer</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)):</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)</span><span class="o">/</span><span class="n">ncols</span><span class="p">),</span> <span class="n">ncols</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">cdplt</span><span class="o">.</span><span class="n">gene</span><span class="o">.</span><span class="n">scatter_gene</span><span class="p">(</span>
+        <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+        <span class="n">x</span><span class="o">=</span><span class="s1">&#39;pseudotime&#39;</span><span class="p">,</span>
+        <span class="n">y</span><span class="o">=</span><span class="s1">&#39;s0&#39;</span><span class="p">,</span>
+        <span class="n">load_cellDancer</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">,</span>
+        <span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_xlim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_ylim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">colors</span><span class="o">=</span><span class="n">colormap_pancreas</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">velocity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">gene_name</span><span class="o">=</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">KeyError</span>                                  Traceback (most recent call last)
+<span class="ansi-green-fg">/var/folders/0m/7mylm3gs5hj8zfvd2hbr8ntc0000gq/T/ipykernel_83110/3998937687.py</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-intense-fg ansi-bold">     24</span>         s <span class="ansi-blue-fg">=</span> <span class="ansi-cyan-fg">5</span><span class="ansi-blue-fg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">     25</span>         velocity<span class="ansi-blue-fg">=</span><span class="ansi-green-fg">False</span><span class="ansi-blue-fg">,</span>
+<span class="ansi-green-fg">---&gt; 26</span><span class="ansi-red-fg">         gene_name=gene_list[i])
+</span><span class="ansi-green-intense-fg ansi-bold">     27</span>
+<span class="ansi-green-intense-fg ansi-bold">     28</span>     ax<span class="ansi-blue-fg">.</span>set_title<span class="ansi-blue-fg">(</span>gene_list<span class="ansi-blue-fg">[</span>i<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">)</span>
+
+<span class="ansi-green-fg">~/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/bin/cellDancer_polish/src/plotting/gene.py</span> in <span class="ansi-cyan-fg">scatter_gene</span><span class="ansi-blue-fg">(ax, x, y, load_cellDancer, save_path, custom_xlim, custom_ylim, vmin, vmax, colors, alpha, s, velocity, step, gene_name, legend, plot_cmap)</span>
+<span class="ansi-green-intense-fg ansi-bold">     81</span>
+<span class="ansi-green-intense-fg ansi-bold">     82</span>     <span class="ansi-green-fg">assert</span> gene_name<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">&#39;\nError! gene_name is required!\n&#39;</span>
+<span class="ansi-green-fg">---&gt; 83</span><span class="ansi-red-fg">     </span>xy <span class="ansi-blue-fg">=</span> extract_from_df<span class="ansi-blue-fg">(</span>load_cellDancer<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">[</span>x<span class="ansi-blue-fg">,</span> y<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span> gene_name<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">     84</span>     ax.scatter(xy[:, 0],
+<span class="ansi-green-intense-fg ansi-bold">     85</span>                xy<span class="ansi-blue-fg">[</span><span class="ansi-blue-fg">:</span><span class="ansi-blue-fg">,</span> <span class="ansi-cyan-fg">1</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span>
+
+<span class="ansi-green-fg">~/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/bin/cellDancer_polish/src/utilities.py</span> in <span class="ansi-cyan-fg">extract_from_df</span><span class="ansi-blue-fg">(load_cellDancer, attr_list, gene_name)</span>
+<span class="ansi-green-intense-fg ansi-bold">    453</span>         gene_name <span class="ansi-blue-fg">=</span> load_cellDancer<span class="ansi-blue-fg">.</span>gene_name<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">]</span>
+<span class="ansi-green-intense-fg ansi-bold">    454</span>     one_gene_idx <span class="ansi-blue-fg">=</span> load_cellDancer<span class="ansi-blue-fg">.</span>gene_name <span class="ansi-blue-fg">==</span> gene_name
+<span class="ansi-green-fg">--&gt; 455</span><span class="ansi-red-fg">     </span>data <span class="ansi-blue-fg">=</span> load_cellDancer<span class="ansi-blue-fg">[</span>one_gene_idx<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">[</span>attr_list<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">.</span>dropna<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    456</span>     <span class="ansi-green-fg">return</span> data<span class="ansi-blue-fg">.</span>to_numpy<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    457</span>
+
+<span class="ansi-green-fg">~/anaconda3/envs/celldancer_env/lib/python3.7/site-packages/pandas/core/frame.py</span> in <span class="ansi-cyan-fg">__getitem__</span><span class="ansi-blue-fg">(self, key)</span>
+<span class="ansi-green-intense-fg ansi-bold">   3462</span>             <span class="ansi-green-fg">if</span> is_iterator<span class="ansi-blue-fg">(</span>key<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">   3463</span>                 key <span class="ansi-blue-fg">=</span> list<span class="ansi-blue-fg">(</span>key<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-fg">-&gt; 3464</span><span class="ansi-red-fg">             </span>indexer <span class="ansi-blue-fg">=</span> self<span class="ansi-blue-fg">.</span>loc<span class="ansi-blue-fg">.</span>_get_listlike_indexer<span class="ansi-blue-fg">(</span>key<span class="ansi-blue-fg">,</span> axis<span class="ansi-blue-fg">=</span><span class="ansi-cyan-fg">1</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">1</span><span class="ansi-blue-fg">]</span>
+<span class="ansi-green-intense-fg ansi-bold">   3465</span>
+<span class="ansi-green-intense-fg ansi-bold">   3466</span>         <span class="ansi-red-fg"># take() does not accept boolean indexers</span>
+
+<span class="ansi-green-fg">~/anaconda3/envs/celldancer_env/lib/python3.7/site-packages/pandas/core/indexing.py</span> in <span class="ansi-cyan-fg">_get_listlike_indexer</span><span class="ansi-blue-fg">(self, key, axis)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1312</span>             keyarr<span class="ansi-blue-fg">,</span> indexer<span class="ansi-blue-fg">,</span> new_indexer <span class="ansi-blue-fg">=</span> ax<span class="ansi-blue-fg">.</span>_reindex_non_unique<span class="ansi-blue-fg">(</span>keyarr<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1313</span>
+<span class="ansi-green-fg">-&gt; 1314</span><span class="ansi-red-fg">         </span>self<span class="ansi-blue-fg">.</span>_validate_read_indexer<span class="ansi-blue-fg">(</span>keyarr<span class="ansi-blue-fg">,</span> indexer<span class="ansi-blue-fg">,</span> axis<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1315</span>
+<span class="ansi-green-intense-fg ansi-bold">   1316</span>         if needs_i8_conversion(ax.dtype) or isinstance(
+
+<span class="ansi-green-fg">~/anaconda3/envs/celldancer_env/lib/python3.7/site-packages/pandas/core/indexing.py</span> in <span class="ansi-cyan-fg">_validate_read_indexer</span><span class="ansi-blue-fg">(self, key, indexer, axis)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1375</span>
+<span class="ansi-green-intense-fg ansi-bold">   1376</span>             not_found <span class="ansi-blue-fg">=</span> list<span class="ansi-blue-fg">(</span>ensure_index<span class="ansi-blue-fg">(</span>key<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">[</span>missing_mask<span class="ansi-blue-fg">.</span>nonzero<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">.</span>unique<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-fg">-&gt; 1377</span><span class="ansi-red-fg">             </span><span class="ansi-green-fg">raise</span> KeyError<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">f&#34;{not_found} not in index&#34;</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1378</span>
+<span class="ansi-green-intense-fg ansi-bold">   1379</span>
+
+<span class="ansi-red-fg">KeyError</span>: &#34;[&#39;pseudotime&#39;] not in index&#34;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Pancreas_main_function_pre_sl_20_1.png" src="../_images/notebooks_Pancreas_main_function_pre_sl_20_1.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">plotting</span> <span class="kn">import</span> <span class="n">colormap</span>
+<span class="n">ncols</span><span class="o">=</span><span class="mi">5</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">12</span><span class="p">))</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="n">load_cellDancer</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)):</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)</span><span class="o">/</span><span class="n">ncols</span><span class="p">),</span> <span class="n">ncols</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">cdplt</span><span class="o">.</span><span class="n">gene</span><span class="o">.</span><span class="n">scatter_gene</span><span class="p">(</span>
+        <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+        <span class="n">x</span><span class="o">=</span><span class="s1">&#39;pseudotime&#39;</span><span class="p">,</span>
+        <span class="n">y</span><span class="o">=</span><span class="s1">&#39;s0&#39;</span><span class="p">,</span>
+        <span class="n">load_cellDancer</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">,</span>
+        <span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_xlim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_ylim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">colors</span><span class="o">=</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_neuro</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">velocity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">gene_name</span><span class="o">=</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">KeyError</span>                                  Traceback (most recent call last)
+<span class="ansi-green-fg">/var/folders/0m/7mylm3gs5hj8zfvd2hbr8ntc0000gq/T/ipykernel_83110/1041138667.py</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-intense-fg ansi-bold">     18</span>         s <span class="ansi-blue-fg">=</span> <span class="ansi-cyan-fg">5</span><span class="ansi-blue-fg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">     19</span>         velocity<span class="ansi-blue-fg">=</span><span class="ansi-green-fg">False</span><span class="ansi-blue-fg">,</span>
+<span class="ansi-green-fg">---&gt; 20</span><span class="ansi-red-fg">         gene_name=gene_list[i])
+</span><span class="ansi-green-intense-fg ansi-bold">     21</span>
+<span class="ansi-green-intense-fg ansi-bold">     22</span>     ax<span class="ansi-blue-fg">.</span>set_title<span class="ansi-blue-fg">(</span>gene_list<span class="ansi-blue-fg">[</span>i<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">)</span>
+
+<span class="ansi-green-fg">~/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/bin/cellDancer_polish/src/plotting/gene.py</span> in <span class="ansi-cyan-fg">scatter_gene</span><span class="ansi-blue-fg">(ax, x, y, load_cellDancer, save_path, custom_xlim, custom_ylim, vmin, vmax, colors, alpha, s, velocity, step, gene_name, legend, plot_cmap)</span>
+<span class="ansi-green-intense-fg ansi-bold">     81</span>
+<span class="ansi-green-intense-fg ansi-bold">     82</span>     <span class="ansi-green-fg">assert</span> gene_name<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">&#39;\nError! gene_name is required!\n&#39;</span>
+<span class="ansi-green-fg">---&gt; 83</span><span class="ansi-red-fg">     </span>xy <span class="ansi-blue-fg">=</span> extract_from_df<span class="ansi-blue-fg">(</span>load_cellDancer<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">[</span>x<span class="ansi-blue-fg">,</span> y<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span> gene_name<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">     84</span>     ax.scatter(xy[:, 0],
+<span class="ansi-green-intense-fg ansi-bold">     85</span>                xy<span class="ansi-blue-fg">[</span><span class="ansi-blue-fg">:</span><span class="ansi-blue-fg">,</span> <span class="ansi-cyan-fg">1</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">,</span>
+
+<span class="ansi-green-fg">~/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/bin/cellDancer_polish/src/utilities.py</span> in <span class="ansi-cyan-fg">extract_from_df</span><span class="ansi-blue-fg">(load_cellDancer, attr_list, gene_name)</span>
+<span class="ansi-green-intense-fg ansi-bold">    453</span>         gene_name <span class="ansi-blue-fg">=</span> load_cellDancer<span class="ansi-blue-fg">.</span>gene_name<span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">]</span>
+<span class="ansi-green-intense-fg ansi-bold">    454</span>     one_gene_idx <span class="ansi-blue-fg">=</span> load_cellDancer<span class="ansi-blue-fg">.</span>gene_name <span class="ansi-blue-fg">==</span> gene_name
+<span class="ansi-green-fg">--&gt; 455</span><span class="ansi-red-fg">     </span>data <span class="ansi-blue-fg">=</span> load_cellDancer<span class="ansi-blue-fg">[</span>one_gene_idx<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">[</span>attr_list<span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">.</span>dropna<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    456</span>     <span class="ansi-green-fg">return</span> data<span class="ansi-blue-fg">.</span>to_numpy<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    457</span>
+
+<span class="ansi-green-fg">~/anaconda3/envs/celldancer_env/lib/python3.7/site-packages/pandas/core/frame.py</span> in <span class="ansi-cyan-fg">__getitem__</span><span class="ansi-blue-fg">(self, key)</span>
+<span class="ansi-green-intense-fg ansi-bold">   3462</span>             <span class="ansi-green-fg">if</span> is_iterator<span class="ansi-blue-fg">(</span>key<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">   3463</span>                 key <span class="ansi-blue-fg">=</span> list<span class="ansi-blue-fg">(</span>key<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-fg">-&gt; 3464</span><span class="ansi-red-fg">             </span>indexer <span class="ansi-blue-fg">=</span> self<span class="ansi-blue-fg">.</span>loc<span class="ansi-blue-fg">.</span>_get_listlike_indexer<span class="ansi-blue-fg">(</span>key<span class="ansi-blue-fg">,</span> axis<span class="ansi-blue-fg">=</span><span class="ansi-cyan-fg">1</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">1</span><span class="ansi-blue-fg">]</span>
+<span class="ansi-green-intense-fg ansi-bold">   3465</span>
+<span class="ansi-green-intense-fg ansi-bold">   3466</span>         <span class="ansi-red-fg"># take() does not accept boolean indexers</span>
+
+<span class="ansi-green-fg">~/anaconda3/envs/celldancer_env/lib/python3.7/site-packages/pandas/core/indexing.py</span> in <span class="ansi-cyan-fg">_get_listlike_indexer</span><span class="ansi-blue-fg">(self, key, axis)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1312</span>             keyarr<span class="ansi-blue-fg">,</span> indexer<span class="ansi-blue-fg">,</span> new_indexer <span class="ansi-blue-fg">=</span> ax<span class="ansi-blue-fg">.</span>_reindex_non_unique<span class="ansi-blue-fg">(</span>keyarr<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1313</span>
+<span class="ansi-green-fg">-&gt; 1314</span><span class="ansi-red-fg">         </span>self<span class="ansi-blue-fg">.</span>_validate_read_indexer<span class="ansi-blue-fg">(</span>keyarr<span class="ansi-blue-fg">,</span> indexer<span class="ansi-blue-fg">,</span> axis<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1315</span>
+<span class="ansi-green-intense-fg ansi-bold">   1316</span>         if needs_i8_conversion(ax.dtype) or isinstance(
+
+<span class="ansi-green-fg">~/anaconda3/envs/celldancer_env/lib/python3.7/site-packages/pandas/core/indexing.py</span> in <span class="ansi-cyan-fg">_validate_read_indexer</span><span class="ansi-blue-fg">(self, key, indexer, axis)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1375</span>
+<span class="ansi-green-intense-fg ansi-bold">   1376</span>             not_found <span class="ansi-blue-fg">=</span> list<span class="ansi-blue-fg">(</span>ensure_index<span class="ansi-blue-fg">(</span>key<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">[</span>missing_mask<span class="ansi-blue-fg">.</span>nonzero<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">0</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">]</span><span class="ansi-blue-fg">.</span>unique<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-fg">-&gt; 1377</span><span class="ansi-red-fg">             </span><span class="ansi-green-fg">raise</span> KeyError<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">f&#34;{not_found} not in index&#34;</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1378</span>
+<span class="ansi-green-intense-fg ansi-bold">   1379</span>
+
+<span class="ansi-red-fg">KeyError</span>: &#34;[&#39;pseudotime&#39;] not in index&#34;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Pancreas_main_function_pre_sl_22_1.png" src="../_images/notebooks_Pancreas_main_function_pre_sl_22_1.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<span class="o">%</span><span class="k">autoreload</span> 2
+
+<span class="n">ncols</span><span class="o">=</span><span class="mi">5</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">24</span><span class="p">))</span>
+
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)):</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gene_list</span><span class="p">)</span><span class="o">/</span><span class="n">ncols</span><span class="p">),</span> <span class="n">ncols</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">cdplt</span><span class="o">.</span><span class="n">gene</span><span class="o">.</span><span class="n">scatter_gene</span><span class="p">(</span>
+        <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+        <span class="n">x</span><span class="o">=</span><span class="s1">&#39;spliced&#39;</span><span class="p">,</span>
+        <span class="n">y</span><span class="o">=</span><span class="s1">&#39;unspliced&#39;</span><span class="p">,</span>
+        <span class="n">load_cellDancer</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">,</span>
+        <span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_xlim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_ylim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">colors</span><span class="o">=</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_pancreas</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">velocity</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">gene_name</span><span class="o">=</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">gene_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+The autoreload extension is already loaded. To reload it, use:
+  %reload_ext autoreload
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Pancreas_main_function_pre_sl_24_1.png" src="../_images/notebooks_Pancreas_main_function_pre_sl_24_1.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Rsquare-rank">
+<h2>Rsquare rank<a class="headerlink" href="#Rsquare-rank" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<span class="o">%</span><span class="k">autoreload</span> 2
+
+<span class="kn">from</span> <span class="nn">utilities</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">cluster_choice</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Blood progenitors 1&#39;</span><span class="p">,</span><span class="s1">&#39;Blood progenitors 2&#39;</span><span class="p">,</span><span class="s1">&#39;Erythroid1&#39;</span><span class="p">,</span><span class="s1">&#39;Erythroid2&#39;</span><span class="p">,</span><span class="s1">&#39;Erythroid3&#39;</span><span class="p">]</span>
+<span class="n">rsquare_rank</span><span class="o">=</span><span class="n">rank_rsquare</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">gene_list</span><span class="o">=</span><span class="n">gene_list</span><span class="p">,</span><span class="n">cluster_choice</span><span class="o">=</span><span class="n">cluster_choice</span><span class="p">)</span>
+<span class="n">rsquare_rank</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+The autoreload extension is already loaded. To reload it, use:
+  %reload_ext autoreload
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+Calculate rsquare: 100%|████████████████████████| 13/13 [00:08&lt;00:00,  1.52it/s]
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>gene_name</th>
+      <th>r_square</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Hba-x</td>
+      <td>0.992753</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Blvrb</td>
+      <td>0.992749</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Mllt3</td>
+      <td>0.982714</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Smim1</td>
+      <td>0.977385</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Skap1</td>
+      <td>0.940685</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Snca</td>
+      <td>0.866329</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Smarca2</td>
+      <td>0.844709</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>Yipf5</td>
+      <td>0.840429</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>Nfkb1</td>
+      <td>0.804476</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Phc2</td>
+      <td>0.711426</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Coro2b</td>
+      <td>0.711294</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>Myo1b</td>
+      <td>0.694352</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>Sulf2</td>
+      <td>0.657642</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<span class="o">%</span><span class="k">autoreload</span> 2
+</pre></div>
+</div>
+</div>
+</section>
+<section id="UMAP-using-alpha,-beta,-and-gamma">
+<h2>UMAP using alpha, beta, and gamma<a class="headerlink" href="#UMAP-using-alpha,-beta,-and-gamma" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_cellDancer</span><span class="o">=</span><span class="n">calculate_para_umap</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="s1">&#39;alpha&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+OMP: Info #271: omp_set_nested routine deprecated, please use omp_set_max_active_levels instead.
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_cellDancer</span><span class="o">=</span><span class="n">calculate_para_umap</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="s1">&#39;beta&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_cellDancer</span><span class="o">=</span><span class="n">calculate_para_umap</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="s1">&#39;gamma&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">load_cellDancer</span><span class="o">=</span><span class="n">calculate_para_umap</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="s1">&#39;alpha_beta_gamma&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[49]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_para_umap</span><span class="p">(</span><span class="s1">&#39;alpha&#39;</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="n">cdplt</span><span class="o">.</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_pancreas</span> <span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">plot_para_umap</span><span class="p">(</span><span class="s1">&#39;alpha&#39;</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">gene_name</span><span class="o">=</span><span class="s1">&#39;Top2a&#39;</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="n">cdplt</span><span class="o">.</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_pancreas</span> <span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Pancreas_main_function_pre_sl_34_0.png" src="../_images/notebooks_Pancreas_main_function_pre_sl_34_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Pancreas_main_function_pre_sl_34_1.png" src="../_images/notebooks_Pancreas_main_function_pre_sl_34_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[50]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_para_umap</span><span class="p">(</span><span class="s1">&#39;beta&#39;</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="n">cdplt</span><span class="o">.</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_pancreas</span> <span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">plot_para_umap</span><span class="p">(</span><span class="s1">&#39;beta&#39;</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">gene_name</span><span class="o">=</span><span class="s1">&#39;Top2a&#39;</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="n">cdplt</span><span class="o">.</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_pancreas</span> <span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Pancreas_main_function_pre_sl_35_0.png" src="../_images/notebooks_Pancreas_main_function_pre_sl_35_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Pancreas_main_function_pre_sl_35_1.png" src="../_images/notebooks_Pancreas_main_function_pre_sl_35_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[51]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_para_umap</span><span class="p">(</span><span class="s1">&#39;gamma&#39;</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="n">cdplt</span><span class="o">.</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_pancreas</span> <span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">plot_para_umap</span><span class="p">(</span><span class="s1">&#39;gamma&#39;</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">gene_name</span><span class="o">=</span><span class="s1">&#39;Top2a&#39;</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="n">cdplt</span><span class="o">.</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_pancreas</span> <span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Pancreas_main_function_pre_sl_36_0.png" src="../_images/notebooks_Pancreas_main_function_pre_sl_36_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Pancreas_main_function_pre_sl_36_1.png" src="../_images/notebooks_Pancreas_main_function_pre_sl_36_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[52]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_para_umap</span><span class="p">(</span><span class="s1">&#39;alpha_beta_gamma&#39;</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="n">cdplt</span><span class="o">.</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_pancreas</span> <span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">plot_para_umap</span><span class="p">(</span><span class="s1">&#39;alpha_beta_gamma&#39;</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">gene_name</span><span class="o">=</span><span class="s1">&#39;Top2a&#39;</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="n">cdplt</span><span class="o">.</span><span class="n">colormap</span><span class="o">.</span><span class="n">colormap_pancreas</span> <span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Pancreas_main_function_pre_sl_37_0.png" src="../_images/notebooks_Pancreas_main_function_pre_sl_37_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Pancreas_main_function_pre_sl_37_1.png" src="../_images/notebooks_Pancreas_main_function_pre_sl_37_1.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[48]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">calculate_para_umap</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">para</span><span class="p">,</span><span class="n">umap_n</span><span class="o">=</span><span class="mi">25</span><span class="p">):</span>
+
+    <span class="kn">import</span> <span class="nn">umap</span>
+    <span class="k">if</span> <span class="nb">set</span><span class="p">([(</span><span class="n">para</span><span class="o">+</span><span class="s1">&#39;_umap1&#39;</span><span class="p">),(</span><span class="n">para</span><span class="o">+</span><span class="s1">&#39;_umap2&#39;</span><span class="p">)])</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
+        <span class="n">load_cellDancer</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[(</span><span class="n">para</span><span class="o">+</span><span class="s1">&#39;_umap1&#39;</span><span class="p">),(</span><span class="n">para</span><span class="o">+</span><span class="s1">&#39;_umap2&#39;</span><span class="p">)])</span>
+
+    <span class="k">if</span> <span class="n">para</span><span class="o">==</span><span class="s1">&#39;alpha&#39;</span> <span class="ow">or</span> <span class="n">para</span><span class="o">==</span><span class="s1">&#39;beta&#39;</span> <span class="ow">or</span> <span class="n">para</span><span class="o">==</span><span class="s1">&#39;gamma&#39;</span><span class="p">:</span>
+        <span class="n">para_df</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">pivot</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s1">&#39;cellIndex&#39;</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="s1">&#39;gene_name&#39;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">para</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">para</span><span class="o">==</span><span class="s1">&#39;alpha_beta_gamma&#39;</span><span class="p">:</span>
+        <span class="n">alpha_df</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">pivot</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s1">&#39;cellIndex&#39;</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="s1">&#39;gene_name&#39;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="s1">&#39;alpha&#39;</span><span class="p">)</span>
+        <span class="n">beta_df</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">pivot</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s1">&#39;cellIndex&#39;</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="s1">&#39;gene_name&#39;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="s1">&#39;beta&#39;</span><span class="p">)</span>
+        <span class="n">gamma_df</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">pivot</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s1">&#39;cellIndex&#39;</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="s1">&#39;gene_name&#39;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="s1">&#39;gamma&#39;</span><span class="p">)</span>
+        <span class="n">para_df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">alpha_df</span><span class="p">,</span><span class="n">beta_df</span><span class="p">,</span><span class="n">gamma_df</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;para should be set in one of alpha, beta, gamma, or alpha_beta_gamma.&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_umap</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">n_neighbors</span><span class="o">=</span><span class="n">umap_n</span><span class="p">,</span> <span class="n">min_dist</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s1">&#39;euclidean&#39;</span><span class="p">):</span>
+        <span class="n">fit</span> <span class="o">=</span> <span class="n">umap</span><span class="o">.</span><span class="n">UMAP</span><span class="p">(</span>
+            <span class="n">n_neighbors</span><span class="o">=</span><span class="n">n_neighbors</span><span class="p">,</span>
+            <span class="n">min_dist</span><span class="o">=</span><span class="n">min_dist</span><span class="p">,</span>
+            <span class="n">n_components</span><span class="o">=</span><span class="n">n_components</span><span class="p">,</span>
+            <span class="n">metric</span><span class="o">=</span><span class="n">metric</span>
+        <span class="p">)</span>
+        <span class="n">embed</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">df</span><span class="p">);</span>
+        <span class="k">return</span><span class="p">(</span><span class="n">embed</span><span class="p">)</span>
+    <span class="n">umap_para</span><span class="o">=</span><span class="n">get_umap</span><span class="p">(</span><span class="n">para_df</span><span class="p">)</span>
+    <span class="n">umap_info</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">umap_para</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="p">[(</span><span class="n">para</span><span class="o">+</span><span class="s1">&#39;_umap1&#39;</span><span class="p">),(</span><span class="n">para</span><span class="o">+</span><span class="s1">&#39;_umap2&#39;</span><span class="p">)])</span>
+
+    <span class="n">gene_amt</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">gene_name</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">())</span>
+    <span class="n">umap_col</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">umap_info</span><span class="p">]</span><span class="o">*</span><span class="n">gene_amt</span><span class="p">)</span>
+    <span class="n">umap_col</span><span class="o">.</span><span class="n">index</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">index</span>
+    <span class="n">load_cellDancer</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">umap_col</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">load_cellDancer</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">plot_para_umap</span><span class="p">(</span><span class="n">para</span><span class="p">,</span><span class="n">load_cellDancer</span><span class="p">,</span><span class="n">gene_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">umap_n</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span><span class="n">cluster_map</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">legend_annotation</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+    <span class="n">onegene</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">[</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">gene_name</span><span class="o">==</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">gene_name</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="n">umap_para</span><span class="o">=</span><span class="n">onegene</span><span class="p">[[(</span><span class="n">para</span><span class="o">+</span><span class="s1">&#39;_umap1&#39;</span><span class="p">),(</span><span class="n">para</span><span class="o">+</span><span class="s1">&#39;_umap2&#39;</span><span class="p">)]]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+    <span class="n">onegene_cluster_info</span><span class="o">=</span><span class="n">onegene</span><span class="o">.</span><span class="n">clusters</span>
+
+    <span class="k">if</span> <span class="n">gene_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cluster_map</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">plotting.colormap</span> <span class="kn">import</span> <span class="n">build_colormap</span>
+            <span class="n">cluster_map</span><span class="o">=</span><span class="n">build_colormap</span><span class="p">(</span><span class="n">onegene_cluster_info</span><span class="p">)</span>
+
+        <span class="n">colors</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">cluster_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;black&#39;</span><span class="p">),</span> <span class="n">onegene_cluster_info</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">legend_annotation</span><span class="p">:</span>
+            <span class="n">markers</span> <span class="o">=</span> <span class="p">[</span><span class="n">plt</span><span class="o">.</span><span class="n">Line2D</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span><span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">color</span> <span class="ow">in</span> <span class="n">cluster_map</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+            <span class="n">lgd</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">markers</span><span class="p">,</span> <span class="n">cluster_map</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">numpoints</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;upper left&#39;</span><span class="p">,</span><span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">1.01</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">umap_para</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">umap_para</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span><span class="n">c</span><span class="o">=</span><span class="n">colors</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">edgecolor</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;square&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">onegene</span><span class="o">=</span><span class="n">load_cellDancer</span><span class="p">[</span><span class="n">load_cellDancer</span><span class="o">.</span><span class="n">gene_name</span><span class="o">==</span><span class="n">gene_name</span><span class="p">]</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">umap_para</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">umap_para</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span><span class="n">c</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">onegene</span><span class="o">.</span><span class="n">s0</span><span class="o">+</span><span class="mf">0.0001</span><span class="p">),</span><span class="n">s</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">edgecolor</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;square&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">gene_name</span><span class="o">+</span><span class="s2">&quot; s0&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">save_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span><span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span><span class="n">bbox_extra_artists</span><span class="o">=</span><span class="p">(</span><span class="n">lgd</span><span class="p">,))</span>
+    <span class="n">umap_df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;umap1&#39;</span><span class="p">:</span><span class="n">umap_para</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span><span class="s1">&#39;umap2&#39;</span><span class="p">:</span><span class="n">umap_para</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]})],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Neuro_main_function-pre_sl.html" class="btn btn-neutral float-right" title="Case Study: Dentate Gyrus" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="Gastrulation_main_function-Copy2.html" class="btn btn-neutral" title="Case Study: Gastrulation" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2022, 1.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Sphinx-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script type="text/javascript" src="../None"></script>
+      <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -295,11 +295,12 @@ def grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass):
     plot_cell_velocity_curve(XYM, UVT, UVH, UVT2, UVH2, s_vals)
     ############ end --- plot the curve arrow for cell velocity ############
 
-def plot_para_umap(ax,para,load_cellDancer,gene_name=None,umap_n=25,cluster_map=None,save_path=None,title=None,legend_annotation=False):
-    
-    
+def calculate_para_umap(load_cellDancer,para,umap_n=25):
+
     import umap
-    
+    if set([(para+'_umap1'),(para+'_umap2')]).issubset(load_cellDancer.columns):
+        load_cellDancer=load_cellDancer.drop(columns=[(para+'_umap1'),(para+'_umap2')])
+
     if para=='alpha' or para=='beta' or para=='gamma':
         para_df=load_cellDancer.pivot(index='cellIndex', columns='gene_name', values=para)
     elif para=='alpha_beta_gamma':
@@ -310,7 +311,7 @@ def plot_para_umap(ax,para,load_cellDancer,gene_name=None,umap_n=25,cluster_map=
     else:
         print('para should be set in one of alpha, beta, gamma, or alpha_beta_gamma.')
 
-    def get_umap(df,n_neighbors=umap_n, min_dist=0.1, n_components=2, metric='euclidean'): 
+    def get_umap(df,n_neighbors=umap_n, min_dist=0.1, n_components=2, metric='euclidean'):
         fit = umap.UMAP(
             n_neighbors=n_neighbors,
             min_dist=min_dist,
@@ -320,29 +321,43 @@ def plot_para_umap(ax,para,load_cellDancer,gene_name=None,umap_n=25,cluster_map=
         embed = fit.fit_transform(df);
         return(embed)
     umap_para=get_umap(para_df)
-    
-    
-    onegene_cluster_info=load_cellDancer[load_cellDancer.gene_name==load_cellDancer.gene_name[0]].clusters
+    umap_info=pd.DataFrame(umap_para,columns=[(para+'_umap1'),(para+'_umap2')])
 
-    if cluster_map is None:
-        from plotting.colormap import build_colormap
-        cluster_map=build_colormap(onegene_cluster_info)
+    gene_amt=len(load_cellDancer.gene_name.drop_duplicates())
+    umap_col=pd.concat([umap_info]*gene_amt)
+    umap_col.index=load_cellDancer.index
+    load_cellDancer=pd.concat([load_cellDancer,umap_col],axis=1)
+    return(load_cellDancer)
 
-    colors = list(map(lambda x: cluster_map.get(x, 'black'), onegene_cluster_info))
+def plot_para_umap(para,load_cellDancer,gene_name=None,umap_n=25,cluster_map=None,save_path=None,title=None,legend_annotation=False):
+    import numpy as np
+    onegene=load_cellDancer[load_cellDancer.gene_name==load_cellDancer.gene_name[0]]
+    umap_para=onegene[[(para+'_umap1'),(para+'_umap2')]].to_numpy()
+    onegene_cluster_info=onegene.clusters
 
-    if legend_annotation:
-        markers = [plt.Line2D([0,0],[0,0],color=color, marker='o', linestyle='') for color in cluster_map.values()]
-        lgd=plt.legend(markers, cluster_map.keys(), numpoints=1,loc='upper left',bbox_to_anchor=(1.01, 1))
+    if gene_name is None:
+        if cluster_map is None:
+            from plotting.colormap import build_colormap
+            cluster_map=build_colormap(onegene_cluster_info)
 
-    plt.scatter(umap_para[:,0], umap_para[:,1],c=colors,s=15,alpha=0.5,edgecolor="none")
-    
-    if gene_name is not None:
+        colors = list(map(lambda x: cluster_map.get(x, 'black'), onegene_cluster_info))
+
+        if legend_annotation:
+            markers = [plt.Line2D([0,0],[0,0],color=color, marker='o', linestyle='') for color in cluster_map.values()]
+            lgd=plt.legend(markers, cluster_map.keys(), numpoints=1,loc='upper left',bbox_to_anchor=(1.01, 1))
+
+        plt.scatter(umap_para[:,0], umap_para[:,1],c=colors,s=15,alpha=0.5,edgecolor="none")
+        plt.axis('square')
+        plt.axis('off')
+
+    else:
         onegene=load_cellDancer[load_cellDancer.gene_name==gene_name]
         plt.figure()
         plt.scatter(umap_para[:,0], umap_para[:,1],c=np.log(onegene.s0+0.0001),s=15,alpha=1,edgecolor="none")
+        plt.axis('square')
+        plt.axis('off')
         plt.colorbar(label=gene_name+" s0")
-        
+
     if save_path is not None:
         plt.savefig(save_path,bbox_inches='tight',bbox_extra_artists=(lgd,))
     umap_df=pd.concat([pd.DataFrame({'umap1':umap_para[:,0],'umap2':umap_para[:,1]})],axis=1)
-    return(umap_df,ax)
