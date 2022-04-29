@@ -2,6 +2,8 @@
 # need to write readme to teach user how to use the functions in the package.
 
 
-from celldancer import *
-from plotting import *
-from . import diffusion
+# from . import plotting
+from .cdplt import *
+from . import velocity_estimation
+from . import pseudo_time
+from . import compute_cell_velocity

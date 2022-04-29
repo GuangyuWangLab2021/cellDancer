@@ -9,7 +9,12 @@ import bezier
 import numpy as np
 import pandas as pd
 from .colormap import *
-from utilities import find_nn_neighbors, extract_from_df
+
+if __name__ == "__main__":# developer test
+    sys.path.append('..')
+    from utilities import find_nn_neighbors, extract_from_df
+else:
+    from celldancer.utilities import find_nn_neighbors, extract_from_df
 
 def scatter_cell(
         ax,

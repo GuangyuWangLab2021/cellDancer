@@ -17,8 +17,14 @@ from scipy import interpolate
 from matplotlib.pyplot import cm
 from matplotlib.colors import ListedColormap
 
-from diffusion import *
-from compute_cell_velocity import compute_cell_velocity
+if __name__ == "__main__":# developer test
+    from diffusion import *
+    from compute_cell_velocity import compute_cell_velocity
+else:
+    from celldancer.diffusion import *
+    from celldancer.compute_cell_velocity import compute_cell_velocity
+
+
     
 
 def compute_trajectory_displacement(traj):

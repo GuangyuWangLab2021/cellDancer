@@ -850,7 +850,7 @@ def train( # use train_thread # change name to velocity estiminate
     shutil.rmtree(os.path.join(result_path,'TEMP'))
     os.mkdir(os.path.join(result_path,'TEMP'))
     
-    from utilities import tqdm_joblib
+    from .utilities import tqdm_joblib
     from tqdm import tqdm
     
     with tqdm_joblib(tqdm(desc="Velocity Estimation", total=data_len)) as progress_bar:
