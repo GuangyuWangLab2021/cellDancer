@@ -40,12 +40,12 @@ def scatter_gene(
     if isinstance(colors, dict):
         attr = 'clusters'
         legend_elements= [gen_Line2D(i, colors[i]) for i in colors]
-        if legend is not 'off':
+        if legend != 'off':
             lgd=ax.legend(handles=legend_elements,
                 bbox_to_anchor=(1.01, 1),
                 loc='upper left')
             bbox_extra_artists=(lgd,)
-            if legend is 'only':
+            if legend == 'only':
                 return lgd
         else:
             bbox_extra_artists=None
