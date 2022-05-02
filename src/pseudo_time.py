@@ -715,7 +715,7 @@ def compute_all_cell_time(load_cellDancer, embedding, cell_embedding,
 
     # intra-cluster time assignment
     for i in clusters:
-        cell_time_per_cluster, refPaths = recursive_cell_time_assignment_intracluster(
+        cell_time_per_cluster, refPaths, cell_time_per_subcluster,  = recursive_cell_time_assignment_intracluster(
             cell_time_per_cluster, 
             i, 
             [path_clusters[i][0]], 
