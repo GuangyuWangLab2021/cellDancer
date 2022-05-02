@@ -726,9 +726,9 @@ def _train_thread(datamodule,
 def downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=None,binning=False):
     
     if gene_choice is None:
-        data_df=load_raw_data[['gene_name', 'u0','s0','embedding1','embedding2']]
+        data_df=load_raw_data[['gene_name', 'u0','s0','embedding1','embedding2','cellID']]
     else:
-        data_df=load_raw_data[['gene_name', 'u0','s0','embedding1','embedding2']][load_raw_data.gene_name.isin(gene_choice)]
+        data_df=load_raw_data[['gene_name', 'u0','s0','embedding1','embedding2','cellID']][load_raw_data.gene_name.isin(gene_choice)]
 
     # data_df.s0=data_df.s0/max(data_df.s0)
     # data_df=load_raw_data[['gene_name', 'u0','s0','cellID','embedding1','embedding2']][load_raw_data.gene_name.isin(gene_choice)]
@@ -739,8 +739,10 @@ def downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsa
                             target_amount=downsample_target_amount,
                             step=(step_i,step_j),
                             n_neighbors=n_neighbors_downsample,mode='embedding')
-        gene_downsampling = downsampling(data_df=data_df, gene_choice=gene_choice, downsampling_ixs=sampling_ixs)
-        
+        # gene_downsampling = downsampling(data_df=data_df, gene_choice=gene_choice, downsampling_ixs=sampling_ixs)
+        data_df_one_gene=load_raw_data[load_raw_data['gene_name']==list(gene_choice)[0]]
+        downsample_cellid=data_df_one_gene.cellID.iloc[sampling_ixs]
+        gene_downsampling=data_df[data_df.cellID.isin(downsample_cellid)]
 
         feed_data = feedData(data_fit = gene_downsampling, data_predict=data_df, sampling_ratio=sampling_ratio,auto_norm_u_s=auto_norm_u_s,binning=binning) # default 
     else:
@@ -887,6 +889,9 @@ def train( # use train_thread # change name to velocity estiminate
     except:os.mkdir(os.path.join(result_path,'TEMP'))
     # end - set output dir
 
+    if gene_choice is None:
+        gene_choice=list(load_raw_data.gene_name.drop_duplicates())
+
     datamodule=downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=gene_choice,binning=binning)
     
     if check_n_epoch=='None':check_n_epoch=None
@@ -985,23 +990,6 @@ def train( # use train_thread # change name to velocity estiminate
 
     return brief, detail
 
-
-def downsampling(data_df, gene_choice, downsampling_ixs):
-    '''
-    Guangyu
-    '''
-    data_df_downsampled=pd.DataFrame()
-    for gene in gene_choice:
-        data_df_one_gene=data_df[data_df['gene_name']==gene]
-        data_df_one_gene_downsampled = data_df_one_gene.iloc[downsampling_ixs]
-        data_df_downsampled=data_df_downsampled.append(data_df_one_gene_downsampled)
-
-        # plt.scatter(data_df_one_gene['embedding1'], data_df_one_gene['embedding2'])
-        # plt.scatter(data_df_one_gene.iloc[downsampling_ixs]['embedding1'], data_df_one_gene.iloc[downsampling_ixs]['embedding2'])
-        # plt.scatter(embedding_downsampling.iloc[neighbor_ixs[0,:]]['embedding1'], embedding_downsampling.iloc[neighbor_ixs[0,:]]['embedding2'])
-        # plt.scatter(embedding_downsampling.iloc[0]['embedding1'], embedding_downsampling.iloc[0]['embedding2'])
-        # plt.show()
-    return(data_df_downsampled)
 
 def vaildation_plot(gene,validation_result,save_path_validation):
     plt.figure()
