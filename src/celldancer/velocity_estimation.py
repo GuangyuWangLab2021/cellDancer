@@ -738,8 +738,6 @@ def downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsa
                             para=downsample_method,
                             target_amount=downsample_target_amount,
                             step=(step_i,step_j),
-                            # step_i=step_i,
-                            # step_j=step_j,
                             n_neighbors=n_neighbors_downsample,mode='embedding')
         gene_downsampling = downsampling(data_df=data_df, gene_choice=gene_choice, downsampling_ixs=sampling_ixs)
         
@@ -757,10 +755,10 @@ def downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsa
 def train( # use train_thread # change name to velocity estiminate
     load_raw_data,
     gene_choice=None,
+    auto_downsample=True,
     downsample_method='neighbors',
     n_neighbors_downsample=30,
     downsample_target_amount=0,
-    auto_downsample=True,
     auto_norm_u_s=True,
     sampling_ratio=0.125,
     step_i=200,
@@ -782,7 +780,77 @@ def train( # use train_thread # change name to velocity estiminate
     average_cost_window_size=10, 
     patience=3,
     smooth_weight=0.9,
-    binning=False):
+    binning=True):
+
+    """Velocity estimation for each cell.
+    
+    .. image:: https://user-images.githubusercontent.com/31883718/67709134-a0989480-f9bd-11e9-8ae6-f6391f5d95a0.png
+    
+
+    Arguments
+    ---------
+    load_raw_data: `pandas.Dataframe`
+        Data frame of raw data - columns=['gene_name','u0','s0','cellID','clusters','embedding1','embedding2']
+    gene_choice: `list`(default: None)
+        Gene set that selected to train, if use default value, all genes in the load_raw_data will be trained.
+    auto_downsample: `bool` (default: True)
+        Whether or not the cell will be downsampled in cell level before training, usually will be True if cell amount is too high.
+    downsample_method: `string` (default: 'neighbors')
+        The way to downsample cells if auto_downsample is set to be 'True'. Could be selected from ['neighbors','inverse','circle','random']
+    n_neighbors_downsample: `int` (default: 30)
+        Neighbors selected if auto_downsample is True and downsample_method is 'neighbors'.
+    downsample_target_amount: `int` (default: 0)
+        Target amount of downsampling if auto_downsample is True and downsample_method is selected form ['inverse','circle','random'].
+    auto_norm_u_s: `bool` (default: True)
+        Whether or not normalize u0 and s0.
+    sampling_ratio: `float` (default: 0.125)
+        Sampling ratio of cells in each epoch when training each gene.
+    step_i: `int` (default: 200)
+        Steps of i when downsampling load_raw_data.
+    step_j: `int` (default: 200)
+        Steps of j when downsampling load_raw_data.
+    initial_zoom: `int` (default: 2) 
+        !!!!!!!!!!!!!alpha0 = np.float32(umax*self.initial_zoom)
+    initial_strech: `int` (default: 1)
+        !!!!!!!!!!!!!gamma0 = np.float32(umax/smax*self.initial_strech)
+    model_save_path : `string` (default: None)
+        !!!!!!!!!!!!!NOT USE???
+    result_path : `string` (default: None)
+        Result path of velocity estimation, if use default value, the result will be saved at current working directory.
+    check_n_epoch: `int` (default: 5)
+        Epoch interval of loss being checked.
+    max_epoches: `int` (default: 200)
+        Max epoch of training.
+    n_jobs: `int` (default: os.cpu_count())
+        Amount of gene being trained at the same time.
+    optimizer: `string` (default: "Adam")
+        Optimizer during training. Could be selected form ['Adam','SGD'].
+    learning_rate: `float` (default: 0.001)
+        Learning rate of the optimizer.
+    trace_cost_ratio: `float` (default: 0)
+        The ratio of trace cost, Could be set in between [0,1]. The sum of all costs should be 1.
+    cost2_cutoff: `float` (default: 0.3)
+        The cutoff of trace cost if trace_cost_ratio > 0.
+    corrcoef_cost_ratio: `float` (default: 0)
+        The ratio of trace cost, Could be set in between [0,1]. The sum of all costs should be 1.
+    cost_type: `string` (default: 'average')
+        The ['average','median','smooth']
+    average_cost_window_size: `int` (default: 10)
+        Window size of cost if cost_type is 'average'.
+    smooth_weight: `float` (default: 0.9)
+        Smooth weight of cost if cost_type is 'smooth'.
+    n_neighbors: `int` (default: 30)
+        Neighbors when iniating the network module.
+    patience: `int` (default: 3)
+        Epochs being waited after the last time the loss improved before breaking the training loop.
+    binning: `bool` (default: True)
+        Whether or not using binning method to select cells to train.
+
+    Returns
+    -------
+    `loss` (pandas.DataFrame), `celldancer_estimation` (pandas.DataFrame)
+    """
+
     '''
     multple jobs
     when model_path is defined, model_number wont be used
@@ -832,7 +900,8 @@ def train( # use train_thread # change name to velocity estiminate
             result_path=result_path,
             max_epoches=max_epoches,
             check_n_epoch=check_n_epoch,
-            initial_zoom=initial_zoom, initial_strech=initial_strech,
+            initial_zoom=initial_zoom, 
+            initial_strech=initial_strech,
             model_save_path=model_save_path,
             learning_rate=learning_rate,
             cost2_cutoff=cost2_cutoff,
@@ -861,7 +930,8 @@ def train( # use train_thread # change name to velocity estiminate
                 result_path=result_path,
                 max_epoches=max_epoches,
                 check_n_epoch=check_n_epoch,
-                initial_zoom=initial_zoom, initial_strech=initial_strech,
+                initial_zoom=initial_zoom, 
+                initial_strech=initial_strech,
                 model_save_path=model_save_path,
                 learning_rate=learning_rate,
                 cost2_cutoff=cost2_cutoff,
