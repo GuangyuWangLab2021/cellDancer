@@ -6,8 +6,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-
-
 def sampling_neighbors(gene_u0_s0,step=(30,30),percentile=25): # current version will obtain ~100 cells. e.g. Ntrk2:109; Tmem163:104
     #step 250 will got 4000 from den data 
     from scipy.stats import norm
@@ -146,7 +144,7 @@ def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,transfe
     '''
     Guangyu
     sampling cells by embedding
-    data—df: load_raw_data
+    data—df: from load_cellDancer
     para:
     
     return: sampled embedding, the indexs of sampled cells, and the neighbors of sampled cells
@@ -163,9 +161,9 @@ def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,transfe
                     step=step)
     else:
         idx_downSampling_embedding=range(0,embedding.shape[0]) # all cells
-    
+    # TODO GENE MODE TRANSFER
     def transfer(data_df,transfer_mode):
-        #print('tranfer mode: '+str(transfer_mode))
+        print('tranfer mode: '+str(transfer_mode))
         if transfer_mode=='log':
             data_df.s0=np.log(data_df.s0+0.000001)
             data_df.u0=np.log(data_df.u0+0.000001)
@@ -256,7 +254,7 @@ def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,transfe
         #         elif i=='log10'
     
 
-    n_neighbors = min((embedding_downsampling.shape[0]-1), n_neighbors)
+    n_neighbors = min(int((embedding_downsampling.shape[0])/4), n_neighbors)
     nn = NearestNeighbors(n_neighbors=n_neighbors) #modify
     nn.fit(embedding_downsampling)  # NOTE should support knn in high dimensions
     embedding_knn = nn.kneighbors_graph(mode="connectivity")

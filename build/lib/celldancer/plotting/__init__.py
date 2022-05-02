@@ -2,5 +2,5 @@
 # need to write readme to teach user how to use the functions in the package.
 
 
-from celldancer import *
-from plotting import *
+# from . import plotting
+__all__=['cell','colormap','gene']

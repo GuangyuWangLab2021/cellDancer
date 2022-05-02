@@ -6,8 +6,8 @@ import numpy as np
 from matplotlib.lines import Line2D
 from matplotlib.colors import ListedColormap
 from .colormap import *
-from sampling import sampling_neighbors
-from utilities import extract_from_df
+from ..sampling import sampling_neighbors
+from ..utilities import extract_from_df
 
 def scatter_gene(
     ax=None,
