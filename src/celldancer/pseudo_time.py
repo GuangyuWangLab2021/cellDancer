@@ -244,15 +244,16 @@ def closest_distance_between_two_paths(path1, path2, cell_embedding):
         return np.Inf,(np.nan,np.nan)
     
     
-def recursive_cell_time_assignment_intracluster(
+def recur_cell_time_assignment_intracluster(
     unresolved_cell_time_cluster, 
+    cell_time_subclusters,
     cluster, 
     sorted_refPaths, 
     cell_fate,
     cell_embedding, 
     vel, 
     cell_grid_idx, 
-    grid_density, 
+    grid_mass, 
     dt=0.001, 
     t_total=10000, 
     n_repeats = 10, 
@@ -270,12 +271,12 @@ def recursive_cell_time_assignment_intracluster(
     sorted_refPaths: list
         a list of paths in the cluster ordered from longest to shortest in displacement. 
         
-    cell_embedding, vel, grid_density: a set of parameters for the diffusion simulations.
+    cell_embedding, vel, grid_mass: a set of parameters for the diffusion simulations.
     
     Return
     ------
-    resolved_cell_time_cluster: list
-        a list of dictionaries {cellID : time} 
+    resolved_cell_time_cluster: dictionary
+        dictionary {cellID : time} 
     
     sorted_refPaths: list
         a list of longest trajectories used for cell time projection
@@ -285,29 +286,49 @@ def recursive_cell_time_assignment_intracluster(
     print("cluster ", cluster)
     ZERO = 0
     if isinstance(MAX_ZERO_TIME_CELLS, float):
-        MAX_ZERO_TIME_CELLS = int(MAX_ZERO_TIME_CELLS
-                * len(unresolved_cell_time_cluster[cluster]))
+        MAX_ZERO_TIME_CELLS = int(MAX_ZERO_TIME_CELLS \
+                * len(unresolved_cell_time_cluster))
     MAX_ZERO_TIME_CELLS = max(MAX_ZERO_TIME_CELLS, 10)
     print("MAX allowed zero time cells are: ", MAX_ZERO_TIME_CELLS)
 
-    zero_time_cells = [cellid for cellid, celltime in unresolved_cell_time_cluster[cluster].items() if celltime <= ZERO]
+    zero_time_cells = [cellid for cellid, celltime \
+            in unresolved_cell_time_cluster.items() if celltime <= ZERO]
     if len(zero_time_cells) < MAX_ZERO_TIME_CELLS:
         print("Only ", len(zero_time_cells), " Cells left. Stopping.")
-        return unresolved_cell_time_cluster, sorted_refPaths
+        cell_time_subclusters.append({i:unresolved_cell_time_cluster[i] for
+            i in zero_time_cells})
+        return unresolved_cell_time_cluster, cell_time_subclusters, sorted_refPaths
     else:
         print(len(zero_time_cells), " Cells left.")
+    
+    # non-zero time cells form a subcluster.
+    cells_processed = [j for i in cell_time_subclusters for j in i]
+    print("cells processed already, ", cells_processed)
+    temp = dict()
+    for cellid, celltime in unresolved_cell_time_cluster.items():
+        if cellid in zero_time_cells:
+            pass
+        if cellid in cells_processed:
+            pass
+        else:
+            temp[cellid] = celltime
+    cell_time_subclusters.append(temp)
+
+    #cell_time_subclusters.append({cellid:celltime for cellid, celltime in \
+    #        unresolved_cell_time_cluster.items() if cellid not in
+    #        zero_time_cells and cellid not in cells_processed})
     
     # get subsampled cell embedding
     sub_embedding = cell_embedding[zero_time_cells]
 
-    # get subsampled density matrix
-    sub_grid_density = np.zeros_like(grid_density)
+    # get subsampled cell mass density matrix
+    sub_grid_mass = np.zeros_like(grid_mass)
     for cell in zero_time_cells:
         i = tuple(cell_grid_idx[cell])
-        sub_grid_density[i] = grid_density[i]
+        sub_grid_mass[i] = grid_mass[i]
     
     # sanity check
-    cells = [_ for _ in unresolved_cell_time_cluster[cluster]]
+    cells = [_ for _ in unresolved_cell_time_cluster]
     fig, axes = plt.subplots(nrows=1, ncols=2,
             gridspec_kw={'width_ratios':[1,1]}, figsize=(12,6))
     axes[0].scatter(cell_embedding[:,0], cell_embedding[:,1], s=5, alpha=0.1)
@@ -317,21 +338,21 @@ def recursive_cell_time_assignment_intracluster(
     axes[0].title.set_text("spread of the zero time cells")
 
     cmap = sns.cubehelix_palette(start=2, rot=0., dark=0.2, light=1, as_cmap=True)
-    axes[1].imshow(grid_density.T, interpolation=None, origin='lower', cmap="Greys")
-    axes[1].imshow(sub_grid_density.T, interpolation=None,
+    axes[1].imshow(grid_mass.T, interpolation=None, origin='lower', cmap="Greys")
+    axes[1].imshow(sub_grid_mass.T, interpolation=None,
             origin='lower',cmap=cmap, alpha=0.3)
-    axes[1].title.set_text("cell density for generating new trajectories")
+    axes[1].title.set_text("cell mass density for generating new trajectories")
     plt.show()
     
-    # generating new trajectories for the zero-time cells
-    print("Sampling new trajectories for zero-time cells in cluster ", cluster, "  ...")
+    # generate new trajectories starting from the zero-time cells
+    print("Sampling new trajs for zero-time cells in cluster ", cluster, "  ...")
     sub_traj=run_diffusion(cell_embedding, vel=vel,
-            grid_density=sub_grid_density, 
+            grid_mass=sub_grid_mass, 
             dt=dt, t_total=t_total, eps=1e-3, 
             off_cell_init=False, init_cell=zero_time_cells, 
             n_repeats = n_repeats, n_jobs = n_jobs)
     
-    # finding the longest trajectory
+    # Find the longest trajectory
     newPaths = truncate_end_state_stuttering(sub_traj, cell_embedding)
     traj_displacement = np.array([compute_trajectory_displacement(ipath) for ipath in newPaths])
     order = np.argsort(traj_displacement)[::-1]
@@ -343,30 +364,32 @@ def recursive_cell_time_assignment_intracluster(
     
     # re-assign time for zero time cells
     sub_cell_time = cell_time_projection_cluster(cell_embedding, ref_path, cluster, cell_fate)
+    for cell in cells:
+        unresolved_cell_time_cluster[cell] = sub_cell_time[cell] if \
+                cell in zero_time_cells else unresolved_cell_time_cluster[cell] 
 
-    # consolidate 
-    dist, (dotA, dotB) = closest_distance_between_two_paths(ref_path,
-            sorted_refPaths[-1], cell_embedding)
-    
-    print("now the cell time is updated for cluster: ", cluster)
-    print("shifting ref_path2 by time ", dotA-dotB)
-    #print(unresolved_cell_time_cluster[cluster])
-
-    for cell in unresolved_cell_time_cluster[cluster]:
-        unresolved_cell_time_cluster[cluster][cell] = sub_cell_time[cell] if \
-                cell in zero_time_cells else unresolved_cell_time_cluster[cluster][cell] - dotB + dotA
+    if False:
+        # consolidate 
+        dist, (dotA, dotB) = closest_distance_between_two_paths( \
+                ref_path, sorted_refPaths[-1], cell_embedding)
+        print("now the cell time is updated for cluster: ", cluster)
+        print("shifting ref_path2 by time ", dotA-dotB)
+        for cell in cells:
+            unresolved_cell_time_cluster[cell] = sub_cell_time[cell] if \
+                    cell in zero_time_cells else unresolved_cell_time_cluster[cell] - dotB + dotA
 
     sorted_refPaths.append(ref_path)
     
-    return recursive_cell_time_assignment_intracluster(
+    return recur_cell_time_assignment_intracluster(
         unresolved_cell_time_cluster, 
+        cell_time_subclusters,
         cluster, 
         sorted_refPaths, 
         cell_fate,
         cell_embedding, 
         vel, 
         cell_grid_idx, 
-        grid_density, 
+        grid_mass, 
         dt=dt, 
         t_total=t_total, 
         n_repeats = n_repeats, 
@@ -399,6 +422,8 @@ def cell_time_assignment_intercluster(unresolved_cell_time, cell_fate, cell_embe
 
     '''
 
+    print("number of cells: ", len(cell_fate))
+    print(cell_fate[0])
     clusterIDs = sorted(np.unique(cell_fate))
     cutoff = overlap_crit_intracluster(cell_embedding, cell_fate, tau)
 
@@ -704,7 +729,7 @@ def assign_all_cell_fate(embedding, sampling_ixs, cell_fate):
 
 def compute_all_cell_time(load_cellDancer, embedding, cell_embedding, 
                           path_clusters, cell_fate,
-                          vel_mesh, cell_grid_idx, grid_density,
+                          vel_mesh, cell_grid_idx, grid_mass,
                           sampling_ixs, step,
                           dt=0.001, t_total=10000, n_repeats = 10, 
                           n_jobs = mp.cpu_count()-1):
@@ -715,28 +740,30 @@ def compute_all_cell_time(load_cellDancer, embedding, cell_embedding,
     print("They are: ", clusters)
     
     #plot_path_clusters(path_clusters, clusters, cell_embedding)
-
     cell_time_per_cluster = [cell_time_projection_cluster(cell_embedding, 
-        path_clusters[i][0], i, cell_fate) for i in clusters]
+        path_clusters[cluster][0], cluster, cell_fate) for cluster in clusters]
 
     # intra-cluster time assignment
-    for i in clusters:
-        cell_time_per_cluster, refPaths = recursive_cell_time_assignment_intracluster(
-            cell_time_per_cluster, 
-            i, 
-            [path_clusters[i][0]], 
-            cell_fate, 
-            cell_embedding, 
-            vel_mesh, 
-            cell_grid_idx, 
-            grid_density,
-            dt=dt, 
-            t_total=t_total, 
-            n_repeats=n_repeats, 
-            n_jobs=n_jobs,
-            MAX_ZERO_TIME_CELLS = 0.05)
+    for cluster in clusters:
+        cell_time_subclusters = list()
+        cell_time_per_cluster[cluster], cell_time_subclusters, refPaths \
+                = recur_cell_time_assignment_intracluster(
+                        cell_time_per_cluster[cluster], 
+                        cell_time_subclusters,
+                        cluster, 
+                        [path_clusters[cluster][0]], 
+                        cell_fate, 
+                        cell_embedding, 
+                        vel_mesh, 
+                        cell_grid_idx, 
+                        grid_mass,
+                        dt=dt, 
+                        t_total=t_total, 
+                        n_repeats=n_repeats, 
+                        n_jobs=n_jobs,
+                        MAX_ZERO_TIME_CELLS = 0.05)
 
-        print("\n Display reference paths for cluster .", i)
+        print("\n Display reference paths for cluster .", cluster)
         plt.scatter(cell_embedding[:,0], cell_embedding[:,1], alpha = 0.3)
         for j in range(len(refPaths)):
             path = refPaths[j]
@@ -744,10 +771,24 @@ def compute_all_cell_time(load_cellDancer, embedding, cell_embedding,
             plt.text(path[-1,0], path[-1,1], "refPath"+str(j), fontsize=12)
         plt.show()
 
-        # Need to do intercluster adjustment for all the subclusters in a cluster
-        # cell_time_per_cluster for subclusters!
-        # cell_fate for subclusters!
-        # cell_embedding for subclusters!
+        print(cell_time_subclusters)
+
+        # Need to do inter-subcluster adjustment for all the subclusters in a cluster
+        if len(cell_time_subclusters) > 1:
+            cells_subclusters = list()
+            cell_fate_subclusters = list()
+            for subcluster in cell_time_subclusters:
+                for cell in subcluster:
+                    cells_subclusters.append(cell)
+                    cell_fate_subclusters.append(subcluster)
+
+            cell_embedding_subclusters = cell_embedding[cells_subclusters]
+
+            cell_time_per_cluster[cluster] = cell_time_assignment_intercluster(
+                    cell_time_subclusters,
+                    cell_fate_subclusters, 
+                    cell_embedding_subclusters, 
+                    tau = 0.05)
 
     print("\n\n\nAll intra cluster cell time has been resolved.\n\n\n")
     
@@ -804,7 +845,7 @@ def pseudo_time(load_cellDancer,
 
     __ = generate_grid(cell_embedding, normalized_embedding, velocity, steps=grid)
     vel_mesh = __[0] 
-    grid_density = __[1]
+    grid_mass = __[1]
     cell_grid_idx = __[2] 
     cell_grid_coor = __[3]
     all_grid_idx = __[4] 
@@ -812,7 +853,7 @@ def pseudo_time(load_cellDancer,
     
     paths=run_diffusion(cell_embedding, 
                         vel_mesh, 
-                        grid_density, 
+                        grid_mass, 
                         dt=dt, 
                         t_total=t_total,
                         eps=1e-5, 
@@ -851,7 +892,7 @@ def pseudo_time(load_cellDancer,
         cell_fate,
         vel_mesh, 
         cell_grid_idx=cell_grid_idx, 
-        grid_density=grid_density, 
+        grid_mass=grid_mass, 
         sampling_ixs=sampling_ixs, 
         step=downsample_step,
         dt=dt, 
