@@ -15,11 +15,10 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", UserWarning)
 
-#logging.getLogger("lightning").setLevel(logging.ERROR)
-#logging.getLogger("lightning").setLevel(logging.ERROR)
-
 import pkg_resources
 import torch.multiprocessing as mp
+import logging
+logging.getLogger("pytorch_lightning").setLevel(logging.WARNING)
 
 if __name__ == "__main__":
     sys.path.append('.')
@@ -27,6 +26,7 @@ if __name__ == "__main__":
 else:
     try:
         from .sampling import *
+
     except ImportError:
         from sampling import *
 
@@ -163,17 +163,17 @@ class stochasticModule(nn.Module): # deep learning module
             den[den==0] = -1 # den==0 will cause nan in training 
             cosine = torch.where(den!=-1, (unv*uv + snv*sv) / den, torch.tensor(1.)) # cosine: col is individuel cell (cellI), row is nearby cells of cellI, value is the cosine between col and row cells
             
-            print('indices')
-            print(indices)
-            print('cosine')
-            print(cosine)
-            print('cosine.shape')
-            print(cosine.shape)
+            # print('indices')
+            # print(indices)
+            # print('cosine')
+            # print(cosine)
+            # print('cosine.shape')
+            # print(cosine.shape)
 
-            print('torch.min(cosine, 0)')
-            print(torch.min(cosine, 0))
-            print('torch.max(cosine, 0)')
-            print(torch.max(cosine, 0))
+            # print('torch.min(cosine, 0)')
+            # print(torch.min(cosine, 0))
+            # print('torch.max(cosine, 0)')
+            # print(torch.max(cosine, 0))
             cosine_max = torch.max(cosine, 0)[0]
             # print('cosine_max')
             # print(cosine_max)
@@ -219,12 +219,12 @@ class stochasticModule(nn.Module): # deep learning module
         # corrcoef_cost_ratio=0.3
         
         if trace_cost_ratio==0 and corrcoef_cost_ratio==0:
-            print('cost_fin--1---')
+            # print('cost_fin--1---')
             # print('------running - just cosin cost, trace_cost_ratio==0 and corrcoef_cost_ratio==0')
             cost1 = cosine_similarity(u0, s0, u1, s1, indices)[0]
             cost_fin=torch.mean(cost1)
 
-            print(cost_fin)
+            # print(cost_fin)
         else:
             # print('trace_cost_ratio!=0 or corrcoef_cost_ratio!=0')
 
@@ -371,7 +371,7 @@ class ltModule(pl.LightningModule):
         ###############################################
         #########       add embedding         #########
         ###############################################
-        print('-----------training_step------------')
+        # print('-----------training_step------------')
         u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, u0maxs, s0maxs, embedding1s, embedding2s = batch
         u0, s0, u1t, s1t, _, _, _, _, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
         
@@ -627,7 +627,8 @@ def _train_thread(datamodule,
                  smooth_weight=None,
                  ini_model=None, 
                  model_save_path=None):
-    print("train thread---------")
+    # print("train thread---------")
+
     import random
     seed = 0
     torch.manual_seed(seed)
@@ -647,15 +648,14 @@ def _train_thread(datamodule,
                     average_cost_window_size=average_cost_window_size,
                     smooth_weight=smooth_weight,)
 
-    print("train thread-----1----")
-    print("indices", data_indices)
+    # print("indices", data_indices)
     selected_data = datamodule.subset(data_indices)  # IMPORTANT: 这个subset对应realdata.py里的每一个get_item块，
     #因为从前如果不用subset，就会训练出一个网络，对应不同gene的不同alpha，beta，gamma；
     #但是，如果使用subset，就分块训练每个基因不同网络，效果变好
 
     u0, s0, u1, s1, alpha, beta, gamma, this_gene_name, u0max, s0max, embedding1, embedding2=selected_data.training_dataset.__getitem__(0)
-    print(u0)
-    print('u0')
+    # print(u0)
+    # print('u0')
     # data_df=load_raw_data[['gene_name', 'u0','s0','cellID','embedding1','embedding2']][load_raw_data.gene_name.isin(gene_choice)]
     data_df=pd.DataFrame({'u0':u0,'s0':s0,'embedding1':embedding1,'embedding2':embedding2})
     data_df['gene_name']=this_gene_name
@@ -669,7 +669,6 @@ def _train_thread(datamodule,
                         n_neighbors=n_neighbors,
                         mode='embedding')
 
-    print("train thread-----2----")
     gene_downsampling=downsampling(data_df=data_df, gene_choice=[this_gene_name], downsampling_ixs=sampling_ixs_select_model)
     if ini_model=='circle':
         model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'branch.pt')).name
@@ -686,7 +685,6 @@ def _train_thread(datamodule,
                                           mode='min',
                                           auto_insert_metric_name=True
                                           )
-    print("train thread-----3----")
     if check_n_epoch is None:
         #print('not using early stop')
         trainer = pl.Trainer(
@@ -706,7 +704,6 @@ def _train_thread(datamodule,
             callbacks=[early_stop_callback]
             #callbacks=[early_stop_callback,checkpoint_callback]
             )
-    print("train thread-----4----")
     '''   by Lingqun
     trainer = pl.Trainer(
     max_epochs=500, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1,
@@ -722,7 +719,6 @@ def _train_thread(datamodule,
     if max_epoches > 0:
         trainer.fit(model, selected_data)   # start and finish traning network
 
-    print("train thread-----5----")
     trainer.test(model, selected_data)    # predict using model
     
     if(model_save_path != None):
@@ -732,7 +728,6 @@ def _train_thread(datamodule,
     detail = model.test_detail
 
 
-    print("train thread-----6----")
     
 
     if auto_norm_u_s:
@@ -743,7 +738,6 @@ def _train_thread(datamodule,
         detail.beta=detail.beta*u0max
         detail.gamma=detail.gamma*s0max
 
-    print("train thread-----7----")
     if(model_save_path != None):
         model.save(model_save_path)
     
@@ -752,7 +746,7 @@ def _train_thread(datamodule,
     
     brief.to_csv(os.path.join(result_path,'TEMP', ('loss'+'_'+this_gene_name+'.csv')),header=header_brief,index=False)
     detail.to_csv(os.path.join(result_path,'TEMP', ('celldancer_estimation_'+this_gene_name+'.csv')),header=header_detail,index=False)
-    print('finished_'+this_gene_name)
+    # print('finished_'+this_gene_name)
     return None
 
 def downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=None,binning=False):
@@ -925,18 +919,20 @@ def train( # use train_thread # change name to velocity estiminate
         gene_choice=list(load_raw_data.gene_name.drop_duplicates())
 
     datamodule=downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=gene_choice,binning=binning)
-    print('datamodule')
-    print(datamodule)
+
     if check_n_epoch=='None':check_n_epoch=None
     all_data = datamodule
     data_len = all_data.test_dataset.__len__()
 
     # buring
-    _train_thread(
+    gene_choice_buring=[list(load_raw_data.gene_name.drop_duplicates())[0]]
+    datamodule=downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=gene_choice_buring,binning=binning)
+
+    result = Parallel(n_jobs=n_jobs, backend="loky")(
+        delayed(_train_thread)(
             datamodule = datamodule,
-            data_indices=[0], 
+            data_indices=[data_index], 
             result_path=result_path,
-            n_neighbors=n_neighbors,
             max_epoches=max_epoches,
             check_n_epoch=check_n_epoch,
             initial_zoom=initial_zoom, 
@@ -944,6 +940,7 @@ def train( # use train_thread # change name to velocity estiminate
             model_save_path=model_save_path,
             learning_rate=learning_rate,
             cost2_cutoff=cost2_cutoff,
+            n_neighbors=n_neighbors,
             optimizer=optimizer,
             trace_cost_ratio=trace_cost_ratio,
             corrcoef_cost_ratio=corrcoef_cost_ratio,
@@ -952,108 +949,56 @@ def train( # use train_thread # change name to velocity estiminate
             average_cost_window_size=average_cost_window_size,
             patience=patience,
             smooth_weight=smooth_weight)
+        for data_index in range(0,len(gene_choice_buring))) #for 循环里执行train_thread
     # end - buring
 
     shutil.rmtree(os.path.join(result_path,'TEMP'))
     os.mkdir(os.path.join(result_path,'TEMP'))
     
-    # from .utilities import tqdm_joblib
-    # import math
-    # import multiprocessing as mp_sys
-    TASKS = list()
-    ini_model=None
+    from .utilities import tqdm_joblib
+    from tqdm import tqdm
 
-    for i in range(0,data_len):
-        data_indices=[i]
-        TASKS.append((datamodule, \
-                      data_indices, \
-                      result_path, \
-                      n_neighbors, \
-                      max_epoches, \
-                      check_n_epoch, \
-                      initial_zoom, \
-                      initial_strech, \
-                      learning_rate, \
-                      cost2_cutoff,\
-                      optimizer, \
-                      trace_cost_ratio, \
-                      corrcoef_cost_ratio, \
-                      auto_norm_u_s, \
-                      cost_type, \
-                      average_cost_window_size, \
-                      patience, \
-                      smooth_weight,\
-                      ini_model, \
-                      model_save_path))
-    print(TASKS)
-    # #with tqdm_joblib(tqdm(desc="Velocity Estimation", total=data_len)) as progress_bar:
-    # #pool = Pool(processes=n_jobs)
+    data_len
+    id_ranges=list()
+    interval=40
+    for i in range(0,data_len,interval):
+        idx_start=i
+        if data_len<i+interval:
+            idx_end=data_len
+        else:
+            idx_end=i+interval
+        id_ranges.append((idx_start,idx_end))
 
-    # with mp_sys.Pool(n_jobs) as pool:
-    #     pool.starmap(_train_thread, TASKS)
+    for id_range in tqdm(id_ranges,desc="Velocity Estimation", total=len(id_ranges)):
+        if gene_choice is None: 
+            gene_choice=list(load_raw_data.gene_name.drop_duplicates())
+        gene_choice_batch=gene_choice[id_range[0]:id_range[1]]
+        datamodule=downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=gene_choice_batch,binning=binning)
 
-
-    from ray.util.multiprocessing import Pool
-
-    def f(index):
-        return index
-
-    pool = Pool()
-    for result in pool.map(f, TASKS):
-        print(result)
+        result = Parallel(n_jobs=n_jobs, backend="loky")(
+            delayed(_train_thread)(
+                datamodule = datamodule,
+                data_indices=[data_index], 
+                result_path=result_path,
+                max_epoches=max_epoches,
+                check_n_epoch=check_n_epoch,
+                initial_zoom=initial_zoom, 
+                initial_strech=initial_strech,
+                model_save_path=model_save_path,
+                learning_rate=learning_rate,
+                cost2_cutoff=cost2_cutoff,
+                n_neighbors=n_neighbors,
+                optimizer=optimizer,
+                trace_cost_ratio=trace_cost_ratio,
+                corrcoef_cost_ratio=corrcoef_cost_ratio,
+                auto_norm_u_s=auto_norm_u_s,
+                cost_type=cost_type,
+                average_cost_window_size=average_cost_window_size,
+                patience=patience,
+                smooth_weight=smooth_weight)
+            for data_index in range(0,len(gene_choice_batch))) #for 循环里执行train_thread
 
 
-
-
-
-    # from tqdm import tqdm
-
-    # with tqdm_joblib(tqdm(desc="Velocity Estimation", total=data_len)) as progress_bar:
-    #     result = Parallel(n_jobs=n_jobs, backend="loky")(
-    #         delayed(_train_thread)(
-    #             datamodule = datamodule,
-    #             data_indices=[data_index], 
-    #             result_path=result_path,
-    #             max_epoches=max_epoches,
-    #             check_n_epoch=check_n_epoch,
-    #             initial_zoom=initial_zoom, 
-    #             initial_strech=initial_strech,
-    #             model_save_path=model_save_path,
-    #             learning_rate=learning_rate,
-    #             cost2_cutoff=cost2_cutoff,
-    #             n_neighbors=n_neighbors,
-    #             optimizer=optimizer,
-    #             trace_cost_ratio=trace_cost_ratio,
-    #             corrcoef_cost_ratio=corrcoef_cost_ratio,
-    #             auto_norm_u_s=auto_norm_u_s,
-    #             cost_type=cost_type,
-    #             average_cost_window_size=average_cost_window_size,
-    #             patience=patience,
-    #             smooth_weight=smooth_weight)
-    #         for data_index in range(data_len)) #for 循环里执行train_thread
-
-    # with tqdm_joblib(tqdm(desc="Velocity Estimation", total=data_len)) as progress_bar:
-    #     for data_index in range(data_len):
-    #         _train_thread(
-    #                 datamodule = datamodule,
-    #                 data_indices=[data_index], 
-    #                 result_path=result_path,
-    #                 n_neighbors=n_neighbors,
-    #                 max_epoches=max_epoches,
-    #                 check_n_epoch=check_n_epoch,
-    #                 initial_zoom=initial_zoom, 
-    #                 initial_strech=initial_strech,
-    #                 model_save_path=model_save_path,
-    #                 learning_rate=learning_rate,
-    #                 cost2_cutoff=cost2_cutoff,
-    #                 optimizer=optimizer,
-    #                 trace_cost_ratio=trace_cost_ratio,
-    #                 corrcoef_cost_ratio=corrcoef_cost_ratio,
-    #                 auto_norm_u_s=auto_norm_u_s,
-    #                 cost_type=cost_type,
-    #                 average_cost_window_size=average_cost_window_size,
-    #                 patience=patience,
-    #                 smooth_weight=smooth_weight)
 
     import pandas as pd
     import glob
