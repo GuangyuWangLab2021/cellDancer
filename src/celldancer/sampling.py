@@ -152,8 +152,7 @@ def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,transfe
 
     gene = data_df['gene_name'].drop_duplicates().iloc[0]
     embedding = data_df.loc[data_df['gene_name']==gene][['embedding1','embedding2']]
-    #print(para)
-    
+
     if step is not None:
         idx_downSampling_embedding = sampling_embedding(embedding,
                     para=para,
@@ -163,7 +162,7 @@ def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,transfe
         idx_downSampling_embedding=range(0,embedding.shape[0]) # all cells
     # TODO GENE MODE TRANSFER
     def transfer(data_df,transfer_mode):
-        print('tranfer mode: '+str(transfer_mode))
+        # print('tranfer mode: '+str(transfer_mode))
         if transfer_mode=='log':
             data_df.s0=np.log(data_df.s0+0.000001)
             data_df.u0=np.log(data_df.u0+0.000001)
@@ -189,12 +188,13 @@ def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,transfe
             data_df_combined.u0=2**(data_df_combined.u0_norm*10)
             data_df_combined.s0=2**(data_df_combined.s0_norm*10)
             data_df=data_df_combined
-        #elif transfer_mode==None:
-            #print('None')
+        # elif transfer_mode==None:
+
         return (data_df)
 
     data_df=transfer(data_df,transfer_mode)
- 
+    
+
     if mode=='gene':
         #print('using gene mode')
         cellID = data_df.loc[data_df['gene_name']==gene]['cellID']
@@ -222,8 +222,8 @@ def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,transfe
         embedding_downsampling_trans_norm_mult10=embedding_downsampling_trans_norm*10 #optional
         embedding_downsampling=embedding_downsampling_trans_norm_mult10**5 # optional
     elif mode=='embedding':
-        #print('using cell mode')
         embedding_downsampling = embedding.iloc[idx_downSampling_embedding][['embedding1','embedding2']]
+
     elif mode =='umap':
         import umap
         #print('using umap mode')
@@ -252,9 +252,10 @@ def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,transfe
         #             embedding_downsampling_trans_norm_mult10=embedding_downsampling_trans_norm*10
         #             embedding_downsampling=embedding_downsampling_trans_norm_mult10**5
         #         elif i=='log10'
-    
+
 
     n_neighbors = min(int((embedding_downsampling.shape[0])/4), n_neighbors)
+    if n_neighbors==0:n_neighbors=1
     nn = NearestNeighbors(n_neighbors=n_neighbors) #modify
     nn.fit(embedding_downsampling)  # NOTE should support knn in high dimensions
     embedding_knn = nn.kneighbors_graph(mode="connectivity")
@@ -270,7 +271,6 @@ def downsampling(data_df, gene_choice, downsampling_ixs):
         data_df_one_gene=data_df[data_df['gene_name']==gene]
         data_df_one_gene_downsampled = data_df_one_gene.iloc[downsampling_ixs]
         data_df_downsampled=data_df_downsampled.append(data_df_one_gene_downsampled)
-        print(gene)
         # plt.scatter(data_df_one_gene['embedding1'], data_df_one_gene['embedding2'])
         # plt.scatter(data_df_one_gene.iloc[downsampling_ixs]['embedding1'], data_df_one_gene.iloc[downsampling_ixs]['embedding2'])
         # plt.scatter(embedding_downsampling.iloc[neighbor_ixs[0,:]]['embedding1'], embedding_downsampling.iloc[neighbor_ixs[0,:]]['embedding2'])
