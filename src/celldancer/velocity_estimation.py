@@ -627,7 +627,6 @@ def _train_thread(datamodule,
                  smooth_weight=None,
                  ini_model=None, 
                  model_save_path=None):
-    # print("train thread---------")
 
     import random
     seed = 0
@@ -654,12 +653,11 @@ def _train_thread(datamodule,
     #但是，如果使用subset，就分块训练每个基因不同网络，效果变好
 
     u0, s0, u1, s1, alpha, beta, gamma, this_gene_name, u0max, s0max, embedding1, embedding2=selected_data.training_dataset.__getitem__(0)
-    # print(u0)
-    # print('u0')
+
     # data_df=load_raw_data[['gene_name', 'u0','s0','cellID','embedding1','embedding2']][load_raw_data.gene_name.isin(gene_choice)]
     data_df=pd.DataFrame({'u0':u0,'s0':s0,'embedding1':embedding1,'embedding2':embedding2})
     data_df['gene_name']=this_gene_name
-    #print(this_gene_name)
+
     _, sampling_ixs_select_model, _ = downsampling_embedding(data_df, # for select model
                         para='neighbors',
                         target_amount=0,
@@ -668,7 +666,6 @@ def _train_thread(datamodule,
                         # step_j=20,
                         n_neighbors=n_neighbors,
                         mode='embedding')
-
     gene_downsampling=downsampling(data_df=data_df, gene_choice=[this_gene_name], downsampling_ixs=sampling_ixs_select_model)
     if ini_model=='circle':
         model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'branch.pt')).name
