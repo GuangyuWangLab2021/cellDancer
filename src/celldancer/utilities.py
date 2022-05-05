@@ -437,14 +437,34 @@ def moments(adata):
     adata.layers["Ms"] = csr_matrix.dot(connect, csr_matrix(adata.layers["spliced"])).astype(np.float32).A
 
 
-# PENGZHI -> Moved this to utilities
-def find_nn_neighbors(data, gridpoints_coordinates, n_neighbors, radius=1):
-    nn = NearestNeighbors(n_neighbors=n_neighbors, radius=1, n_jobs=-1)
-    nn.fit(data)
-    dists, neighs = nn.kneighbors(gridpoints_coordinates)
+def find_nn_neighbors(
+        data=None, 
+        gridpoints_coordinates=None, 
+        n_neighbors=None,
+        radius=None):
+    '''
+    data: numpy ndarray
+    gridpoints_coordinates: numpy ndarray
+    n_neighbors: int
+    raidus: float
+    '''
+
+    if gridpoints_coordinates is None:
+        gridpoints_coordinates = data
+
+    if n_neighbors is None and radius is not None:
+        nn = NearestNeighbors(radius = radius, n_jobs = -1)
+        nn.fit(data)
+        dists, neighs = nn.radius_neighbors(gridpoints_coordinates)
+    elif n_neighbors is not None and radius is None:
+        nn = NearestNeighbors(n_neighbors = n_neighbors, n_jobs = -1)
+        nn.fit(data)
+        dists, neighs = nn.kneighbors(gridpoints_coordinates)
+
     return(dists, neighs)
 
-def extract_from_df(load_cellDancer, attr_list, gene_name):
+
+def extract_from_df(load_cellDancer, attr_list, gene_name=None):
     '''
     Extract a single copy of a list of columns from the load_cellDancer data frame
     Returns a numpy array.

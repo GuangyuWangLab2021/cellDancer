@@ -50,8 +50,8 @@ def scatter_gene(
         else:
             bbox_extra_artists=None
 
-        assert gene_name, '\nError! gene_name is required!\n'
-        c=np.vectorize(colors.get)(extract_from_df(load_cellDancer, 'clusters', gene_name))
+#        assert gene_name, '\nError! gene_name is required!\n'
+        c=np.vectorize(colors.get)(extract_from_df(load_cellDancer, 'clusters'))
         cmap=ListedColormap(list(colors.keys()))
 
     elif isinstance(colors, str):
@@ -60,12 +60,12 @@ def scatter_gene(
             assert gene_name, '\nError! gene_name is required!\n'
             cmap = ListedColormap(zissou2)
         if colors in ['spliced', 'unspliced']:
+            assert gene_name, '\nError! gene_name is required!\n'
             colors = {'spliced':'s0', 'unspliced':'u0'}[colors]
             cmap = ListedColormap(fireworks3)
         if colors in ['pseudotime']:
             cmap = 'viridis'
 
-        assert gene_name, '\nError! gene_name is required!\n'
         c = extract_from_df(load_cellDancer, [colors], gene_name)
     elif colors is None:
         attr = 'basic'

@@ -113,8 +113,8 @@ def scatter_cell(
     
     embedding = extract_from_df(load_cellDancer, ['embedding1', 'embedding2'], gene_name)
     n_cells = embedding.shape[0]
-    sample_cells = load_cellDancer['velocity1'][:n_cells].isna()
-    embedding_ds = embedding[~sample_cells]
+    sample_cells = load_cellDancer['velocity1'][:n_cells].dropna().index
+    embedding_ds = embedding[sample_cells]
     
     im=ax.scatter(embedding[:, 0],
                 embedding[:, 1],
@@ -179,9 +179,10 @@ def grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass):
 
         n_neighbors = int(velocity_embedding.shape[0]/3)
         dists_head, neighs_head = find_nn_neighbors(
-            embedding_ds, gridpoints_coordinates, n_neighbors, radius=1)
+            embedding_ds, gridpoints_coordinates, n_neighbors)
         dists_tail, neighs_tail = find_nn_neighbors(
-            embedding_ds+velocity_embedding, gridpoints_coordinates, n_neighbors, radius=1)
+            embedding_ds+velocity_embedding, gridpoints_coordinates,
+            n_neighbors)
         std = np.mean([(g[1] - g[0]) for g in grs])
 
         # isotropic gaussian kernel
@@ -201,9 +202,9 @@ def grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass):
         XY = gridpoints_coordinates
 
         dists_head2, neighs_head2 = find_nn_neighbors(
-            embedding_ds, XY+UZ_head, n_neighbors, radius=1)
+            embedding_ds, XY+UZ_head, n_neighbors)
         dists_tail2, neighs_tail2 = find_nn_neighbors(
-            embedding_ds, XY-UZ_tail, n_neighbors, radius=1)
+            embedding_ds, XY-UZ_tail, n_neighbors)
 
         gaussian_w_head2 = normal.pdf(
             loc=0, scale=smooth * std, x=dists_head2)

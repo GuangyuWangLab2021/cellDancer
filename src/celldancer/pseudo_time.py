@@ -465,8 +465,6 @@ def cell_time_assignment_intercluster(
     # weights
     w = list()
     
-    #print("unresolved_cell_time")
-    #print(unresolved_cell_time)
     # MAX_IGNORED_TIME_SHIFT is set to 50% of the shortest cluster.
     durations = list()
     for cluster in clusterIDs:
@@ -509,6 +507,15 @@ def cell_time_assignment_intercluster(
                 w.append(-shiftT)
                 paths.append([j,i])
 
+            # I think this is necessary.
+            if shiftT == 0:
+                CT.add_edge(i, j, weight = 100/MAX_IGNORED_TIME_SHIFT)
+                w.append(shiftT)
+                paths.append([i,j])
+
+    if len(paths) == 0:
+        return unresolved_cell_time
+
     pos = nx.spring_layout(CT, k = 1)
     nx.draw(CT, 
             pos=pos, 
@@ -528,52 +535,65 @@ def cell_time_assignment_intercluster(
         print("There exists a cycle in the cluster graph.")
         print("Unable to consolidate cells times in this case.")
         return unresolved_cell_time
-    
-    if len(paths) == 0:
-        return unresolved_cell_time
-
-    paths = np.array(paths)
-    w = np.array(w)
-    flag = np.array([0]*n_nodes)
-    w_cumm = np.array([0]*n_nodes)
-
-    # for unconnected nodes
-    for i in range(n_nodes):
-        node = nodes[i]
-        if not node in paths.flatten():
-            flag[node]=1
-
-    # by Guangyu Wang
-    node = nodes[0]
-    idx = np.where(nodes == node)
-    flag[idx] = 1
-    while len(flag[flag==0])>0:
-        for path in paths:
-            if path[0]==node:
-                #print("Forward: "+str(node))
-                w_cumm[nodes==path[1]] = w_cumm[nodes==node]+w[np.all(paths==path, axis=1)]
-                node = path[1]
-                idx = np.where(nodes==node)
-                flag[idx] = 1
-            
-            elif path[1]==node:
-                #print("Backward: "+str(node))
-                w_cumm[nodes==path[0]] = w_cumm[nodes==node]-w[np.all(paths==path, axis=1)]
-                node=path[0]
-                idx = np.where(nodes==node)
-                flag[idx] = 1
-            else:
-                #print("Pass: "+str(node))
-                pass
+    else:
+        CT_undir = CT.to_undirected(reciprocal=False, as_view=False)
+        w_cumm = {node:0 for node in nodes}
+        p_w = zip(paths, w)
+        for tree_nodes in nx.connected_components(CT_undir):
+            temp_p = []
+            temp_w = []
+            for i in tree_nodes:
+                for j, k in p_w:
+                    if i in j:
+                        temp_p.append(j)
+                        temp_w.append(k)
+                        continue
+            temp_w_cumm = relative_time_in_tree(temp_p, temp_w)
+            if len(temp_w_cumm) > 1:
+                for node, time_adj in temp_w_cumm.items(): 
+                    w_cumm[node] = time_adj
 
     # update pseudotime
     pseudotime = np.array(unresolved_cell_time, dtype=object)
-    for node_idx in range(len(w_cumm)):
+    for node_idx in range(n_nodes):
         cells = pseudotime[node_idx]
+        node = nodes[node_idx]
         for cell in cells:
-            cells[cell] += w_cumm[node_idx]
+            cells[cell] += w_cumm[node]
     return pseudotime
 
+def relative_time_in_tree(paths, w):
+    paths = np.array(paths)
+    w = np.array(w)
+    nodes = sorted(set(np.array(paths).flatten()))
+    print(nodes)
+    n_nodes = len(nodes)
+    flag = {node:0 for node in nodes}
+    w_cumm = {node:0 for node in nodes}
+
+    if len(paths) == 0:
+        return w_cumm
+
+    # by Guangyu Wang
+    node = nodes[0]
+    flag[node] = 1
+    while 0 in flag.values():
+        for path in paths:
+            if path[0]==node:
+                #print("Forward: "+str(node)+" -> "+str(path[1]))
+                w_cumm[path[1]] = w_cumm[node]+w[np.all(paths==path, axis=1)][0]
+                node = path[1]
+                flag[node] = 1
+
+            elif path[1]==node:
+                #print("Backward: "+str(node)+" -> "+str(path[0]))
+                w_cumm[path[0]] = w_cumm[node]-w[np.all(paths==path, axis=1)][0]
+                node=path[0]
+                flag[node] = 1
+            else:
+                #print("Pass: "+str(node))
+                pass
+    return w_cumm
 
 # combine cell time from clusters
 def combine_clusters(cell_time_per_cluster):
@@ -908,6 +928,7 @@ def pseudo_time(
         t_total, 
         n_repeats,
         downsample_step=(60, 60), 
+        path_similarity=0.3,
         save=False, 
         output_path=None):
 
@@ -963,7 +984,7 @@ def pseudo_time(
         path_clusters, 
         cell_clusters, 
         sorted_traj, 
-        similarity_cutoff=0.3, 
+        similarity_cutoff=path_similarity,
         similarity_threshold=0, 
         nkeep=-1)
 
