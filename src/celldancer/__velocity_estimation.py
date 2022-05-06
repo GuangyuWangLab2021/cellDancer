@@ -1,4 +1,4 @@
-# solved bug
+#github
 import os
 import pytorch_lightning as pl
 import torch
@@ -45,19 +45,12 @@ class L2Module(nn.Module):
 
     def forward(self, u0, s0, alpha0, beta0, gamma0, dt):
         input = torch.tensor(np.array([np.array(u0), np.array(s0)]).T)
-
-
         x = self.l1(input)
         x = F.leaky_relu(x)
-        # print('l1_leaky_relu    '+str(x))
         x = self.l2(x)
-        # print('l2    '+str(x))
         x = F.leaky_relu(x)
-        # print('l2_leaky_relu    '+str(x))
         x = self.l3(x)
         output = torch.sigmoid(x)
-
-
         # beta = torch.mean(output[:,0])   # mean of beta Guangyu
         # gamma = torch.mean(output[:,1])   # mean of gama Guangyu
         beta = output[:,0]   # mean of beta Guangyu
@@ -549,7 +542,6 @@ class getItem(Dataset): # TO DO: Change to a suitable name
                 # print(data.shape)
             else:
                 print('sampling ratio is wrong!')
-        
         elif self.datastatus=="predict_dataset":
             data_pred=self.data_predict[self.data_predict.gene_name==gene_name] # u0 & s0 for cells for one gene
             data=data_pred
@@ -559,33 +551,17 @@ class getItem(Dataset): # TO DO: Change to a suitable name
         #print('gene_name: '+gene_name)
         #print(data_pred)
         # 未来可能存在的问题：训练cell，和predict cell的u0和s0重大，不match，若不match？（当前predict cell 里是包含训练cell的，所以暂定用predict的u0max和s0max，如果不包含怎么办？还是在外面算好再传参？）
-
         u0max = np.float32(max(data_pred["u0"]))
         s0max = np.float32(max(data_pred["s0"]))
-
-        # print('max')
-        # print(u0max)
-        # print(s0max)
         # set u0 array and s0 array
         u0 = np.array(data.u0.copy().astype(np.float32))
         s0 = np.array(data.s0.copy().astype(np.float32))
-        # print(max(u0))
-        # print(max(s0))
         # plt.figure()
         # plt.title('before norm')
         # plt.scatter(s0,u0)
-
         if self.auto_norm_u_s:
-            # u0min = np.float32(min(data_pred["u0"]))
-            # s0min = np.float32(min(data_pred["s0"]))
-            # u0=((u0max-u0)/(u0max-u0min))*0.6
-            # s0=((s0max-s0)/(s0max-s0min))*0.5
-            u0=(u0/u0max)*3.15#3.15#1.9#0.6
-            s0=(s0/s0max)*4.5#0.5
-
-            u0max = 3.15#3.15#1.9#0.6 # np.float32(max(data_pred["u0"]))
-            s0max = 4.5#0.5 # np.float32(max(data_pred["s0"]))
-
+            u0=u0/u0max
+            s0=s0/s0max
         # plt.figure()
         # plt.title('after norm')
         # plt.scatter(s0,u0)
@@ -692,16 +668,12 @@ def _train_thread(datamodule,
                         n_neighbors=n_neighbors,
                         mode='embedding')
     gene_downsampling=downsampling(data_df=data_df, gene_choice=[this_gene_name], downsampling_ixs=sampling_ixs_select_model)
-
-    print(this_gene_name)
-    import random
-    seed = 100
-    print(seed)
-    torch.manual_seed(seed)
-    random.seed(seed)
-    np.random.seed(seed)
-
-    model_path=select_initial_net(this_gene_name, gene_downsampling, data_df)
+    if ini_model=='circle':
+        model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'branch.pt')).name
+    if ini_model=='branch':
+        model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'branch.pt')).name
+    else:
+        model_path=select_initial_net(this_gene_name, gene_downsampling, data_df)
     model.load(model_path)
 
     early_stop_callback = EarlyStopping(monitor="loss", min_delta=0.0, patience=patience,mode='min')
@@ -728,7 +700,19 @@ def _train_thread(datamodule,
             check_val_every_n_epoch = int(check_n_epoch),
             enable_model_summary=False,
             callbacks=[early_stop_callback]
+            #callbacks=[early_stop_callback,checkpoint_callback]
             )
+    '''   by Lingqun
+    trainer = pl.Trainer(
+    max_epochs=500, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1,
+    logger=logger,
+    logger = False,
+    checkpoint_callback = False,
+    check_val_every_n_epoch = 10,
+    log_every_n_steps=50,
+    weights_summary=None)#,
+    callbacks=[EarlyStopping(monitor="loss", min_delta=0.0, patience=200)])
+    '''
 
     if max_epoches > 0:
         trainer.fit(model, selected_data)   # start and finish traning network
@@ -744,13 +728,13 @@ def _train_thread(datamodule,
 
     
 
-    # if auto_norm_u_s:
-    #     detail.s0=detail.s0*s0max
-    #     detail.u0=detail.u0*u0max
-    #     detail.s1=detail.s1*s0max
-    #     detail.u1=detail.u1*u0max
-    #     detail.beta=detail.beta*u0max
-    #     detail.gamma=detail.gamma*s0max
+    if auto_norm_u_s:
+        detail.s0=detail.s0*s0max
+        detail.u0=detail.u0*u0max
+        detail.s1=detail.s1*s0max
+        detail.u1=detail.u1*u0max
+        detail.beta=detail.beta*u0max
+        detail.gamma=detail.gamma*s0max
 
     if(model_save_path != None):
         model.save(model_save_path)
@@ -1083,13 +1067,12 @@ def select_initial_net(gene, gene_downsampling, data_df):
     # plt.scatter(gene_u_s.s0, gene_u_s.u0)
     # plt.title(gene)
     # plt.show()
+    
     if gene_u_s_full.loc[gene_u_s_full['color']=='red'].shape[0]>0.001*gene_u_s_full.shape[0]:
-        print('circle')
         # model in circle shape
         model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'circle.pt')).name
     else:
         # model in seperated branch shape
-        print('branch')
         model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'branch.pt')).name
     return(model_path)
 
