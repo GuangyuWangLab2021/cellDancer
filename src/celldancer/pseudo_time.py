@@ -531,11 +531,12 @@ def cell_time_assignment_intercluster(
     nx.draw_networkx_edge_labels(CT,pos,edge_labels=labels)
     plt.show()
     
-    if not nx.is_forest(CT):
-        print("There exists a cycle in the cluster graph.")
-        print("Unable to consolidate cells times in this case.")
-        return unresolved_cell_time
-    else:
+    if True:
+#    if not nx.is_forest(CT):
+#        print("There exists a cycle in the cluster graph.")
+#        print("Unable to consolidate cells times in this case.")
+#        return unresolved_cell_time
+#    else:
         CT_undir = CT.to_undirected(reciprocal=False, as_view=False)
         w_cumm = {node:0 for node in nodes}
         p_w = zip(paths, w)
