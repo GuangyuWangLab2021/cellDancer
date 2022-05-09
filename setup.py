@@ -21,16 +21,17 @@ setuptools.setup(
     packages=setuptools.find_packages(where="src"),
     package_data={'': ['model/*.pt']},
     include_package_data=True,
-    install_requires=[
-        'pandas>=1.3.1',
-        'numpy>=1.19.5',
-        'scipy>=1.4.1',
-        'scikit-learn>=0.22.1',
-        'torch>=1.9.0',
-        'pytorch-lightning>=1.4.4',
-        'matplotlib>=3.1.3',
-        'seaborn>=0.10.0',
-        'joblib>=0.14.1'],
+    # install_requires=[
+    #     'pandas>=1.3.1',
+    #     'numpy>=1.19.5',
+    #     'scipy>=1.4.1',
+    #     'scikit-learn>=0.22.1',
+    #     'torch>=1.9.0',
+    #     'pytorch-lightning>=1.4.4',
+    #     'matplotlib>=3.1.3',
+    #     'seaborn>=0.10.0',
+    #     'joblib>=0.14.1'],
+    install_requires=read_requirements("requirements.txt"),
     python_requires=">=3.7",
 )
 
