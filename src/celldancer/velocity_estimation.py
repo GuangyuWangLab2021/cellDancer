@@ -380,7 +380,7 @@ class ltModule(pl.LightningModule):
         #########       add embedding         #########
         ###############################################
         # print('-----------training_step------------')
-        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, u0maxs, s0maxs, embedding1s, embedding2s = batch
+        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, u0maxs, s0maxs, embedding1s, embedding2s, _, _ = batch
         u0, s0, u1t, s1t, _, _, _, _, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
         
 
@@ -465,8 +465,8 @@ class ltModule(pl.LightningModule):
         #########       add embedding         #########
         ###############################################
         # print('-----------validation_step------------')
-        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, u0maxs, s0maxs, embedding1s, embedding2s = batch
-        u0, s0, u1t, s1t, _, _, _, gene_name, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
+        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, u0maxs, s0maxs, embedding1s, embedding2s, u0max_tmps, s0max_tmps  = batch
+        u0, s0, u1t, s1t, _, _, _, gene_name, u0max, s0max, embedding1, embedding2, u0max_tmp, s0max_tmp  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0], u0max_tmps[0], s0max_tmps[0]
         if self.current_epoch!=0:
             cost = self.get_loss.data.numpy()
             # print("cost_mean: "+str(cost_mean))
@@ -487,8 +487,8 @@ class ltModule(pl.LightningModule):
         #########       add embedding         #########
         ###############################################
         # print('-----------test_step------------')
-        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, u0maxs, s0maxs, embedding1s, embedding2s = batch
-        u0, s0, u1t, s1t, _, _, _, gene_name, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
+        u0s, s0s, u1ts, s1ts, true_alphas, true_betas, true_gammas, gene_names, u0maxs, s0maxs, embedding1s, embedding2s, u0max_tmps, s0max_tmps = batch
+        u0, s0, u1t, s1t, _, _, _, gene_name, u0max, s0max, embedding1, embedding2, u0max_tmp, s0max_tmp  = u0s[0], s0s[0], u1ts[0], s1ts[0], true_alphas[0], true_betas[0], true_gammas[0], gene_names[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0], u0max_tmps[0], s0max_tmps[0]
         umax = u0max
         smax = s0max
         alpha0 = np.float32(umax*2)
@@ -563,25 +563,20 @@ class getItem(Dataset): # TO DO: Change to a suitable name
         u0max = np.float32(max(data_pred["u0"]))
         s0max = np.float32(max(data_pred["s0"]))
 
-        # print('max')
-        # print(u0max)
-        # print(s0max)
-        # set u0 array and s0 array
+        u0max_tmp = np.float32(max(data_pred["u0"]))
+        s0max_tmp = np.float32(max(data_pred["s0"]))
+
         u0 = np.array(data.u0.copy().astype(np.float32))
         s0 = np.array(data.s0.copy().astype(np.float32))
-        # print(max(u0))
-        # print(max(s0))
-        # plt.figure()
-        # plt.title('before norm')
-        # plt.scatter(s0,u0)
+
 
         if self.auto_norm_u_s:
             # u0min = np.float32(min(data_pred["u0"]))
             # s0min = np.float32(min(data_pred["s0"]))
             # u0=((u0max-u0)/(u0max-u0min))*0.6
             # s0=((s0max-s0)/(s0max-s0min))*0.5
-            u0=(u0/u0max)*3.15#3.15#1.9#0.6
-            s0=(s0/s0max)*4.5#0.5
+            u0=(u0/u0max_tmp)*3.15#3.15#1.9#0.6
+            s0=(s0/s0max_tmp)*4.5#0.5
 
             u0max = 3.15#3.15#1.9#0.6 # np.float32(max(data_pred["u0"]))
             s0max = 4.5#0.5 # np.float32(max(data_pred["s0"]))
@@ -601,7 +596,7 @@ class getItem(Dataset): # TO DO: Change to a suitable name
         embedding2 = np.array(data.embedding2.copy().astype(np.float32))
         # print(embedding1)
 
-        return u0, s0, u1, s1, alpha, beta, gamma, gene_name, u0max, s0max, embedding1, embedding2
+        return u0, s0, u1, s1, alpha, beta, gamma, gene_name, u0max, s0max, embedding1, embedding2, u0max_tmp, s0max_tmp
 
 
 
@@ -677,7 +672,7 @@ def _train_thread(datamodule,
     #因为从前如果不用subset，就会训练出一个网络，对应不同gene的不同alpha，beta，gamma；
     #但是，如果使用subset，就分块训练每个基因不同网络，效果变好
 
-    u0, s0, u1, s1, alpha, beta, gamma, this_gene_name, u0max, s0max, embedding1, embedding2=selected_data.training_dataset.__getitem__(0)
+    u0, s0, u1, s1, alpha, beta, gamma, this_gene_name, u0max, s0max, embedding1, embedding2, u0max_tmp, s0max_tmp=selected_data.training_dataset.__getitem__(0)
 
     # data_df=load_raw_data[['gene_name', 'u0','s0','cellID','embedding1','embedding2']][load_raw_data.gene_name.isin(gene_choice)]
     data_df=pd.DataFrame({'u0':u0,'s0':s0,'embedding1':embedding1,'embedding2':embedding2})
@@ -744,13 +739,13 @@ def _train_thread(datamodule,
 
     
 
-    # if auto_norm_u_s:
-    #     detail.s0=detail.s0*s0max
-    #     detail.u0=detail.u0*u0max
-    #     detail.s1=detail.s1*s0max
-    #     detail.u1=detail.u1*u0max
-    #     detail.beta=detail.beta*u0max
-    #     detail.gamma=detail.gamma*s0max
+    if auto_norm_u_s:
+        detail.s0=(detail.s0*s0max_tmp)/s0max
+        detail.u0=(detail.u0*u0max_tmp)/u0max
+        detail.s1=(detail.s1*s0max_tmp)/s0max
+        detail.u1=(detail.u1*u0max_tmp)/u0max
+        detail.beta=detail.beta*u0max_tmp
+        detail.gamma=detail.gamma*s0max_tmp
 
     if(model_save_path != None):
         model.save(model_save_path)
