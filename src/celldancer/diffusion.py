@@ -191,6 +191,8 @@ def velocity_add_random(velocity, theta):
         
     '''
     r = np.random.normal(0, theta, 1)
+#    print(mp.current_process(), r)
+
     cosine = np.cos(r)[0]
     sine = np.sin(r)[0]
     
@@ -231,7 +233,8 @@ def diffusion_off_grid_wallbound(
         grid_mass,
         dt=0.001, 
         t_total=10000, 
-        eps = 1e-5):
+        eps = 1e-5,
+        random_seed = None):
     
     '''
     Simulate the diffusion of a cell in the velocity field (off grid), the cell's velocity will turn 90 degrees
@@ -274,6 +277,8 @@ def diffusion_off_grid_wallbound(
         (real_n_time_steps, n_dims)
     '''
     
+    np.random.seed(seed = random_seed)
+#    print("random seed is set to, ", random_seed)
     THETA = np.pi/6
     
     XMIN = np.min(cell_embedding, axis=0)
@@ -410,7 +415,7 @@ def diffusion_on_grid_wallbound(
     for i in range(int(t_total)):
     
         if np.linalg.norm(v0) < eps:
-            print("Velocity is too small")
+            #print("Velocity is too small")
             return np.array(trajectory)
         if no_cells_around(x0_d_coor, x0_d, v0):
             v0_cc = velocity_rotation(v0, np.pi/2)
@@ -443,7 +448,8 @@ def diffusion_on_grid_wallbound(
 
 
 def run_diffusion(cell_embedding, vel, grid_mass, dt, t_total = 10000, eps = 1e-5, 
-                  off_cell_init = False, init_cell = [], n_repeats = 10, n_jobs = 8):    
+                  off_cell_init = False, init_cell = [], n_repeats = 10, 
+                  n_jobs = 8, psrng_seeds_diffusion = None):
     '''
     Simulation of diffusion of a cell in the velocity field (on grid), 
     the cell's velocity will turn 90 degrees if it hits the boundary the next timestep.
@@ -483,10 +489,17 @@ def run_diffusion(cell_embedding, vel, grid_mass, dt, t_total = 10000, eps = 1e-
     ------
         a numpy array of trajectorys,  shape: (num_trajs, *n_time_steps, 2)
     '''
+
+    if psrng_seeds_diffusion is None:
+        psrng_seeds_diffusion = [i*100+11 for i in range(n_repeats)]
         
+    assert len(psrng_seeds_diffusion) >= n_repeats
+
     if n_jobs >= mp.cpu_count():
-        n_jobs = max(8, mp.cpu_count()-1)
+        n_jobs = min(8, mp.cpu_count()-1)
         print("Reducing n_jobs to", n_jobs, "for optimal performance.")
+
+    print("random numbers seeds are: ", psrng_seeds_diffusion)
 
     TASKS = list()
     # Setting up the TASKS
@@ -499,13 +512,16 @@ def run_diffusion(cell_embedding, vel, grid_mass, dt, t_total = 10000, eps = 1e-
     steps = np.array([vel.shape[0], vel.shape[1]])
     grid_size = embedding_range/steps
     
+    n_trajs = 0 
     for i in init_cell:
         for j in range(n_repeats):
+            n_trajs += 1
             if off_cell_init:
                 init_position = cell_embedding[i] + grid_size * np.random.uniform(-0.5,0.5,2)
             else:
                 init_position = cell_embedding[i]
-            TASKS.append((cell_embedding, vel, init_position, grid_mass, dt, t_total))
+            TASKS.append((cell_embedding, vel, init_position, grid_mass, dt,
+                t_total, 1e-5, psrng_seeds_diffusion[n_trajs % n_repeats]))
     
     with mp.Pool(n_jobs) as pool:
         paths = pool.starmap(diffusion_off_grid_wallbound, TASKS)

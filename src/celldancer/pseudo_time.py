@@ -258,6 +258,7 @@ def recur_cell_time_assignment_intracluster(
     t_total=10000, 
     n_repeats = 10, 
     n_jobs = mp.cpu_count()-1,
+    psrng_seeds_diffusion = None,
     MAX_ZERO_TIME_CELLS = 0.05):
     '''
     Recursive function to consolidate cell time within a cluster.
@@ -357,6 +358,7 @@ def recur_cell_time_assignment_intracluster(
             off_cell_init=False, 
             init_cell=zero_time_cells, 
             n_repeats = n_repeats, 
+            psrng_seeds_diffusion = psrng_seeds_diffusion,
             n_jobs = n_jobs)
     
     # Find the longest trajectory
@@ -408,6 +410,7 @@ def recur_cell_time_assignment_intracluster(
         t_total=t_total, 
         n_repeats = n_repeats, 
         n_jobs = n_jobs,
+        psrng_seeds_diffusion = psrng_seeds_diffusion,
         MAX_ZERO_TIME_CELLS=MAX_ZERO_TIME_CELLS)
     
 
@@ -467,8 +470,8 @@ def cell_time_assignment_intercluster(
     
     # MAX_IGNORED_TIME_SHIFT is set to 50% of the shortest cluster.
     durations = list()
-    for cluster in clusterIDs:
-        time_cluster = unresolved_cell_time[cluster].values()
+    for cluster_index in range(len(clusterIDs)):
+        time_cluster = unresolved_cell_time[cluster_index].values()
         duration_cluster = max(time_cluster)-min(time_cluster)
         durations.append(duration_cluster)
     MAX_IGNORED_TIME_SHIFT = 0.5 * min(durations)
@@ -481,13 +484,19 @@ def cell_time_assignment_intercluster(
     if n_nodes == 3:
         MAX_IGNORED_TIME_SHIFT = 0.1 * MAX_IGNORED_TIME_SHIFT
 
+    # i, j are the clusterIDs
+    # they have to be converted to cluster_index to be used by
+    # overlap_intercluster
+    print("clusterIDs: ", clusterIDs)
     for i,j in itertools.combinations(clusterIDs, 2):
+        cluster0_index = clusterIDs.index(i)
+        cluster1_index = clusterIDs.index(j)
         shiftT, overlap_cells = overlap_intercluster(
                 cell_embedding,
                 cell_fate_dict, 
                 unresolved_cell_time, 
-                i, 
-                j, 
+                cluster0_index,
+                cluster1_index,
                 cutoff)
 
         if shiftT is not None:
@@ -516,7 +525,7 @@ def cell_time_assignment_intercluster(
     if len(paths) == 0:
         return unresolved_cell_time
 
-    pos = nx.spring_layout(CT, k = 1)
+    pos = nx.spring_layout(CT, k = 10)
     nx.draw(CT, 
             pos=pos, 
             with_labels = True, 
@@ -540,20 +549,23 @@ def cell_time_assignment_intercluster(
         CT_undir = CT.to_undirected(reciprocal=False, as_view=False)
         w_cumm = {node:0 for node in nodes}
         p_w = zip(paths, w)
+        print("paths are: ", paths)
         for tree_nodes in nx.connected_components(CT_undir):
+            print("connected component: ", tree_nodes)
             temp_p = []
             temp_w = []
             for i in tree_nodes:
                 for j, k in p_w:
-                    if i in j:
+                    if i in j and (j not in temp_p):
                         temp_p.append(j)
                         temp_w.append(k)
-                        continue
+            print(temp_p)
             temp_w_cumm = relative_time_in_tree(temp_p, temp_w)
             if len(temp_w_cumm) > 1:
                 for node, time_adj in temp_w_cumm.items(): 
                     w_cumm[node] = time_adj
 
+    print("all nodes adjustment: ", w_cumm)
     # update pseudotime
     pseudotime = np.array(unresolved_cell_time, dtype=object)
     for node_idx in range(n_nodes):
@@ -594,6 +606,7 @@ def relative_time_in_tree(paths, w):
             else:
                 #print("Pass: "+str(node))
                 pass
+    print(w_cumm)
     return w_cumm
 
 # combine cell time from clusters
@@ -821,7 +834,8 @@ def compute_all_cell_time(
         dt=0.001, 
         t_total=10000, 
         n_repeats = 10, 
-        n_jobs = mp.cpu_count()-1):
+        n_jobs = mp.cpu_count()-1,
+        psrng_seeds_diffusion = None):
     
     clusters = np.unique(cell_fate)
 
@@ -836,11 +850,18 @@ def compute_all_cell_time(
         path_clusters[cluster][0], cluster, cell_fate) for cluster in clusters]
 
     # intra-cluster time assignment
+    clusterIndex=0
+    # It is trickly as cell clusters do not 1-to-1 map to the path clusters
+    # The clusterIndex is 0, 1, 2, ..., without skips
+    # It is used for lists cell_time_per_cluster
+    # The cluster could be 0, 2, 3, 6, ... with skips.
+    # It is used for path_clusters
+
     for cluster in clusters:
         cell_time_subclusters = list()
-        cell_time_per_cluster[cluster], cell_time_subclusters, refPaths \
+        cell_time_per_cluster[clusterIndex], cell_time_subclusters, refPaths \
                 = recur_cell_time_assignment_intracluster(
-                        cell_time_per_cluster[cluster], 
+                        cell_time_per_cluster[clusterIndex], 
                         cell_time_subclusters,
                         cluster, 
                         [path_clusters[cluster][0]], 
@@ -853,6 +874,7 @@ def compute_all_cell_time(
                         t_total=t_total, 
                         n_repeats=n_repeats, 
                         n_jobs=n_jobs,
+                        psrng_seeds_diffusion = psrng_seeds_diffusion,
                         MAX_ZERO_TIME_CELLS = 0.05)
 
         print("\n Display reference paths for cluster", cluster)
@@ -886,6 +908,8 @@ def compute_all_cell_time(
                     tau = 0.05)
             cell_time_per_cluster[cluster] = \
                     combine_clusters(cell_time_per_cluster[cluster])
+
+        clusterIndex += 1
 
     print("\n\n\nAll intra cluster cell time has been resolved.\n\n\n")
     
@@ -928,6 +952,8 @@ def pseudo_time(
         dt, 
         t_total, 
         n_repeats,
+        psrng_seeds_diffusion=None,
+        n_jobs = mp.cpu_count()-1,
         downsample_step=(60, 60), 
         path_similarity=0.3,
         save=False, 
@@ -960,6 +986,7 @@ def pseudo_time(
     all_grid_idx = __[4] 
     all_grid_coor = __[5]
     
+
     paths=run_diffusion(cell_embedding, 
                         vel_mesh, 
                         grid_mass, 
@@ -968,7 +995,8 @@ def pseudo_time(
                         eps=1e-5, 
                         off_cell_init=False, 
                         n_repeats = n_repeats, 
-                        n_jobs = mp.cpu_count()-1)
+                        psrng_seeds_diffusion = psrng_seeds_diffusion,
+                        n_jobs = n_jobs)
     
     newPaths = truncate_end_state_stuttering(paths, cell_embedding) 
     traj_displacement = np.array([compute_trajectory_displacement(ipath) for ipath in newPaths])
@@ -1007,7 +1035,8 @@ def pseudo_time(
         dt=dt, 
         t_total=t_total, 
         n_repeats = n_repeats, 
-        n_jobs=mp.cpu_count()-1)
+        n_jobs=n_jobs,
+        psrng_seeds_diffusion=psrng_seeds_diffusion)
     
     print("--- %s seconds ---" % (time.time() - start_time))
 
