@@ -499,7 +499,7 @@ def run_diffusion(cell_embedding, vel, grid_mass, dt, t_total = 10000, eps = 1e-
         n_jobs = min(8, mp.cpu_count()-1)
         print("Reducing n_jobs to", n_jobs, "for optimal performance.")
 
-    print("random numbers seeds are: ", psrng_seeds_diffusion)
+    print("Pseudo random numbers seeds are: ", psrng_seeds_diffusion)
 
     TASKS = list()
     # Setting up the TASKS

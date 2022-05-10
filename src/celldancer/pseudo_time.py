@@ -453,7 +453,7 @@ def cell_time_assignment_intercluster(
     clusterIDs = sorted(np.unique(list(cell_fate_dict.values())))
 
     cutoff = overlap_crit_intracluster(cell_embedding, cell_fate_dict, tau)
-    print("cut off is ", cutoff)
+    #print("Cutoff is ", cutoff)
 
     CT = nx.DiGraph()
     for cluster in clusterIDs:
@@ -495,6 +495,7 @@ def cell_time_assignment_intercluster(
                 cell_embedding,
                 cell_fate_dict, 
                 unresolved_cell_time, 
+                clusterIDs,
                 cluster0_index,
                 cluster1_index,
                 cutoff)
@@ -502,7 +503,7 @@ def cell_time_assignment_intercluster(
         if shiftT is not None:
             shiftT = 0 if abs(shiftT) < MAX_IGNORED_TIME_SHIFT else shiftT
 
-            print("shift time is: ", shiftT, ".\nThe overlapping cells are:",
+            print("Shift time is: ", shiftT, ".\nThe overlapping cells are:",
                     "\ncell ", overlap_cells[0], " from cluster ", i, " and ", 
                     overlap_cells[1], " from cluster ", j)
 
@@ -548,18 +549,18 @@ def cell_time_assignment_intercluster(
 #    else:
         CT_undir = CT.to_undirected(reciprocal=False, as_view=False)
         w_cumm = {node:0 for node in nodes}
-        p_w = zip(paths, w)
-        print("paths are: ", paths)
+#        p_w = zip(paths, w)
+#        print("Paths are: ", paths)
         for tree_nodes in nx.connected_components(CT_undir):
-            print("connected component: ", tree_nodes)
+            print("Connected component: ", tree_nodes)
             temp_p = []
             temp_w = []
             for i in tree_nodes:
-                for j, k in p_w:
-                    if i in j and (j not in temp_p):
+                for j, k in zip(paths, w):
+                    if (i in j) and (j not in temp_p):
                         temp_p.append(j)
                         temp_w.append(k)
-            print(temp_p)
+#            print(temp_p)
             temp_w_cumm = relative_time_in_tree(temp_p, temp_w)
             if len(temp_w_cumm) > 1:
                 for node, time_adj in temp_w_cumm.items(): 
@@ -579,7 +580,7 @@ def relative_time_in_tree(paths, w):
     paths = np.array(paths)
     w = np.array(w)
     nodes = sorted(set(np.array(paths).flatten()))
-    print(nodes)
+#    print(nodes)
     n_nodes = len(nodes)
     flag = {node:0 for node in nodes}
     w_cumm = {node:0 for node in nodes}
@@ -606,7 +607,7 @@ def relative_time_in_tree(paths, w):
             else:
                 #print("Pass: "+str(node))
                 pass
-    print(w_cumm)
+#    print(w_cumm)
     return w_cumm
 
 # combine cell time from clusters
@@ -711,6 +712,7 @@ def overlap_intercluster(
         cell_embedding, 
         cell_fate_dict, 
         cell_time_per_cluster, 
+        clusterIDs,
         cluster0_index, 
         cluster1_index, 
         cutoff, 
@@ -720,22 +722,19 @@ def overlap_intercluster(
     returns the indices of overlapping cells in pairs and dT.
     '''
 
-    print("\nConsolidating time between clusters ", cluster0_index, " and ",
-            cluster1_index, "..")
-#    cluster0_cellID = np.where(cell_fate == cluster0_index)[0]
-#    cluster1_cellID = np.where(cell_fate == cluster1_index)[0]
-
+    cluster0_ID = clusterIDs[cluster0_index]
+    cluster1_ID = clusterIDs[cluster1_index]
+    print("\nConsolidating time between clusters ", 
+            cluster0_ID, " and ", cluster1_ID, "...")
 
     cluster0_cellID = list()
     cluster1_cellID = list()
     for cell, fate in cell_fate_dict.items():
-        if fate == cluster0_index:
+        if fate == cluster0_ID:
             cluster0_cellID.append(cell)
-        if fate == cluster1_index:
+        if fate == cluster1_ID:
             cluster1_cellID.append(cell)
 
-    #print("cluster0_cellID: ", cluster0_cellID)
-    #print("cluster1_cellID: ", cluster1_cellID)
     cluster0_cellID = np.array(cluster0_cellID)
     cluster1_cellID = np.array(cluster1_cellID)
 
@@ -748,7 +747,8 @@ def overlap_intercluster(
         
         #print(closePairs)
         if len(closePairs[0]) == 0:
-            print("No close cells between clusters\t", (cluster0_index, cluster1_index))
+            print("No close cells between clusters\t", 
+                    (cluster0_ID, cluster1_ID))
             return None, []
         #print("\ncells in ", cluster0_index, ": \n", cluster0_cellID[closePairs[1]])
         #print("\ncells in ", cluster1_index, ": \n", cluster1_cellID[closePairs[0]])
@@ -777,7 +777,7 @@ def overlap_intercluster(
         if len(deltaT_values) < BARELY_OVERLAP:
             peak_mode = 'least_shift'
 
-        print("\n peak mode: ", peak_mode)
+        print("\nPeak mode: ", peak_mode)
         if peak_mode in ['least_shift']:
             shiftT = deltaT_values[np.argmin(np.abs(deltaT_values))]
             closest_pair = list(deltaT.keys())[list(deltaT.values()).index(shiftT)]
@@ -855,16 +855,17 @@ def compute_all_cell_time(
     # The clusterIndex is 0, 1, 2, ..., without skips
     # It is used for lists cell_time_per_cluster
     # The cluster could be 0, 2, 3, 6, ... with skips.
-    # It is used for path_clusters
+    # It is used for path_clusters (because we didn't merge/drop
+    # path clusters)
 
-    for cluster in clusters:
+    for clusterID in clusters:
         cell_time_subclusters = list()
         cell_time_per_cluster[clusterIndex], cell_time_subclusters, refPaths \
                 = recur_cell_time_assignment_intracluster(
                         cell_time_per_cluster[clusterIndex], 
                         cell_time_subclusters,
-                        cluster, 
-                        [path_clusters[cluster][0]], 
+                        clusterID, 
+                        [path_clusters[clusterID][0]], 
                         cell_fate, 
                         cell_embedding, 
                         vel_mesh, 
@@ -877,15 +878,17 @@ def compute_all_cell_time(
                         psrng_seeds_diffusion = psrng_seeds_diffusion,
                         MAX_ZERO_TIME_CELLS = 0.05)
 
-        print("\n Display reference paths for cluster", cluster)
+        print("\nDisplay reference paths for cluster", clusterID)
+        fig, ax = plt.subplots(figsize=(6,6))
         plt.scatter(cell_embedding[:,0], cell_embedding[:,1], alpha = 0.3)
         for j in range(len(refPaths)):
             path = refPaths[j]
             plt.scatter(path[:,0], path[:,1], c=range(len(path)), s=5)
             plt.text(path[-1,0], path[-1,1], "refPath"+str(j), fontsize=12)
+        plt.axis('off')
         plt.show()
 
-        print("\n For cluster ", cluster)
+        print("\nFor cluster ", clusterID)
 
         # Need to do inter-subcluster adjustment for all the subclusters in a cluster
         if len(cell_time_subclusters) > 1:
@@ -901,13 +904,13 @@ def compute_all_cell_time(
                     cell_fate_subclusters_dict[cell] = subclusterID
                 subclusterID += 1
 
-            cell_time_per_cluster[cluster] = cell_time_assignment_intercluster(
+            cell_time_per_cluster[clusterIndex] = cell_time_assignment_intercluster(
                     cell_time_subclusters,
                     cell_fate_subclusters_dict, 
                     cell_embedding, 
                     tau = 0.05)
-            cell_time_per_cluster[cluster] = \
-                    combine_clusters(cell_time_per_cluster[cluster])
+            cell_time_per_cluster[clusterIndex] = \
+                    combine_clusters(cell_time_per_cluster[clusterIndex])
 
         clusterIndex += 1
 
@@ -937,7 +940,7 @@ def compute_all_cell_time(
 
     all_cell_fate = assign_all_cell_fate(embedding, sampling_ixs, cell_fate)
     print("There are %d cells." % (len(all_cell_fate)))
-    #plot_cell_clusters(all_cell_fate, embedding)
+    plot_cell_clusters(all_cell_fate, embedding)
     
     # write cell time to load_cellDancer
     gene_names = load_cellDancer['gene_name'].drop_duplicates().to_list()
@@ -1098,7 +1101,7 @@ def plot_cell_clusters(cell_fate, cell_embedding):
     clusters = np.unique(cell_fate)
     n_clusters = len(clusters)
 
-    cmap = ListedColormap(sns.color_palette("colorblind", n_colors = n_clusters))
+    cmap = ListedColormap(sns.color_palette("husl", n_colors = n_clusters))
     fig, ax1 = plt.subplots(figsize=(6, 6))
     img1=ax1.scatter(cell_embedding[:,0], cell_embedding[:,1], c=cell_fate,
             s=1, alpha=1, cmap=cmap)
@@ -1110,7 +1113,7 @@ def plot_cell_clusters(cell_fate, cell_embedding):
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
     ax3 = fig.add_axes([0.9, 0.3, 0.02, 0.3])
     cb = mpl.colorbar.ColorbarBase(ax3, cmap=cmap, spacing='proportional', boundaries=bounds, norm=norm, format='%1i')
-    labels = ["cluster "+str(i) for i in range(n_clusters)]
+    labels = ["cluster "+str(i) for i in clusters]
 
     cb.ax.get_yaxis().set_ticks([])
     for i, label in enumerate(labels):
