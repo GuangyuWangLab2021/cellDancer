@@ -526,7 +526,7 @@ def cell_time_assignment_intercluster(
     if len(paths) == 0:
         return unresolved_cell_time
 
-    pos = nx.spring_layout(CT, k = 10)
+    pos = nx.planar_layout(CT)
     nx.draw(CT, 
             pos=pos, 
             with_labels = True, 
@@ -547,11 +547,10 @@ def cell_time_assignment_intercluster(
 #        print("Unable to consolidate cells times in this case.")
 #        return unresolved_cell_time
 #    else:
-        CT_undir = CT.to_undirected(reciprocal=False, as_view=False)
         w_cumm = {node:0 for node in nodes}
 #        p_w = zip(paths, w)
 #        print("Paths are: ", paths)
-        for tree_nodes in nx.connected_components(CT_undir):
+        for tree_nodes in nx.weakly_connected_components(CT):
             print("Connected component: ", tree_nodes)
             temp_p = []
             temp_w = []
@@ -566,21 +565,25 @@ def cell_time_assignment_intercluster(
                 for node, time_adj in temp_w_cumm.items(): 
                     w_cumm[node] = time_adj
 
-    print("all nodes adjustment: ", w_cumm)
+    print("All nodes adjustment: ", w_cumm)
     # update pseudotime
+    print("Before:\n", unresolved_cell_time)
     pseudotime = np.array(unresolved_cell_time, dtype=object)
     for node_idx in range(n_nodes):
         cells = pseudotime[node_idx]
         node = nodes[node_idx]
         for cell in cells:
             cells[cell] += w_cumm[node]
+    print("After:\n", unresolved_cell_time)
     return pseudotime
 
 def relative_time_in_tree(paths, w):
     paths = np.array(paths)
     w = np.array(w)
+
+    # Hence starting from the longest path
     nodes = sorted(set(np.array(paths).flatten()))
-#    print(nodes)
+    # print(nodes)
     n_nodes = len(nodes)
     flag = {node:0 for node in nodes}
     w_cumm = {node:0 for node in nodes}
@@ -793,15 +796,20 @@ def overlap_intercluster(
             
             axes[1].title.set_text('histogram of overlapping time difference')
             sns.histplot(ax=axes[1], data=deltaT_values, kde=True, color='skyblue')
-            kdeline = axes[1].lines[0]
-            x = kdeline.get_xdata()
-            y = kdeline.get_ydata()
-            mode_idx = np.argmax(y)
-            axes[1].vlines(x[mode_idx], 0, y[mode_idx], color='tomato', ls='--', lw=5)
-            plt.tight_layout()
+            try:
+                kdeline = axes[1].lines[0]
+                x = kdeline.get_xdata()
+                y = kdeline.get_ydata()
+                mode_idx = np.argmax(y)
+                axes[1].vlines(x[mode_idx], 0, y[mode_idx], color='tomato', ls='--', lw=5)
+                shiftT = x[mode_idx]
+            except IndexError: 
+            # When there is only one bin, kdeline does not exist.
+                for p in axes[1].patches:
+                    shiftT = p.get_x()
+                axes[1].vlines(p.get_x(), 0, p.get_height(), color='tomato', ls='--', lw=5)
             plt.show()
 
-            shiftT = x[mode_idx]
             # find the pair ~ shiftT
             shiftT = deltaT_values[np.argmin(np.abs(deltaT_values-shiftT))]
             closest_pair = list(deltaT.keys())[list(deltaT.values()).index(shiftT)]
@@ -893,7 +901,6 @@ def compute_all_cell_time(
         # Need to do inter-subcluster adjustment for all the subclusters in a cluster
         if len(cell_time_subclusters) > 1:
             cells_subclusters = list()
-            # TODOHERE
             cell_fate_subclusters_dict = dict()
 
             # subclusterID starts from 0
@@ -1101,7 +1108,7 @@ def plot_cell_clusters(cell_fate, cell_embedding):
     clusters = np.unique(cell_fate)
     n_clusters = len(clusters)
 
-    cmap = ListedColormap(sns.color_palette("husl", n_colors = n_clusters))
+    cmap = ListedColormap(sns.color_palette("tab10", n_colors = n_clusters))
     fig, ax1 = plt.subplots(figsize=(6, 6))
     img1=ax1.scatter(cell_embedding[:,0], cell_embedding[:,1], c=cell_fate,
             s=1, alpha=1, cmap=cmap)
