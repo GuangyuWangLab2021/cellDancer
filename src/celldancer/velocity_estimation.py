@@ -629,9 +629,6 @@ def _train_thread(datamodule,
                  ini_model=None, 
                  model_save_path=None):
 
-    # Disable print
-    sys.stdout = open(os.devnull, 'w')
-
     import random
     seed = 0
     torch.manual_seed(seed)
@@ -748,8 +745,6 @@ def _train_thread(datamodule,
     brief.to_csv(os.path.join(result_path,'TEMP', ('loss'+'_'+this_gene_name+'.csv')),header=header_brief,index=False)
     detail.to_csv(os.path.join(result_path,'TEMP', ('celldancer_estimation_'+this_gene_name+'.csv')),header=header_detail,index=False)
     # print('finished_'+this_gene_name)
-    # Restore print
-    sys.stdout = sys.__stdout__
     return None
 
 def downsample_raw(load_raw_data,downsample_method,n_neighbors_downsample,downsample_target_amount,auto_downsample,auto_norm_u_s,sampling_ratio,step_i,step_j,gene_choice=None,binning=False):
