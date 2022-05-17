@@ -90,58 +90,111 @@ def discretize(coordinate, xmin, xmax, steps, capping=False):
     return grid_idx, grid_coor 
 
 
-def generate_grid(cell_embedding, embedding, velocity_embedding, steps):
-    '''
-    the original embedding is used to generate the mass
-    '''
-
-    def array_to_tuple(arr):
-        try:
-            return tuple(array_to_tuple(i) for i in arr)
-        except TypeError:
-            return arr
+def generate_grid(
+        cell_embedding, 
+        embedding, 
+        velocity_embedding, 
+        abr_umap = None, 
+        steps = None):
 
     xmin = np.min(cell_embedding, axis=0)
     xmax = np.max(cell_embedding, axis=0)
     steps = np.array(steps, dtype=int)
 
-    cell_grid_idx, cell_grid_coor = discretize(cell_embedding, xmin=xmin, xmax=xmax, steps=steps)
-    mesh = np.zeros(np.append(steps+1,len(steps)))
+    cell_grid_idx, cell_grid_coor = discretize(cell_embedding, 
+            xmin=xmin, 
+            xmax=xmax, 
+            steps=steps)
 
     # The actual steps need to allow a leeway +1 in each dimension.
+    mesh = np.zeros(np.append(steps+1,len(steps)))
+
     cnt = np.zeros(steps+1)
-    
     for index in range(cell_grid_idx.shape[0]):
         grid_index = cell_grid_idx[index]
         if np.any(grid_index > steps) or np.any(grid_index < 0):
             continue
-        grid_index = array_to_tuple(grid_index)
+        grid_index = toTuple(grid_index)
         mesh[grid_index] += velocity_embedding[index]
         cnt[grid_index] += 1
     cnt = cnt[:,:,None]
-    mesh = np.divide(mesh, cnt, out=np.zeros_like(mesh), where=cnt!=0)
+    mesh = np.divide(mesh, cnt, out=np.zeros_like(mesh), where=cnt>0.1)
     
-    #sanity check
-    #fig, ax = plt.subplots(figsize=(6, 6))
-    #plt.scatter(cell_embedding[:,0],cell_embedding[:,1], c='grey', alpha = 0.3)
-    #plt.scatter(cell_grid_coor[:,0], cell_grid_coor[:,1], marker='s',
-    #        color='none', edgecolor='blue', alpha=0.3)
-    #plt.xlim([-0.1,1.1])
-    #plt.ylim([-0.1,1.1])
-    #plt.show()
-    
-    # The actual steps need to allow a leeway +1 in each dimension.
+    # the all cell embedding is used to generate mass
     mass = np.zeros(steps+1)
-    all_grid_idx, all_grid_coor = discretize(embedding, xmin=xmin, xmax=xmax, steps=steps)
-    for index in range(all_grid_idx.shape[0]):
-        all_grid_index = all_grid_idx[index]
+    all_cells_grid_idx, all_cells_grid_coor = \
+            discretize(embedding, xmin=xmin, xmax=xmax, steps=steps)
+    n_cells = all_cells_grid_idx.shape[0]
+
+    for index in range(n_cells):
+        all_cells_grid_index = all_cells_grid_idx[index]
         
-        # outside mass is not needed.
-        if np.any(all_grid_index > steps) or np.any(all_grid_index < 0):
-            continue
-        all_grid_index = array_to_tuple(all_grid_index)
-        mass[all_grid_index] += 1
-    return mesh, mass, cell_grid_idx, cell_grid_coor, all_grid_idx, all_grid_coor
+        # mass outside the grid is unneeded.
+        if np.any(all_cells_grid_index > steps) or np.any(all_cells_grid_index < 0):
+            pass
+        all_cells_grid_index = toTuple(all_cells_grid_index)
+        mass[all_cells_grid_index] += 1
+
+    # the all cell embedding is used to generate grid_umap
+    if abr_umap is not None:
+        grid_umap = np.full_like(mesh, np.NAN)
+        n_umap_dims = all_cells_grid_idx.shape[-1]
+        for index in range(n_cells):
+            all_cells_grid_index = all_cells_grid_idx[index]
+            if np.any(all_cells_grid_index > steps) or np.any(all_cells_grid_index < 0):
+                all_cells_grid_index = toTuple(all_cells_grid_index)
+                grid_umap[all_cells_grid_index] = np.full((1,n_umap_dims), np.NAN)
+                pass
+            all_cells_grid_index = toTuple(all_cells_grid_index)
+            if np.any(np.isnan(grid_umap[all_cells_grid_index])):
+                grid_umap[all_cells_grid_index] = np.full((1,n_umap_dims), 0)
+            else:
+                grid_umap[all_cells_grid_index] += abr_umap[index,:]
+
+        # divide by 0 does not happen
+        # because where-ever mass is 0, grid_umap is nan. nan/0 -> nan
+        grid_umap = np.divide(grid_umap, mass[:,:,None])
+
+    else:
+        grid_umap = None
+
+    return mesh, mass, grid_umap, \
+            cell_grid_idx, cell_grid_coor, all_cells_grid_idx, all_cells_grid_coor
+
+
+def toTuple(arr):
+    '''
+    Parameters
+    ----------
+    arr: numpy ndarray or list
+
+    Return
+    ------
+    A tuple (of nested tuples)
+
+    '''
+
+    try:
+        return tuple(toTuple(i) for i in arr)
+    except TypeError:
+        return arr
+
+
+def compute_path_divider_matrix(fmat, cutoff=0.3):
+
+
+    print("The cutoff for banning a path is ", cutoff)
+    ngrids = fmat.shape[:-1]
+    flat_length = np.multiply(*ngrids)
+    temp = fmat.reshape(flat_length, fmat.shape[-1])
+
+    temp2 = temp-temp[:,None]
+    temp2 = np.linalg.norm(temp2, axis=-1)
+
+    ban = temp2.reshape(ngrids+ngrids)
+
+    path_divider_matrix = ban < cutoff
+    return path_divider_matrix
 
 
 def plot_velocity(embedding, velocity_embedding):
@@ -231,10 +284,11 @@ def diffusion_off_grid_wallbound(
         vel, 
         init, 
         grid_mass,
-        dt=0.001, 
-        t_total=10000, 
+        dt = 0.001, 
+        t_total = 10000, 
         eps = 1e-5,
-        random_seed = None):
+        random_seed = None,
+        pdm = None):
     
     '''
     Simulate the diffusion of a cell in the velocity field (off grid), the cell's velocity will turn 90 degrees
@@ -286,7 +340,7 @@ def diffusion_off_grid_wallbound(
     STEPS=(vel.shape[0]-1,vel.shape[1]-1)
 
     # lower 5% nonzero mass set to 0.
-    MAX_IGNORED_MASS= np.percentile(grid_mass[grid_mass>0],5)
+    MAX_IGNORED_MASS= np.percentile(grid_mass[grid_mass>0], 5)
     
     def no_cells_around(xcur, xcur_d, vcur):
         xnxt = xcur + vcur*dt
@@ -324,16 +378,17 @@ def diffusion_off_grid_wallbound(
         else:
             x = x0 + v0*dt
             x_d, dummy = discretize(x, xmin=XMIN, xmax=XMAX, steps=STEPS)
-            try:
-                v = vel[x_d[0],x_d[1]]
-                mass = grid_mass[x_d[0],x_d[1]]
-                v = velocity_add_random(v, THETA)
-            except IndexError:
-                break
+            if (pdm is None) or (pdm[toTuple(x0_d)+toTuple(x_d)]):
+                try:
+                    v = vel[x_d[0],x_d[1]]
+                    mass = grid_mass[x_d[0],x_d[1]]
+                    v = velocity_add_random(v, THETA)
+                except IndexError:
+                    break
             
-            trajectory.append(x)
-            x0 = x
-            v0 = v
+                trajectory.append(x)
+                x0 = x
+                v0 = v
 
     return np.array(trajectory)
 
@@ -447,9 +502,19 @@ def diffusion_on_grid_wallbound(
     return np.array(trajectory)
 
 
-def run_diffusion(cell_embedding, vel, grid_mass, dt, t_total = 10000, eps = 1e-5, 
-                  off_cell_init = False, init_cell = [], n_repeats = 10, 
-                  n_jobs = 8, psrng_seeds_diffusion = None):
+def run_diffusion(
+        cell_embedding, 
+        vel, 
+        grid_mass, 
+        dt, 
+        t_total = 10000, 
+        eps = 1e-5, 
+        off_cell_init = False, 
+        init_cell = [], 
+        n_repeats = 10, 
+        n_jobs = 8, 
+        psrng_seeds_diffusion = None,
+        path_divider_matrix=None):
     '''
     Simulation of diffusion of a cell in the velocity field (on grid), 
     the cell's velocity will turn 90 degrees if it hits the boundary the next timestep.
@@ -458,7 +523,7 @@ def run_diffusion(cell_embedding, vel, grid_mass, dt, t_total = 10000, eps = 1e-
     Parameters
     ----------
     
-    cell_embedding: numpy.ndarray (ncells, 2)
+    cell_embedding: numpy.ndarray (n_cells, 2)
         embedding coordinate for all the cells (downsampled)
         
     vel: numpy.ndarray (ngrid, ngrid, 2)
@@ -489,6 +554,7 @@ def run_diffusion(cell_embedding, vel, grid_mass, dt, t_total = 10000, eps = 1e-
     ------
         a numpy array of trajectorys,  shape: (num_trajs, *n_time_steps, 2)
     '''
+    import tqdm
 
     if psrng_seeds_diffusion is None:
         psrng_seeds_diffusion = [i*100+11 for i in range(n_repeats)]
@@ -521,8 +587,10 @@ def run_diffusion(cell_embedding, vel, grid_mass, dt, t_total = 10000, eps = 1e-
             else:
                 init_position = cell_embedding[i]
             TASKS.append((cell_embedding, vel, init_position, grid_mass, dt,
-                t_total, 1e-5, psrng_seeds_diffusion[n_trajs % n_repeats]))
+                t_total, 1e-5, psrng_seeds_diffusion[n_trajs % n_repeats],
+                path_divider_matrix))
     
     with mp.Pool(n_jobs) as pool:
-        paths = pool.starmap(diffusion_off_grid_wallbound, TASKS)
+        paths = pool.starmap(diffusion_off_grid_wallbound, tqdm.tqdm(TASKS,
+            total=len(init_cell)*n_repeats))
     return np.array(paths, dtype=object)
