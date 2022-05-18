@@ -58,7 +58,7 @@ def velocity_normalization(downsampled_vel, all_vel=None, mode="max", NORM_ALL_C
     '''
     # add v_prime to vel of each cell without changing their directions.
     v_mag = np.linalg.norm(downsampled_vel, axis=1)
-    v_prime = np.std(v_mag)
+    v_prime = 0.1*np.std(v_mag)
 
     # for 0 velocity cell, nothing changed.
     v_prime = np.divide(v_prime, v_mag, where=v_mag > 0)

@@ -524,7 +524,7 @@ def cell_time_assignment_intercluster(
     clusterIDs = sorted(np.unique(list(cell_fate_dict.values())))
 
     cutoff = overlap_crit_intracluster(cell_embedding, cell_fate_dict, tau)
-    #print("Cutoff is ", cutoff)
+    print("Cutoff is ", cutoff)
 
     CT = nx.DiGraph()
     for cluster in clusterIDs:
@@ -580,17 +580,17 @@ def cell_time_assignment_intercluster(
                     overlap_cells[1], " from cluster ", j)
 
             if shiftT > 0:
-                CT.add_edge(i, j, weight = 1/shiftT)
+                CT.add_edge(i, j, weight = shiftT)
                 w.append(shiftT)
                 paths.append([i,j])
 
             if shiftT < 0:
-                CT.add_edge(j, i, weight = -1/shiftT)
+                CT.add_edge(j, i, weight = -shiftT)
                 w.append(-shiftT)
                 paths.append([j,i])
 
             if shiftT == 0:
-                CT.add_edge(i, j, weight = 100/MAX_IGNORED_TIME_SHIFT)
+                CT.add_edge(i, j, weight = MAX_IGNORED_TIME_SHIFT)
                 w.append(shiftT)
                 paths.append([i,j])
 
@@ -609,7 +609,8 @@ def cell_time_assignment_intercluster(
             font_color = 'w')
 
     weights = nx.get_edge_attributes(CT,'weight')
-    labels = {i:int(1/weights[i]) for i in weights}
+    #labels = {i:int(1/weights[i]) for i in weights}
+    labels = weights
     nx.draw_networkx_edge_labels(CT,pos,edge_labels=labels)
     plt.show()
     
@@ -663,10 +664,16 @@ def relative_time_in_tree(paths, w):
     if len(paths) == 0:
         return w_cumm
 
+    MAX_ITER = 10*n_nodes
     # by Guangyu Wang
     node = nodes[0]
     flag[node] = 1
+    iterations = 0
     while 0 in flag.values():
+        iterations += 1
+        if iterations > MAX_ITER:
+            print("There are cycle(s), forcing a break.")
+            break
         for path in paths:
             if path[0]==node:
                 #print("Forward: "+str(node)+" -> "+str(path[1]))
@@ -751,7 +758,7 @@ def overlap_crit_intracluster(cell_embedding, cell_fate_dict, quant):
         
         # drop the self distances
         temp3 = temp2[~np.eye(temp2.shape[0], dtype=bool)]
-        cutoff.append((np.quantile(temp2, quant)))
+        cutoff.append((np.quantile(temp3, quant)))
     return max(cutoff)
 
 
@@ -988,6 +995,7 @@ def compute_all_cell_time(
                 MAX_ZERO_TIME_CELLS = 0.05,
                 MAX_TERM_CELLS = 0.05)
         cell_time_subclusters, refPaths = cluster_out[0], cluster_out[1]
+        print("number of paths: ", len(cell_time_subclusters), len(refPaths))
 
         print("\nDisplay reference paths for cluster", clusterID)
         fig, ax = plt.subplots(figsize=(6,6))
