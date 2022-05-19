@@ -90,10 +90,10 @@ def compute_cell_velocity(load_cellDancer,
     # load_cellDancer_copy.loc[:,'s0'] = (load_cellDancer_copy.s0/load_cellDancer_copy.s0Max)*4.5
     # load_cellDancer_copy.loc[:,'s1'] = (load_cellDancer_copy.s1/load_cellDancer_copy.s0Max)*4.5
 
-    if gene_list is None:
-        gene_list=load_cellDancer.gene_name.drop_duplicates()
-    else:
+    if gene_list is not None:
         print("Selected genes: ", gene_list)
+    else:
+        gene_list=load_cellDancer.gene_name.drop_duplicates()
 
 
     # This creates a new dataframe
