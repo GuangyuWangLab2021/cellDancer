@@ -26,11 +26,9 @@ else:
     from celldancer.compute_cell_velocity import compute_cell_velocity
     import celldancer.cdplt as cdplt
     
-
 def compute_trajectory_displacement(traj):
     traj = np.array(traj)
     return np.linalg.norm(traj[-1,:] - traj[0,:])
-
 
 def compute_trajectory_length(traj1):
     temp = traj1[:-1,:] - traj1[1:,:]
@@ -207,9 +205,9 @@ def cell_fate_tuning(embedding, cell_clusters, n_neighbors=20):
     cell_fate_tuned = np.array([collections.Counter(B[i][B[i]!=0]* \
             cell_fate_major[B[i]!=0]).most_common()[0][0] \
             for i in range(n_cells)], dtype=int)
-    if set(cell_fate_tuned).issubset(set(cell_fate_major)):
-        del_path_clusters = set(cell_fate_major) - set(cell_fate_tuned)
-        print("Those path clusters are removed: ", del_path_clusters)
+#    if set(cell_fate_tuned).issubset(set(cell_fate_major)):
+#        del_path_clusters = set(cell_fate_major) - set(cell_fate_tuned)
+#        print("Those path clusters are removed: ", del_path_clusters)
 
     return np.array(cell_fate_tuned)
 
@@ -1080,7 +1078,7 @@ def pseudo_time(
         activate_umap_paths_divider=False,
         n_jobs = -1,
         downsample_step=(60, 60), 
-        path_similarity=0.3,
+        n_paths=5,
         save=False, 
         output_path=None):
 
@@ -1116,8 +1114,11 @@ def pseudo_time(
         normalized_abr_umap = None
 
 
-    __ = generate_grid(cell_embedding, normalized_embedding,
-            velocity, normalized_abr_umap, steps=grid)
+    __ = generate_grid(cell_embedding, 
+            normalized_embedding,
+            velocity, 
+            normalized_abr_umap, 
+            steps=grid)
 
     vel_mesh = __[0] 
     grid_mass = __[1]
@@ -1152,25 +1153,53 @@ def pseudo_time(
     sorted_traj = newPaths[order]
     traj_displacement=traj_displacement[order]
 
+    def decide_cell_fate(path_similarity):
+        path_clusters = dict()
+        cell_clusters = dict()
+        __ = extract_representative_long_trajectories(
+            path_clusters, 
+            cell_clusters, 
+            sorted_traj, 
+            similarity_cutoff=path_similarity,
+            similarity_threshold=0, 
+            nkeep=-1)
+        path_clusters, cell_clusters = __
 
-    path_clusters = dict()
-    cell_clusters = dict()
-    path_clusters, cell_clusters = extract_representative_long_trajectories(
-        path_clusters, 
-        cell_clusters, 
-        sorted_traj, 
-        similarity_cutoff=path_similarity,
-        similarity_threshold=0, 
-        nkeep=-1)
+        # This step could cause dropping of number of path clusters.
+        cell_fate = cell_fate_tuning(cell_embedding, cell_clusters)
+        clusters = np.unique(cell_fate)
+        n_clusters = len(clusters)
+        return n_clusters, cell_fate, path_clusters
+
+    def binary_search(s_high, s_low, n_path_h, n_path_l):
+        if n_path_h >= n_paths:
+            return s_high
+        if n_path_l < n_paths:
+            return s_low
+
+        s_mid = (s_high + s_low)/2.
+        n_path_m = decide_cell_fate(s_mid)[0]
+        if n_path_m == n_paths:
+            return s_mid
+        elif n_path_m < n_paths:
+            return binary_search(s_mid, s_low, n_path_m, n_path_l)
+        else:
+            return binary_search(s_high, s_mid, n_path_h, n_path_m)
+
+    s_high = 0.4
+    s_low = 0.1
+    n_path_h = decide_cell_fate(s_high)[0] 
+    n_path_l = decide_cell_fate(s_low)[0] 
+    path_similarity = binary_search(s_high, s_low, n_path_h, n_path_l)
+    print("use path_similarity: ", path_similarity)
+    n_clusters, cell_fate, path_clusters = decide_cell_fate(path_similarity)
+
+    # make sure cluster id is continuous from 0 to n_clusters-1
+    #cluster_map = dict(zip(np.unique(cell_fate), np.array(range(n_clusters))))
+    #cell_fate = [cluster_map[i] for i in cell_fate]
 
     # NNN show path clusters
     #plot_path_clusters(path_clusters, cell_clusters, cell_embedding)    
-
-
-    # This step could cause dropping of number of path clusters.
-    cell_fate = cell_fate_tuning(cell_embedding, cell_clusters)
-    clusters = np.unique(cell_fate)
-
     load_cellDadncer = compute_all_cell_time(
         load_cellDancer,
         normalized_embedding, 
@@ -1248,11 +1277,18 @@ def pseudotime_cell_plot():
 def plot_cell_clusters(cell_fate, cell_embedding):
     clusters = np.unique(cell_fate)
     n_clusters = len(clusters)
-
+    cluster_map = dict(zip(clusters, np.array(range(n_clusters))))
+    
     cmap = ListedColormap(sns.color_palette("tab10", n_colors = n_clusters))
     fig, ax1 = plt.subplots(figsize=(6, 6))
-    img1=ax1.scatter(cell_embedding[:,0], cell_embedding[:,1], c=cell_fate,
-            s=1, alpha=1, cmap=cmap)
+    img1=ax1.scatter(
+            cell_embedding[:,0], 
+            cell_embedding[:,1],
+            c=[cluster_map[i] for i in cell_fate],
+            s=1, 
+            alpha=1, 
+            cmap=cmap)
+
     ax1.set_aspect('equal', adjustable='box')
     ax1.set_title("cell fate: majority votes")
     ax1.axis("off")
@@ -1260,7 +1296,12 @@ def plot_cell_clusters(cell_fate, cell_embedding):
     bounds = np.linspace(0, n_clusters, n_clusters+1)
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
     ax3 = fig.add_axes([0.9, 0.3, 0.02, 0.3])
-    cb = mpl.colorbar.ColorbarBase(ax3, cmap=cmap, spacing='proportional', boundaries=bounds, norm=norm, format='%1i')
+    cb = mpl.colorbar.ColorbarBase(ax3, cmap=cmap, 
+            spacing='proportional', 
+            boundaries=bounds, 
+            norm=norm, 
+            format='%1i')
+
     labels = ["cluster "+str(i) for i in clusters]
 
     cb.ax.get_yaxis().set_ticks([])

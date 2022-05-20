@@ -591,6 +591,10 @@ def run_diffusion(
                 path_divider_matrix))
     
     with mp.Pool(n_jobs) as pool:
-        paths = pool.starmap(diffusion_off_grid_wallbound, tqdm.tqdm(TASKS,
-            total=len(init_cell)*n_repeats))
+        n_total = len(init_cell)*n_repeats
+        if n_total > 5000:
+            paths = pool.starmap(diffusion_off_grid_wallbound, 
+                    tqdm.tqdm(TASKS, total=n_total))
+        else:
+            paths = pool.starmap(diffusion_off_grid_wallbound, TASKS) 
     return np.array(paths, dtype=object)
