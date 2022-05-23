@@ -606,7 +606,7 @@ class feedData(pl.LightningDataModule): #change name to feedData
     def val_dataloader(self):# name cannot be changed 
         return DataLoader(self.training_dataset,num_workers=0)
     def test_dataloader(self):# name cannot be changed 
-        return DataLoader(self.test_dataset,num_workers=0)
+        return DataLoader(self.test_dataset,num_workers=0,)
 
 def _train_thread(datamodule, 
                     data_indices, 
@@ -717,7 +717,7 @@ def _train_thread(datamodule,
     if max_epoches > 0:
         trainer.fit(model, selected_data)   # start and finish traning network
 
-    trainer.test(model, selected_data)    # predict using model
+    trainer.test(model, selected_data,verbose=False)    # predict using model
     
     if(model_save_path != None):
         model.save(model_save_path)
@@ -812,7 +812,6 @@ def train( # use train_thread # change name to velocity estiminate
     
     .. image:: https://user-images.githubusercontent.com/31883718/67709134-a0989480-f9bd-11e9-8ae6-f6391f5d95a0.png
     
-
     Arguments
     ---------
     load_raw_data: `pandas.Dataframe`
@@ -871,7 +870,6 @@ def train( # use train_thread # change name to velocity estiminate
         Epochs being waited after the last time the loss improved before breaking the training loop.
     binning: `bool` (default: True)
         Whether or not using binning method to select cells to train.
-
     Returns
     -------
     `loss` (pandas.DataFrame), `celldancer_estimation` (pandas.DataFrame)
@@ -880,7 +878,6 @@ def train( # use train_thread # change name to velocity estiminate
     '''
     multple jobs
     when model_path is defined, model_number wont be used
-
     Sample
     import API.velocity_estimation
     import API.velocity_estimation as calc_velocity
@@ -888,7 +885,6 @@ def train( # use train_thread # change name to velocity estiminate
     raw_path='/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/raw_data/mouse_endo_blood20to25_2000_genes_moment100.csv'
     load_raw_data=pd.read_csv(raw_path)
     gene_choice=['Smim1','Hba-x']
-
     result_path = '/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/Gastrulation/velocity_result/result_detailcsv/polish/'
     calc_velocity.train(load_raw_data,gene_choice=gene_choice,result_path=result_path)
     '''    
@@ -1075,4 +1071,3 @@ def select_initial_net(gene, gene_downsampling, data_df):
         # model in seperated branch shape
         model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'branch.pt')).name
     return(model_path)
-

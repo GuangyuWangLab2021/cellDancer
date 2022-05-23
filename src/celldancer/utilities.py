@@ -77,7 +77,7 @@ def getidx_downSampling_embedding(load_cellDancer,cell_choice=None):
     embedding=load_cellDancer.loc[load_cellDancer.gene_name==list(load_cellDancer.gene_name)[0]][['embedding1','embedding2']]
 
     # get transfer id
-    from sampling import sampling_embedding
+    from .sampling import sampling_embedding
     idx_downSampling_embedding = sampling_embedding(embedding,
                 para='neighbors',
                 target_amount=0,
