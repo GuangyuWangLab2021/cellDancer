@@ -15,6 +15,8 @@ def _generate_points(u0_start, s0_start, alpha, beta, gamma, t1, t2, samples):
         return [ds_dt, du_dt]
 
     t_space = np.linspace(t1, t2, samples)
+
+    # PZ: should it be t1?
     num_sol = solve_ivp(trans_dynamics, [0, t2], [s0_start, u0_start], method='RK45', dense_output=True)
     XY_num_sol = num_sol.sol(t_space)
     S, U = XY_num_sol[0], XY_num_sol[1]

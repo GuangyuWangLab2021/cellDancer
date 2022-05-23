@@ -17,3 +17,9 @@ pip install ipykernel --no-warn-script-location
 python -m pip install tslearn
 
 # curve
+
+
+# graph plot
+conda install -c pyviz holoviews bokeh -y
+conda install -y pygraphviz -c conda-forge
+conda install -y scikit-image

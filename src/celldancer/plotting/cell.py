@@ -103,6 +103,8 @@ def scatter_cell(
             cmap = LinearSegmentedColormap.from_list("mycmap", fireworks3)
         if colors in ['pseudotime']:
             cmap = 'viridis'
+        else:
+            cmap = 'viridis'
         c = extract_from_df(load_cellDancer, [colors], gene_name)
         
     elif colors is None:
@@ -113,8 +115,6 @@ def scatter_cell(
     
     embedding = extract_from_df(load_cellDancer, ['embedding1', 'embedding2'], gene_name)
     n_cells = embedding.shape[0]
-    sample_cells = load_cellDancer['velocity1'][:n_cells].dropna().index
-    embedding_ds = embedding[sample_cells]
     
     im=ax.scatter(embedding[:, 0],
                 embedding[:, 1],
@@ -129,10 +129,13 @@ def scatter_cell(
         ax_divider = make_axes_locatable(ax)
         cax = ax_divider.append_axes("top", size="5%", pad="-5%")
 
+        print("   \n ")
         cbar = plt.colorbar(im, cax=cax, orientation="horizontal", shrink=0.1)
-        cbar.set_ticks([])
+       # cbar.set_ticks([])
 
     if velocity:
+        sample_cells = load_cellDancer['velocity1'][:n_cells].dropna().index
+        embedding_ds = embedding[sample_cells]
         velocity_embedding= extract_from_df(load_cellDancer, ['velocity1', 'velocity2'], gene_name)
         grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass)
 

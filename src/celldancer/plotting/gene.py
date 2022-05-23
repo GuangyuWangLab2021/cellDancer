@@ -65,6 +65,8 @@ def scatter_gene(
             cmap = ListedColormap(fireworks3)
         if colors in ['pseudotime']:
             cmap = 'viridis'
+        else:
+            cmap = 'viridis'
 
         c = extract_from_df(load_cellDancer, [colors], gene_name)
     elif colors is None:

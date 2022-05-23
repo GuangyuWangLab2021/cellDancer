@@ -78,23 +78,36 @@ def compute_cell_velocity(load_cellDancer,
             knn_embedding.sum(1).A.T  # embedding_knn.A *
         velocity_embedding = velocity_embedding.T
         return velocity_embedding
-
-    if gene_list is None:
-        gene_list=load_cellDancer.gene_name.drop_duplicates()
-
-    np_s0_all,np_dMatrix_all= data_reshape(load_cellDancer)
-
-    #print(np_dMatrix_all.shape)
-    print("(genes, cells): ", end="")
-    n_genes, n_cells = np_s0_all.shape
-    print(np_s0_all.shape)
-
-    embedding = load_cellDancer[load_cellDancer.gene_name == gene_list[0]][['embedding1', 'embedding2']]
-    embedding = embedding.to_numpy()
     
 
-    load_cellDancer_input = load_cellDancer[load_cellDancer.gene_name.isin(gene_list)]
-    data_df = load_cellDancer_input.loc[:, ['gene_name', 'u0', 's0', 'cellID','embedding1', 'embedding2']]
+    #no na
+    is_NaN = load_cellDancer[['alpha','beta']].isnull()
+    row_has_NaN = is_NaN. any(axis=1)
+    load_cellDancer = load_cellDancer[~row_has_NaN].reset_index(drop=True)
+    
+
+    # load_cellDancer_copy['s0Max'] = load_cellDancer_copy.groupby('gene_name')['s0'].transform(lambda x: x.max())
+    # load_cellDancer_copy.loc[:,'s0'] = (load_cellDancer_copy.s0/load_cellDancer_copy.s0Max)*4.5
+    # load_cellDancer_copy.loc[:,'s1'] = (load_cellDancer_copy.s1/load_cellDancer_copy.s0Max)*4.5
+
+    if gene_list is not None:
+        print("Selected genes: ", gene_list)
+    else:
+        gene_list=load_cellDancer.gene_name.drop_duplicates()
+
+
+    # This creates a new dataframe
+    load_cellDancer_input = load_cellDancer[
+            load_cellDancer.gene_name.isin(gene_list)].reset_index(drop=True)
+
+    np_s0_all, np_dMatrix_all= data_reshape(load_cellDancer_input)
+    print("(genes, cells): ", end="")
+    print(np_s0_all.shape)
+    n_genes, n_cells = np_s0_all.shape
+
+    # This creates a new dataframe
+    data_df = load_cellDancer_input.loc[:, 
+            ['gene_name', 'u0', 's0', 'cellID','embedding1', 'embedding2']]
     # random.seed(10)
     embedding_downsampling, sampling_ixs, knn_embedding = downsampling_embedding(data_df,
                                                                                  para='neighbors',
@@ -109,6 +122,9 @@ def compute_cell_velocity(load_cellDancer,
     
 
     # mode only provides neighborlist, use embedding(from raw data) to compute cell velocity
+    embedding = load_cellDancer_input[load_cellDancer_input.gene_name == 
+            gene_list[0]][['embedding1', 'embedding2']]
+    embedding = embedding.to_numpy()
     velocity_embedding = velocity_projection(
             np_s0_all[:, sampling_ixs], 
             np_dMatrix_all[:, sampling_ixs], 
@@ -119,10 +135,11 @@ def compute_cell_velocity(load_cellDancer,
         print("Caution! Overwriting the \'velocity\' columns.") 
         load_cellDancer.drop(['velocity1','velocity2'], axis=1, inplace=True)
 
-    sampling_ixs_all_genes = load_cellDancer[load_cellDancer.cellIndex.isin(sampling_ixs)].index
-    load_cellDancer.loc[sampling_ixs_all_genes,'velocity1'] = np.tile(velocity_embedding[:,0], n_genes)
-    load_cellDancer.loc[sampling_ixs_all_genes,'velocity2'] = np.tile(velocity_embedding[:,1], n_genes)
+    sampling_ixs_all_genes = load_cellDancer_input[load_cellDancer_input.cellIndex.isin(sampling_ixs)].index
+    load_cellDancer_input.loc[sampling_ixs_all_genes,'velocity1'] = np.tile(velocity_embedding[:,0], n_genes)
+    load_cellDancer_input.loc[sampling_ixs_all_genes,'velocity2'] = np.tile(velocity_embedding[:,1], n_genes)
     print("After downsampling, there are ", len(sampling_ixs), "cells.")
+    return(load_cellDancer_input)
 
 def corr_coeff(ematrix, vmatrix, i):
         '''
