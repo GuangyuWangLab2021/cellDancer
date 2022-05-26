@@ -597,6 +597,10 @@ def velocity_estimation( # use train_thread # change name to velocity estiminate
         Normalize genes that the u0 or s0 of which it too high.
     norm_cell_distribution: `bool` (default: True)
         Remove bias of cell distribution on embedding space (many cell share same embedding position).
+    n_jobs: `int` (default: -1)
+        The maximum number of concurrently running jobs.
+    save_path: `str` (default: 200)
+        The directory to save the result of velocity estimation.
 
     Returns
     -------

@@ -309,7 +309,23 @@ def embedding_kinetic_para(
     kinetic_para,
     umap_n=25
 ):
+    """Velocity estimation for each cell.
+        
+    Arguments
+    ---------
+    cellDancer_df: `pandas.Dataframe`
+        Data frame of velocity estimation results - columns=['cellIndex','gene_name','s0','u0','s1','u1','alpha','beta','gamma','loss','cellID','clusters','embedding1','embedding2']
+    kinetic_para: `str`
+        Parameter selected to calculate the embedding by using umap, Could be selected from {'alpha', 'beta', 'gamma', 'alpha_beta_gamma'}.
+    umap_n: `int` (default: 25)
+        The size of local neighborhood (in terms of number of neighboring sample points) used for manifold approximation in UMAP.
 
+    Returns
+    -------
+    Returns the updated cellDancer_df with additional column of UMAP based on kinetic parameter(s).
+    `cellDancer_df` (pandas.DataFrame)
+
+    """  
     import umap
     if set([(kinetic_para+'_umap1'),(kinetic_para+'_umap2')]).issubset(cellDancer_df.columns):
         cellDancer_df=cellDancer_df.drop(columns=[(kinetic_para+'_umap1'),(kinetic_para+'_umap2')])
@@ -343,16 +359,33 @@ def embedding_kinetic_para(
     return(cellDancer_df)
 
 def plot_kinetic_para(
-    kinetic_para,
     cellDancer_df,
+    kinetic_para,
     gene=None,
-    umap_n=25,
     color_map=None,
     save_path=None,
     title=None,
-    legend=False):
-    
-    import numpy as np
+    legend=False
+):
+
+    """Velocity estimation for each cell.
+        
+    Arguments
+    ---------
+    cellDancer_df: `pandas.Dataframe`
+        Data frame of velocity estimation results - columns=['cellIndex','gene_name','s0','u0','s1','u1','alpha','beta','gamma','loss','cellID','clusters','embedding1','embedding2']
+    kinetic_para: `str`
+        Parameter selected plot, Could be selected from {'alpha', 'beta', 'gamma', 'alpha_beta_gamma'}.
+    gene: `str` (default: None)
+        If the gene name is set, s0 of this gene in the embeddings based on kinetic parameter(s) will be displayed.
+    color_map: `dict` (default: None)
+        The color map of each cell tpye.
+    save_path: `str` (default: None)
+        Directory to save the plot.
+    legend: `bool` (default: False)
+        Display the color legend of each cell type.
+
+    """    
     onegene=cellDancer_df[cellDancer_df.gene_name==cellDancer_df.gene_name[0]]
     umap_para=onegene[[(kinetic_para+'_umap1'),(kinetic_para+'_umap2')]].to_numpy()
     onegene_cluster_info=onegene.clusters
