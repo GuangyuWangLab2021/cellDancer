@@ -94,7 +94,7 @@ class deep_learning_module(nn.Module):
                            trace_cost_ratio=None,
                            corrcoef_cost_ratio=None):
         '''
-        add embedding (Guangyu)
+        add embedding
         for real dataset
         calculate loss function
         predict u1 s1 from network 
@@ -133,7 +133,6 @@ class deep_learning_module(nn.Module):
         
         def trace_cost(u0, s0, u1, s1, idx,version):
             '''
-            Guangyu
             '''
             uv, sv = u1-u0, s1-s0
             tan = torch.where(sv!=1000000, uv/sv, torch.tensor(0.00001))
@@ -399,7 +398,7 @@ class getItem(Dataset): # TO DO: Change to a suitable name
             u0=u0/u0max
             s0=s0/s0max
 
-        # add embedding (Guangyu)
+        # add embedding
         embedding1 = np.array(data.embedding1.copy().astype(np.float32))
         embedding2 = np.array(data.embedding2.copy().astype(np.float32))
 
@@ -566,7 +565,7 @@ def velocity_estimation( # use train_thread # change name to velocity estiminate
     cell_type_u_s,
     gene_list=None,
     max_epoches=200, 
-    check_val_every_n_epoch=5,
+    check_val_every_n_epoch=10,
     patience=3,
     permutation_ratio=0.125,
     speed_up=True,
@@ -577,86 +576,32 @@ def velocity_estimation( # use train_thread # change name to velocity estiminate
 ):
 
     """Velocity estimation for each cell.
-    
-    .. image:: https://user-images.githubusercontent.com/31883718/67709134-a0989480-f9bd-11e9-8ae6-f6391f5d95a0.png
-    
+        
     Arguments
     ---------
     cell_type_u_s: `pandas.Dataframe`
         Data frame of raw data - columns=['gene_name','u0','s0','cellID','clusters','embedding1','embedding2']
     gene_list: `list`(default: None)
-        Gene set that selected to train, if use default value, all genes in the cell_type_u_s will be trained.
-    speed_up: `bool` (default: True)
-        Whether or not the cell will be downsampled in cell level before training, usually will be True if cell amount is too high.
-    downsample_method: `string` (default: 'neighbors')
-        The way to downsample cells if speed_up is set to be 'True'. Could be selected from ['neighbors','inverse','circle','random']
-    n_neighbors_downsample: `int` (default: 30)
-        Neighbors selected if speed_up is True and downsample_method is 'neighbors'.
-    downsample_target_amount: `int` (default: 0)
-        Target amount of downsampling if speed_up is True and downsample_method is selected form ['inverse','circle','random'].
-    norm_u_s: `bool` (default: True)
-        Whether or not normalize u0 and s0.
+        Gene set that selected to train, if use default value, the velocity of all genes will be estimated.
+    max_epoches: `int` (default: 200)
+        Stop training once this number of epochs is reached.
+    check_val_every_n_epoch: `int` (default: 10)
+        Check loss every n train epochs. 
+    patience: `int` (default: 3)
+        Number of checks with no improvement after which training will be stopped. Under the default configuration, 3 check happens after every training epoch. 
     permutation_ratio: `float` (default: 0.125)
         Sampling ratio of cells in each epoch when training each gene.
-    step_i: `int` (default: 200)
-        Steps of i when downsampling cell_type_u_s.
-    step_j: `int` (default: 200)
-        Steps of j when downsampling cell_type_u_s.
-    initial_zoom: `int` (default: 2) 
-        !!!!!!!!!!!!!alpha0 = np.float32(umax*self.initial_zoom)
-    initial_strech: `int` (default: 1)
-        !!!!!!!!!!!!!gamma0 = np.float32(umax/smax*self.initial_strech)
-    model_save_path : `string` (default: None)
-        !!!!!!!!!!!!!NOT USE???
-    save_path : `string` (default: None)
-        Result path of velocity estimation, if use default value, the result will be saved at current working directory.
-    check_val_every_n_epoch: `int` (default: 5)
-        Epoch interval of loss being checked.
-    max_epoches: `int` (default: 200)
-        Max epoch of training.
-    n_jobs: `int` (default: os.cpu_count())
-        Amount of gene being trained at the same time.
-    optimizer: `string` (default: "Adam")
-        Optimizer during training. Could be selected form ['Adam','SGD'].
-    learning_rate: `float` (default: 0.001)
-        Learning rate of the optimizer.
-    trace_cost_ratio: `float` (default: 0)
-        The ratio of trace cost, Could be set in between [0,1]. The sum of all costs should be 1.
-    cost2_cutoff: `float` (default: 0.3)
-        The cutoff of trace cost if trace_cost_ratio > 0.
-    corrcoef_cost_ratio: `float` (default: 0)
-        The ratio of trace cost, Could be set in between [0,1]. The sum of all costs should be 1.
-    cost_type: `string` (default: 'average')
-        The ['average','median','smooth']
-    average_cost_window_size: `int` (default: 10)
-        Window size of cost if cost_type is 'average'.
-    smooth_weight: `float` (default: 0.9)
-        Smooth weight of cost if cost_type is 'smooth'.
-    n_neighbors: `int` (default: 30)
-        Neighbors when iniating the network module.
-    patience: `int` (default: 3)
-        Epochs being waited after the last time the loss improved before breaking the training loop.
+    speed_up: `bool` (default: True)
+        Speed up by downsampling cells. If set to be False, all cells will be used to train the model.
+    norm_u_s: `bool` (default: True)
+        Normalize genes that the u0 or s0 of which it too high.
     norm_cell_distribution: `bool` (default: True)
-        Whether or not using norm_cell_distribution method to select cells to train.
+        Remove bias of cell distribution on embedding space (many cell share same embedding position).
+
     Returns
     -------
-    `loss` (pandas.DataFrame), `celldancer_estimation` (pandas.DataFrame)
+    `loss_df` (pandas.DataFrame), `cellDancer_df` (pandas.DataFrame)
     """
-
-    '''
-    multple jobs
-    when model_path is defined, model_number wont be used
-    Sample
-    import API.velocity_estimation
-    import API.velocity_estimation as calc_velocity
-    import pandas as pd 
-    raw_path='/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/raw_data/mouse_endo_blood20to25_2000_genes_moment100.csv'
-    cell_type_u_s=pd.read_csv(raw_path)
-    gene_list=['Smim1','Hba-x']
-    save_path = '/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/data/Gastrulation/velocity_result/result_detailcsv/polish/'
-    calc_velocity.velocity_estimation(cell_type_u_s,gene_list=gene_list,save_path=save_path)
-    '''    
-    
 
     # set output dir
     datestring = datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S");
@@ -760,10 +705,9 @@ def velocity_estimation( # use train_thread # change name to velocity estiminate
     
 def select_initial_net(gene, gene_downsampling, data_df):
     '''
-    Guangyu
     check if right top conner has cells
-    model1 is the model for single kinetic
-    model2 is multiple kinetic
+    circle.pt is the model for single kinetic
+    branch.pt is multiple kinetic
     '''
     gene_u_s = gene_downsampling[gene_downsampling.gene_name==gene]
     gene_u_s_full = data_df[data_df.gene_name==gene]
