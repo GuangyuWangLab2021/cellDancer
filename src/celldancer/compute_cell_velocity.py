@@ -26,7 +26,32 @@ def compute_cell_velocity(
     projection_neighbor_choice=None
 ):
 
-    # projection_neighbor_choice: [projection_neighbor_choice='embedding', projection_neighbor_choice='gene']
+"""Compute the cell velocity.
+    
+Arguments
+---------
+cellDancer_df: `pandas.DataFrame`
+    Data frame of velocity estimation results - columns=['cellIndex','gene_name','s0','u0','s1','u1','alpha','beta','gamma','loss','cellID','clusters','embedding1','embedding2']
+gene_list: `list` (default: None)
+    Genes selected to calculate the cell velocity. None if all genes in the cellDancer_df is to be used.
+projection_neighbor_size: `int` (default: '200')
+    the amount neighbors.
+speed_up: `tuple` (default: (60,60))
+    Speed up by giving the sampling grid to downsample cells.
+    None use all cells to compute cell velocity.
+expression_scale: `str` (default: None)
+    None if none expression scale is to be used.
+    'power10' if the 10th power is been used to scale s0 and u0.
+projection_neighbor_choice: `str` (default: 'embedding')
+    'embedding' if use the embedding to obtain the neighbors.
+    'gene' if use the s0 of all genes to obtain the neighbors.
+
+Returns
+-------
+Returns the updated cellDancer_df with additional columns ['velocity1','velocity2'].
+`cellDancer_df` (pandas.DataFrame)
+
+"""  
 
     def velocity_correlation(cell_matrix, velocity_matrix):
         """Calculate the correlation between the predict velocity (velocity_matrix[:,i])

@@ -19,12 +19,11 @@ else:
 def scatter_cell(
     ax,
     cellDancer_df, 
-    save_path=None,
+    colors=None, 
     custom_xlim=None,
     custom_ylim=None,
     vmin=None,
     vmax=None,
-    colors=None, 
     alpha=0.5, 
     s = 5,
     velocity=False,
@@ -32,39 +31,56 @@ def scatter_cell(
     legend='off',
     colorbar='on',
     min_mass=2,
-    arrow_grid=(30,30)
+    arrow_grid=(30,30),
+    save_path=None
 ): 
 
-    """Cell velocity plot.
-    TO DO: cellDancer_df contains the cluster information, needs improve
+"""Plot the the cell velocity; or plot the parameters ('alpha', 'beta', 'gamma', 'spliced', 'unspliced', or 'pseudotime') of one gene in embedding level.
     
-    .. image:: https://user-images.githubusercontent.com/31883718/67709134-a0989480-f9bd-11e9-8ae6-f6391f5d95a0.png
-    
+Arguments
+---------
+ax: `ax`
+    ax of plt.subplots()
+cellDancer_df: `pandas.DataFrame`
+    Data frame of velocity estimation, cell velocity, and pseudotime results - columns=['cellIndex','gene_name','s0','u0','s1','u1','alpha','beta','gamma','loss','cellID','clusters','embedding1','embedding2','velocity1','velocity2','pseudotime']
+colors: `list`, `dict`, or `str`
+    `list` -> build a colormap dictionary for a list of cell type as input.
+    `dict` -> the customized color map dict of each cell type.
+    `str` -> one of {'alpha','beta','gamma','spliced','unspliced','pseudotime'}.
+custom_xlim: `float` (default: None)
+    Set the x limits of the current axes.
+custom_ylim: `float` (default: None)
+    Set the y limits of the current axes.
+vmin: `float` (default: None)
+    Set the minimun color limits of the current image.
+vmax: `float` (default: None)
+    Set the maximum color limits of the current image.
+alpha: `float` (default: 0.5)
+    The alpha blending value, between 0 (transparent) and 1 (opaque).
+s: `float` (default: 5)
+    The marker size in points**2.
+velocity: `bool` (default: False)
+    True if velocity in cell level is to be plotted.
+gene: `str` (default: None)
+    The gene been selected for the plot of alpha, beta, gamma, spliced, or unspliced in embedding level.
+legend: `str` (default: 'off')
+    'off' if the color map of cell legend is not to be plotted.
+    'only' if to only plot the cell type legend.
+colorbar: `str` (default: 'on')
+    'on' if the colorbar of of the plot of alpha, beta, gamma, spliced, or unspliced is to be shown.
+min_mass: `float` (default: 2)
+    Filter by using the isotropic gaussian kernel to display the grid, The less, the more arrows.
+arrow_grid: `tuple` (default: (30,30))
+    The size of the grid for the cell velocity to display.
+save_path: `str` (default: None)
+    Directory to save the plot.
 
-    Arguments
-    ---------
-    adata: :class:`~anndata.AnnData`
-        Annotated data matrix.
-    density: `float` (default: 1)
-        Amount of velocities to show - 0 none to 1 all
-    arrow_size: `float` or triple `headlength, headwidth, headaxislength` (default: 1)
-        Size of arrows.
-    arrow_length: `float` (default: 1)
-        Length of arrows.
-    scale: `float` (default: 1)
-        Length of velocities in the embedding.
-    {scatter}
+Returns
+-------
+Returns the ax of the plot.
+`im` (ax.scatter())
 
-    Returns
-    -------
-    `matplotlib.Axis` if `show==False`
-    """
-
-    #   colors can be one of those:
-    #   a dictionary of {cluster:color}
-    #   a string of the column attribute (pseudotime, alpha, beta etc)
-    #   a list of clusters 
-    #   None
+"""  
 
     def gen_Line2D(label, markerfacecolor):
         return Line2D([0], [0], color='w', marker='o', label=label,
@@ -309,7 +325,7 @@ def embedding_kinetic_para(
     kinetic_para,
     umap_n=25
 ):
-    """Velocity estimation for each cell.
+    """Calculate the UMAP based on kinetic parameter(s).
         
     Arguments
     ---------
@@ -368,7 +384,7 @@ def plot_kinetic_para(
     legend=False
 ):
 
-    """Velocity estimation for each cell.
+    """Plot the UMAP calculated by kinetic parameter(s).
         
     Arguments
     ---------

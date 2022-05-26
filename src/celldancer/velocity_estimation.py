@@ -579,7 +579,7 @@ def velocity_estimation( # use train_thread # change name to velocity estiminate
         
     Arguments
     ---------
-    cell_type_u_s: `pandas.Dataframe`
+    cell_type_u_s: `pandas.DataFrame`
         Data frame of raw data - columns=['gene_name','u0','s0','cellID','clusters','embedding1','embedding2']
     gene_list: `list`(default: None)
         Gene set that selected to train, if use default value, the velocity of all genes will be estimated.
@@ -592,11 +592,11 @@ def velocity_estimation( # use train_thread # change name to velocity estiminate
     permutation_ratio: `float` (default: 0.125)
         Sampling ratio of cells in each epoch when training each gene.
     speed_up: `bool` (default: True)
-        Speed up by downsampling cells. If set to be False, all cells will be used to train the model.
+        True if speed up by downsampling cells. If False, all cells will be used to train the model.
     norm_u_s: `bool` (default: True)
-        Normalize genes that the u0 or s0 of which it too high.
+        True if normalize the u0 or s0 of genes that too high.
     norm_cell_distribution: `bool` (default: True)
-        Remove bias of cell distribution on embedding space (many cell share same embedding position).
+        True if the bias of cell distribution is to be romoved on embedding space (many cell share same embedding position).
     n_jobs: `int` (default: -1)
         The maximum number of concurrently running jobs.
     save_path: `str` (default: 200)
