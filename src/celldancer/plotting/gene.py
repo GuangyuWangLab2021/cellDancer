@@ -27,51 +27,51 @@ def scatter_gene(
     arrow_grid = (15,15),
     save_path=None):
 
-"""Plot the plot of spliced-unspliced of a gene, or plot the parameter ('alpha', 'beta', 'gamma', 'spliced', 'unspliced') in pseudotime, or customize the parameters in x-axis and y-axis of a gene.
-    
-Arguments
----------
-ax: `ax of plt.subplots()`
-    ax to add subplot.
-x: `str`
-    one of {'s0','u0','s1','u1','alpha','beta','gamma','pseudotime}
-y: `str`
-    one of {'s0','u0','s1','u1','alpha','beta','gamma','pseudotime}
-cellDancer_df: `pandas.DataFrame`
-    Data frame of velocity estimation, cell velocity, and pseudotime results - columns=['cellIndex','gene_name','s0','u0','s1','u1','alpha','beta','gamma','loss','cellID','clusters','embedding1','embedding2','velocity1','velocity2','pseudotime']
-colors: `list`, `dict`, or `str`
-    `list` -> build a colormap dictionary for a list of cell type as input.
-    `dict` -> the customized color map dict of each cell type.
-    `str` -> one of {'alpha','beta','gamma','spliced','unspliced','pseudotime'}.
-custom_xlim: `float` (default: None)
-    Set the x limits of the current axes.
-custom_ylim: `float` (default: None)
-    Set the y limits of the current axes.
-vmin: `float` (default: None)
-    Set the minimun color limits of the current image.
-vmax: `float` (default: None)
-    Set the maximum color limits of the current image.
-alpha: `float` (default: 0.5)
-    The alpha blending value, between 0 (transparent) and 1 (opaque).
-s: `float` (default: 5)
-    The marker size in points**2.
-velocity: `bool` (default: False)
-    True if velocity in gene level is to be plotted.
-gene: `str` (default: None)
-    The gene been selected for the plot of alpha, beta, gamma, spliced, or unspliced in embedding level.
-legend: `str` (default: 'off')
-    'off' if the color map of cell tyoe legend is not to be plotted.
-    'only' if to only plot the cell type legend.
-arrow_grid: `tuple` (default: (15,15))
-    The size of the grid for the gene velocity to display.
-save_path: `str` (default: None)
-    Directory to save the plot.
+    """Plot the plot of spliced-unspliced of a gene, or plot the parameter ('alpha', 'beta', 'gamma', 'spliced', 'unspliced') in pseudotime, or customize the parameters in x-axis and y-axis of a gene.
+        
+    Arguments
+    ---------
+    ax: `ax of plt.subplots()`
+        ax to add subplot.
+    x: `str`
+        one of {'s0', 'u0', 's1', 'u1', 'alpha', 'beta', 'gamma', 'pseudotime}
+    y: `str`
+        one of {'s0', 'u0', 's1', 'u1', 'alpha', 'beta', 'gamma', 'pseudotime}
+    cellDancer_df: `pandas.DataFrame`
+        Data frame of velocity estimation, cell velocity, and pseudotime results. Columns=['cellIndex', 'gene_name', 's0', 'u0', 's1', 'u1', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
+    colors: `list`, `dict`, or `str`
+        `list` -> build a colormap dictionary for a list of cell type as input;
+        `dict` -> the customized color map dict of each cell type;
+        `str` -> one of {'alpha', 'beta', 'gamma', 'spliced', 'unspliced', 'pseudotime'}.
+    custom_xlim: `float` (default: None)
+        Set the x limits of the current axes.
+    custom_ylim: `float` (default: None)
+        Set the y limits of the current axes.
+    vmin: `float` (default: None)
+        Set the minimun color limits of the current image.
+    vmax: `float` (default: None)
+        Set the maximum color limits of the current image.
+    alpha: `float` (default: 0.5)
+        The alpha blending value, between 0 (transparent) and 1 (opaque).
+    s: `float` (default: 5)
+        The marker size in points**2.
+    velocity: `bool` (default: False)
+        True if velocity in gene level is to be plotted.
+    gene: `str` (default: None)
+        The gene selected for the plot of alpha, beta, gamma, spliced, or unspliced in embedding level.
+    legend: `str` (default: 'off')
+        'off' if the color map of cell type legend is not to be plotted;
+        'only' if to only plot the cell type legend.
+    arrow_grid: `tuple` (default: (15,15))
+        The size of the grid for the gene velocity to display.
+    save_path: `str` (default: None)
+        Directory to save the plot.
 
-Returns
--------
-Returns the ax of the plot.
-`im` (ax.scatter())
-""" 
+    Returns
+    -------
+    Returns the ax of the plot.
+    `im` (ax.scatter())
+    """ 
 
     def gen_Line2D(label, markerfacecolor):
         return Line2D([0], [0], color='w', marker='o', label=label,

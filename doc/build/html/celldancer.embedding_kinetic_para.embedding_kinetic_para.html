@@ -9,7 +9,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>About celldancer &mdash; celldancer  documentation</title>
+  <title>celldancer.embedding_kinetic_para.embedding_kinetic_para &mdash; celldancer  documentation</title>
   
 
   
@@ -36,13 +36,14 @@
 
   
         <link rel="author" title="About these documents"
-              href="#"/>
+              href="about.html"/>
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="celldancer  documentation" href="index.html"/>
-        <link rel="next" title="API - cellDancer key applications" href="API.html"/>
-        <link rel="prev" title="CellDancer" href="index.html"/> 
+        <link rel="up" title="API - cellDancer key applications" href="API.html"/>
+        <link rel="next" title="celldancer.plotting.gene.scatter_gene" href="celldancer.plotting.gene.scatter_gene.html"/>
+        <link rel="prev" title="celldancer.pseudo_time.pseudo_time" href="celldancer.pseudo_time.pseudo_time.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -90,8 +91,16 @@
             
                 <p class="caption" role="heading"><span class="caption-text">celldancer</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">About celldancer</a></li>
-<li class="toctree-l1"><a class="reference internal" href="API.html">API - cellDancer key applications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About celldancer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="API.html">API - cellDancer key applications</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="celldancer.velocity_estimation.velocity.html">celldancer.velocity_estimation.velocity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="celldancer.compute_cell_velocity.compute_cell_velocity.html">celldancer.compute_cell_velocity.compute_cell_velocity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="celldancer.pseudo_time.pseudo_time.html">celldancer.pseudo_time.pseudo_time</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">celldancer.embedding_kinetic_para.embedding_kinetic_para</a></li>
+<li class="toctree-l2"><a class="reference internal" href="celldancer.plotting.gene.scatter_gene.html">celldancer.plotting.gene.scatter_gene</a></li>
+<li class="toctree-l2"><a class="reference internal" href="celldancer.plotting.cell.scatter_cell.html">celldancer.plotting.cell.scatter_cell</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Tutorials:</span></p>
 <ul>
@@ -145,13 +154,15 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>About celldancer</li>
+          <li><a href="API.html">API - cellDancer key applications</a> &raquo;</li>
+        
+      <li>celldancer.embedding_kinetic_para.embedding_kinetic_para</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/about.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/celldancer.embedding_kinetic_para.embedding_kinetic_para.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -164,9 +175,30 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <section id="about-celldancer">
-<h1>About celldancer<a class="headerlink" href="#about-celldancer" title="Permalink to this headline">¶</a></h1>
-<p>celldancer is a scalable toolkit for RNA velocity analysis in single cells, based on XXX.</p>
+  <section id="celldancer-embedding-kinetic-para-embedding-kinetic-para">
+<h1>celldancer.embedding_kinetic_para.embedding_kinetic_para<a class="headerlink" href="#celldancer-embedding-kinetic-para-embedding-kinetic-para" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="celldancer.embedding_kinetic_para.embedding_kinetic_para">
+<span class="sig-prename descclassname"><span class="pre">celldancer.embedding_kinetic_para.</span></span><span class="sig-name descname"><span class="pre">embedding_kinetic_para</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cellDancer_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kinetic_para</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">umap_n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#celldancer.embedding_kinetic_para.embedding_kinetic_para" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the UMAP based on kinetic parameter(s).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cellDancer_df</strong> (<cite>pandas.Dataframe</cite>) – Data frame of velocity estimation results. Columns=[‘cellIndex’, ‘gene_name’, ‘s0’, ‘u0’, ‘s1’, ‘u1’, ‘alpha’, ‘beta’, ‘gamma’, ‘loss’, ‘cellID’, ‘clusters’, ‘embedding1’, ‘embedding2’]</p></li>
+<li><p><strong>kinetic_para</strong> (<cite>str</cite>) – The selected parameter to calculate the embedding by using umap, could be selected from {‘alpha’, ‘beta’, ‘gamma’, ‘alpha_beta_gamma’}.</p></li>
+<li><p><strong>umap_n</strong> (<cite>int</cite> (default: 25)) – The size of local neighborhood (in terms of number of neighboring sample points) used for manifold approximation in UMAP.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>Returns the updated cellDancer_df with additional column of UMAP based on kinetic parameter(s).</em></p></li>
+<li><p><cite>cellDancer_df</cite> (pandas.DataFrame)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -176,10 +208,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="API.html" class="btn btn-neutral float-right" title="API - cellDancer key applications" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="celldancer.plotting.gene.scatter_gene.html" class="btn btn-neutral float-right" title="celldancer.plotting.gene.scatter_gene" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="index.html" class="btn btn-neutral" title="CellDancer" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="celldancer.pseudo_time.pseudo_time.html" class="btn btn-neutral" title="celldancer.pseudo_time.pseudo_time" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

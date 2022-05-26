@@ -561,7 +561,7 @@ def build_datamodule(cell_type_u_s,
     return(feed_data)
 
 
-def velocity_estimation( # use train_thread # change name to velocity estiminate
+def velocity( # use train_thread # change name to velocity estiminate
     cell_type_u_s,
     gene_list=None,
     max_epoches=200, 
@@ -580,9 +580,9 @@ def velocity_estimation( # use train_thread # change name to velocity estiminate
     Arguments
     ---------
     cell_type_u_s: `pandas.DataFrame`
-        Data frame of raw data - columns=['gene_name','u0','s0','cellID','clusters','embedding1','embedding2']
-    gene_list: `list`(default: None)
-        Gene set that selected to train, if use default value, the velocity of all genes will be estimated.
+        Data frame of raw data. Columns=['gene_name', 'u0' ,'s0' ,'cellID' ,'clusters' ,'embedding1' ,'embedding2']
+    gene_list: `list` (default: None)
+        Gene set selected to train. None if to estimate the velocity of all genes.
     max_epoches: `int` (default: 200)
         Stop training once this number of epochs is reached.
     check_val_every_n_epoch: `int` (default: 10)
@@ -592,9 +592,9 @@ def velocity_estimation( # use train_thread # change name to velocity estiminate
     permutation_ratio: `float` (default: 0.125)
         Sampling ratio of cells in each epoch when training each gene.
     speed_up: `bool` (default: True)
-        True if speed up by downsampling cells. If False, all cells will be used to train the model.
+        True if speed up by downsampling cells. False if to use all cells to train the model.
     norm_u_s: `bool` (default: True)
-        True if normalize the u0 or s0 of genes that too high.
+        True to normalize u0 and s0 if u0 or s0 of genes in this dataset that too high.
     norm_cell_distribution: `bool` (default: True)
         True if the bias of cell distribution is to be romoved on embedding space (many cell share same embedding position).
     n_jobs: `int` (default: -1)

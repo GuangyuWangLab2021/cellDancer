@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-API - CellDancer key applications
+API - cellDancer key applications
 ===========================================================================================
 celldancer is a scalable toolkit for RNA velocity analysis in single cells, based on XXX.
 
@@ -30,23 +30,21 @@ celldancer
 .. autosummary::
    :toctree: 
 
-   velocity_estimation.train
+   velocity_estimation.velocity
+   compute_cell_velocity.compute_cell_velocity
+   pseudo_time.pseudo_time
+   embedding_kinetic_para.embedding_kinetic_para
 
 
 plotting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. currentmodule:: plotting
+.. currentmodule:: celldancer.plotting
 .. rubric:: Functions
 
 .. autosummary::
    :toctree: 
 
    gene.scatter_gene
-   compute_cell_velocity.compute_cell_velocity
-   pseudo_time.pseudo_time
    cell.scatter_cell
-   cell.calculate_para_umap
-   cell.plot_para_umap
-
 
 
