@@ -27,7 +27,7 @@ def scatter_gene(
     arrow_grid = (15,15),
     save_path=None):
 
-    """Plot the plot of spliced-unspliced of a gene, or plot the parameter ('alpha', 'beta', 'gamma', 'spliced', 'unspliced') in pseudotime, or customize the parameters in x-axis and y-axis of a gene.
+    """Plot the velocity（spliced-unspliced） of a gene, or plot the parameter ('alpha', 'beta', 'gamma', 'spliced', 'unspliced') in pseudotime, or customize the parameters in x-axis and y-axis of a gene.
         
     Arguments
     ---------
