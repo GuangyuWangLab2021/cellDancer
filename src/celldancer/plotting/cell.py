@@ -17,26 +17,26 @@ else:
     from celldancer.utilities import find_nn_neighbors, extract_from_df
 
 def scatter_cell(
-        ax,
-        load_cellDancer, 
-        save_path=None,
-        custom_xlim=None,
-        custom_ylim=None,
-        vmin=None,
-        vmax=None,
-        colors=None, 
-        alpha=0.5, 
-        s = 5,
-        velocity=False,
-        gene_name=None,
-        legend='off',
-        colorbar='on',
-        min_mass=2,
-        grid_steps=(30,30)): 
-
+    ax,
+    cellDancer_df, 
+    save_path=None,
+    custom_xlim=None,
+    custom_ylim=None,
+    vmin=None,
+    vmax=None,
+    colors=None, 
+    alpha=0.5, 
+    s = 5,
+    velocity=False,
+    gene=None,
+    legend='off',
+    colorbar='on',
+    min_mass=2,
+    arrow_grid=(30,30)
+): 
 
     """Cell velocity plot.
-    TO DO: load_cellDancer contains the cluster information, needs improve
+    TO DO: cellDancer_df contains the cluster information, needs improve
     
     .. image:: https://user-images.githubusercontent.com/31883718/67709134-a0989480-f9bd-11e9-8ae6-f6391f5d95a0.png
     
@@ -60,7 +60,6 @@ def scatter_cell(
     `matplotlib.Axis` if `show==False`
     """
 
-    
     #   colors can be one of those:
     #   a dictionary of {cluster:color}
     #   a string of the column attribute (pseudotime, alpha, beta etc)
@@ -90,30 +89,29 @@ def scatter_cell(
         else:
             bbox_extra_artists=None
 
-        c=np.vectorize(colors.get)(extract_from_df(load_cellDancer, 'clusters', gene_name))
+        c=np.vectorize(colors.get)(extract_from_df(cellDancer_df, 'clusters', gene))
         cmap=ListedColormap(list(colors.keys()))
     elif isinstance(colors, str):
         attr = colors
         if colors in ['alpha', 'beta', 'gamma']:
-            assert gene_name, '\nError! gene_name is required!\n'
-            cmap = LinearSegmentedColormap.from_list("mycmap", zissou2)
+            assert gene, '\nError! gene is required!\n'
+            
+
+            cmap = LinearSegmentedColormap.from_list("mycmap", color_map_single_alpha_beta_gamma)
         if colors in ['spliced', 'unspliced']:
-            assert gene_name, '\nError! gene_name is required!\n'
+            assert gene, '\nError! gene is required!\n'
             colors = {'spliced':'s0', 'unspliced':'u0'}[colors]
-            cmap = LinearSegmentedColormap.from_list("mycmap", fireworks3)
+            cmap = LinearSegmentedColormap.from_list("mycmap", color_map_alpha_beta_gamma)
         if colors in ['pseudotime']:
             cmap = 'viridis'
-        else:
-            cmap = 'viridis'
-        c = extract_from_df(load_cellDancer, [colors], gene_name)
+        c = extract_from_df(cellDancer_df, [colors], gene)
         
     elif colors is None:
         attr = 'basic'
         cmap = None
         c = 'Grey'
-        
     
-    embedding = extract_from_df(load_cellDancer, ['embedding1', 'embedding2'], gene_name)
+    embedding = extract_from_df(cellDancer_df, ['embedding1', 'embedding2'], gene)
     n_cells = embedding.shape[0]
     
     im=ax.scatter(embedding[:, 0],
@@ -134,10 +132,10 @@ def scatter_cell(
        # cbar.set_ticks([])
 
     if velocity:
-        sample_cells = load_cellDancer['velocity1'][:n_cells].dropna().index
+        sample_cells = cellDancer_df['velocity1'][:n_cells].dropna().index
         embedding_ds = embedding[sample_cells]
-        velocity_embedding= extract_from_df(load_cellDancer, ['velocity1', 'velocity2'], gene_name)
-        grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass)
+        velocity_embedding= extract_from_df(cellDancer_df, ['velocity1', 'velocity2'], gene)
+        grid_curve(ax, embedding_ds, velocity_embedding, arrow_grid, min_mass)
 
     if custom_xlim is not None:
         ax.set_xlim(custom_xlim[0], custom_xlim[1])
@@ -146,7 +144,7 @@ def scatter_cell(
     
     
     if save_path is not None:
-        file_name_parts = ['embedding', attr, gene_name]
+        file_name_parts = ['embedding', attr, gene]
         if velocity:
             file_name_parts.insert(0, 'velocity')
         
@@ -157,13 +155,16 @@ def scatter_cell(
         plt.savefig(save_file_name, 
                 bbox_inches=extent,
                 bbox_extra_artists=bbox_extra_artists)
-        
     return im
 
-
-# Source - https://github.com/velocyto-team/velocyto.py/blob/0963dd2df0ac802c36404e0f434ba97f07edfe4b/velocyto/analysis.py
-def grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass):
-# calculate_grid_arrows
+def grid_curve(
+    ax, 
+    embedding_ds, 
+    velocity_embedding, 
+    arrow_grid, 
+    min_mass
+):
+    # calculate_grid_arrows
     # kernel grid plot
 
     def calculate_two_end_grid(embedding_ds, velocity_embedding, smooth=None, steps=None, min_mass=None):
@@ -232,7 +233,7 @@ def grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass):
         return(XY_filtered, UZ_head_filtered, UZ_tail_filtered, UZ_head2_filtered, UZ_tail2_filtered, mass_filter, grs)
 
     XY_filtered, UZ_head_filtered, UZ_tail_filtered, UZ_head2_filtered, UZ_tail2_filtered, mass_filter, grs = calculate_two_end_grid(
-        embedding_ds, velocity_embedding, smooth=0.8, steps=grid_steps, min_mass=min_mass)
+        embedding_ds, velocity_embedding, smooth=0.8, steps=arrow_grid, min_mass=min_mass)
 
     #######################################################
     ############ connect two end grid to curve ############
@@ -271,8 +272,7 @@ def grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass):
         norm_ratio = distance_grid/max_discance
         return(norm_ratio)
 
-    norm_ratio = norm_arrow_display_ratio(
-        XYM, UVT, UVH, UVT2, UVH2, grs, s_vals)
+    norm_ratio = norm_arrow_display_ratio(XYM, UVT, UVH, UVT2, UVH2, grs, s_vals)
     ############ end --- get longest distance len and norm ratio ############
 
     ############ plot the curve arrow for cell velocity ############
@@ -304,21 +304,25 @@ def grid_curve(ax, embedding_ds, velocity_embedding, grid_steps, min_mass):
     plot_cell_velocity_curve(XYM, UVT, UVH, UVT2, UVH2, s_vals)
     ############ end --- plot the curve arrow for cell velocity ############
 
-def calculate_para_umap(load_cellDancer,para,umap_n=25):
+def embedding_kinetic_para(
+    cellDancer_df,
+    kinetic_para,
+    umap_n=25
+):
 
     import umap
-    if set([(para+'_umap1'),(para+'_umap2')]).issubset(load_cellDancer.columns):
-        load_cellDancer=load_cellDancer.drop(columns=[(para+'_umap1'),(para+'_umap2')])
+    if set([(kinetic_para+'_umap1'),(kinetic_para+'_umap2')]).issubset(cellDancer_df.columns):
+        cellDancer_df=cellDancer_df.drop(columns=[(kinetic_para+'_umap1'),(kinetic_para+'_umap2')])
 
-    if para=='alpha' or para=='beta' or para=='gamma':
-        para_df=load_cellDancer.pivot(index='cellIndex', columns='gene_name', values=para)
-    elif para=='alpha_beta_gamma':
-        alpha_df=load_cellDancer.pivot(index='cellIndex', columns='gene_name', values='alpha')
-        beta_df=load_cellDancer.pivot(index='cellIndex', columns='gene_name', values='beta')
-        gamma_df=load_cellDancer.pivot(index='cellIndex', columns='gene_name', values='gamma')
+    if kinetic_para=='alpha' or kinetic_para=='beta' or kinetic_para=='gamma':
+        para_df=cellDancer_df.pivot(index='cellIndex', columns='gene_name', values=kinetic_para)
+    elif kinetic_para=='alpha_beta_gamma':
+        alpha_df=cellDancer_df.pivot(index='cellIndex', columns='gene_name', values='alpha')
+        beta_df=cellDancer_df.pivot(index='cellIndex', columns='gene_name', values='beta')
+        gamma_df=cellDancer_df.pivot(index='cellIndex', columns='gene_name', values='gamma')
         para_df=pd.concat([alpha_df,beta_df,gamma_df],axis=1)
     else:
-        print('para should be set in one of alpha, beta, gamma, or alpha_beta_gamma.')
+        print('kinetic_para should be set in one of alpha, beta, gamma, or alpha_beta_gamma.')
 
     def get_umap(df,n_neighbors=umap_n, min_dist=0.1, n_components=2, metric='euclidean'):
         fit = umap.UMAP(
@@ -330,42 +334,52 @@ def calculate_para_umap(load_cellDancer,para,umap_n=25):
         embed = fit.fit_transform(df);
         return(embed)
     umap_para=get_umap(para_df)
-    umap_info=pd.DataFrame(umap_para,columns=[(para+'_umap1'),(para+'_umap2')])
+    umap_info=pd.DataFrame(umap_para,columns=[(kinetic_para+'_umap1'),(kinetic_para+'_umap2')])
 
-    gene_amt=len(load_cellDancer.gene_name.drop_duplicates())
+    gene_amt=len(cellDancer_df.gene_name.drop_duplicates())
     umap_col=pd.concat([umap_info]*gene_amt)
-    umap_col.index=load_cellDancer.index
-    load_cellDancer=pd.concat([load_cellDancer,umap_col],axis=1)
-    return(load_cellDancer)
+    umap_col.index=cellDancer_df.index
+    cellDancer_df=pd.concat([cellDancer_df,umap_col],axis=1)
+    return(cellDancer_df)
 
-def plot_para_umap(para,load_cellDancer,gene_name=None,umap_n=25,cluster_map=None,save_path=None,title=None,legend_annotation=False):
+def plot_kinetic_para(
+    kinetic_para,
+    cellDancer_df,
+    gene=None,
+    umap_n=25,
+    color_map=None,
+    save_path=None,
+    title=None,
+    legend=False):
+    
     import numpy as np
-    onegene=load_cellDancer[load_cellDancer.gene_name==load_cellDancer.gene_name[0]]
-    umap_para=onegene[[(para+'_umap1'),(para+'_umap2')]].to_numpy()
+    onegene=cellDancer_df[cellDancer_df.gene_name==cellDancer_df.gene_name[0]]
+    umap_para=onegene[[(kinetic_para+'_umap1'),(kinetic_para+'_umap2')]].to_numpy()
     onegene_cluster_info=onegene.clusters
 
-    if gene_name is None:
-        if cluster_map is None:
+    if gene is None:
+        if color_map is None:
             from plotting.colormap import build_colormap
-            cluster_map=build_colormap(onegene_cluster_info)
+            color_map=build_colormap(onegene_cluster_info)
 
-        colors = list(map(lambda x: cluster_map.get(x, 'black'), onegene_cluster_info))
+        colors = list(map(lambda x: color_map.get(x, 'black'), onegene_cluster_info))
 
-        if legend_annotation:
-            markers = [plt.Line2D([0,0],[0,0],color=color, marker='o', linestyle='') for color in cluster_map.values()]
-            lgd=plt.legend(markers, cluster_map.keys(), numpoints=1,loc='upper left',bbox_to_anchor=(1.01, 1))
-
+        if legend:
+            markers = [plt.Line2D([0,0],[0,0],color=color, marker='o', linestyle='') for color in color_map.values()]
+            lgd=plt.legend(markers, color_map.keys(), numpoints=1,loc='upper left',bbox_to_anchor=(1.01, 1))
+                
+        plt.figure()
         plt.scatter(umap_para[:,0], umap_para[:,1],c=colors,s=15,alpha=0.5,edgecolor="none")
         plt.axis('square')
         plt.axis('off')
 
     else:
-        onegene=load_cellDancer[load_cellDancer.gene_name==gene_name]
+        onegene=cellDancer_df[cellDancer_df.gene_name==gene]
         plt.figure()
         plt.scatter(umap_para[:,0], umap_para[:,1],c=np.log(onegene.s0+0.0001),s=15,alpha=1,edgecolor="none")
         plt.axis('square')
         plt.axis('off')
-        plt.colorbar(label=gene_name+" s0")
+        plt.colorbar(label=gene+" s0")
 
     if save_path is not None:
         plt.savefig(save_path,bbox_inches='tight',bbox_extra_artists=(lgd,))

@@ -13,7 +13,7 @@ def scatter_gene(
     ax=None,
     x=None,
     y=None,
-    load_cellDancer=None,
+    cellDancer_df=None,
     save_path=None,
     custom_xlim=None,
     custom_ylim=None,
@@ -23,8 +23,8 @@ def scatter_gene(
     alpha=0.5, 
     s = 5,
     velocity=False,
-    step = (15,15),
-    gene_name=None,
+    arrow_grid = (15,15),
+    gene=None,
     legend='off',
     plot_cmap='off'):
     
@@ -50,17 +50,16 @@ def scatter_gene(
         else:
             bbox_extra_artists=None
 
-#        assert gene_name, '\nError! gene_name is required!\n'
-        c=np.vectorize(colors.get)(extract_from_df(load_cellDancer, 'clusters'))
+        c=np.vectorize(colors.get)(extract_from_df(cellDancer_df, 'clusters'))
         cmap=ListedColormap(list(colors.keys()))
 
     elif isinstance(colors, str):
         attr = colors
         if colors in ['alpha', 'beta', 'gamma']:
-            assert gene_name, '\nError! gene_name is required!\n'
+            assert gene, '\nError! gene is required!\n'
             cmap = ListedColormap(zissou2)
         if colors in ['spliced', 'unspliced']:
-            assert gene_name, '\nError! gene_name is required!\n'
+            assert gene, '\nError! gene is required!\n'
             colors = {'spliced':'s0', 'unspliced':'u0'}[colors]
             cmap = ListedColormap(fireworks3)
         if colors in ['pseudotime']:
@@ -68,7 +67,7 @@ def scatter_gene(
         else:
             cmap = 'viridis'
 
-        c = extract_from_df(load_cellDancer, [colors], gene_name)
+        c = extract_from_df(cellDancer_df, [colors], gene)
     elif colors is None:
         attr = 'basic'
         cmap = None
@@ -81,8 +80,8 @@ def scatter_gene(
         y = {'spliced':'s0', 'unspliced':'u0'}[y]
 
 
-    assert gene_name, '\nError! gene_name is required!\n'
-    xy = extract_from_df(load_cellDancer, [x, y], gene_name)
+    assert gene, '\nError! gene is required!\n'
+    xy = extract_from_df(cellDancer_df, [x, y], gene)
     ax.scatter(xy[:, 0],
                xy[:, 1],
                c=c,
@@ -101,8 +100,8 @@ def scatter_gene(
                                  
     if velocity:
         assert (x,y) in [('u0', 's0'), ('s0', 'u0')]
-        u_s = extract_from_df(load_cellDancer, ['u0','s0','u1','s1'], gene_name)
-        sampling_idx=sampling_neighbors(u_s[:,0:2], step=step, percentile=15) # Sampling
+        u_s = extract_from_df(cellDancer_df, ['u0','s0','u1','s1'], gene)
+        sampling_idx=sampling_neighbors(u_s[:,0:2], step=arrow_grid, percentile=15) # Sampling
         u_s_downsample = u_s[sampling_idx,0:4]
 
         plt.scatter(u_s_downsample[:, 1], u_s_downsample[:,0], color="none", s=s, edgecolor="k")
@@ -112,7 +111,7 @@ def scatter_gene(
                    angles='xy', clim=(0., 1.))
             
     if save_path is not None:
-        file_name_parts = [y+'-'+x, 'coloring-'+attr, gene_name]
+        file_name_parts = [y+'-'+x, 'coloring-'+attr, gene]
         if velocity:
             file_name_parts.insert(0, 'velocity')
 

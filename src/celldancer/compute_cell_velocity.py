@@ -1,12 +1,10 @@
-from turtle import color
-from sklearn.neighbors import NearestNeighbors
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-import random
 import os
 import sys
+import random
+import pandas as pd
 import numpy as np
+from sklearn.neighbors import NearestNeighbors
+import matplotlib.pyplot as plt
 
 
 if __name__ == "__main__":
@@ -18,21 +16,17 @@ else:
     except ImportError:
         from sampling import *
 
-####### organize code
 
+def compute_cell_velocity(
+    cellDancer_df,
+    gene_list=None,
+    projection_neighbor_size=200,
+    speed_up=(60,60),
+    expression_scale=None,
+    projection_neighbor_choice=None
+):
 
-def compute_cell_velocity(load_cellDancer,
-        gene_list=None,
-        n_neighbors=200,
-        step=(60,60),
-        transfer_mode=None,
-        mode=None,
-        pca_n_components=None,
-        umap_n=None,
-        umap_n_components=None,
-        use_downsampling=True):
-
-    # mode: [mode='embedding', mode='gene']
+    # projection_neighbor_choice: [projection_neighbor_choice='embedding', projection_neighbor_choice='gene']
 
     def velocity_correlation(cell_matrix, velocity_matrix):
         """Calculate the correlation between the predict velocity (velocity_matrix[:,i])
@@ -79,50 +73,44 @@ def compute_cell_velocity(load_cellDancer,
         velocity_embedding = velocity_embedding.T
         return velocity_embedding
     
-
-    #no na
-    is_NaN = load_cellDancer[['alpha','beta']].isnull()
+    # remove invalid prediction
+    is_NaN = cellDancer_df[['alpha','beta']].isnull()
     row_has_NaN = is_NaN. any(axis=1)
-    load_cellDancer = load_cellDancer[~row_has_NaN].reset_index(drop=True)
+    cellDancer_df = cellDancer_df[~row_has_NaN].reset_index(drop=True)
     
-
-    # load_cellDancer_copy['s0Max'] = load_cellDancer_copy.groupby('gene_name')['s0'].transform(lambda x: x.max())
-    # load_cellDancer_copy.loc[:,'s0'] = (load_cellDancer_copy.s0/load_cellDancer_copy.s0Max)*4.5
-    # load_cellDancer_copy.loc[:,'s1'] = (load_cellDancer_copy.s1/load_cellDancer_copy.s0Max)*4.5
-
     if gene_list is not None:
         print("Selected genes: ", gene_list)
     else:
-        gene_list=load_cellDancer.gene_name.drop_duplicates()
+        gene_list=cellDancer_df.gene_name.drop_duplicates()
 
 
     # This creates a new dataframe
-    load_cellDancer_input = load_cellDancer[
-            load_cellDancer.gene_name.isin(gene_list)].reset_index(drop=True)
+    cellDancer_df_input = cellDancer_df[
+            cellDancer_df.gene_name.isin(gene_list)].reset_index(drop=True)
 
-    np_s0_all, np_dMatrix_all= data_reshape(load_cellDancer_input)
+    np_s0_all, np_dMatrix_all= data_reshape(cellDancer_df_input)
     print("(genes, cells): ", end="")
     print(np_s0_all.shape)
     n_genes, n_cells = np_s0_all.shape
 
     # This creates a new dataframe
-    data_df = load_cellDancer_input.loc[:, 
+    data_df = cellDancer_df_input.loc[:, 
             ['gene_name', 'u0', 's0', 'cellID','embedding1', 'embedding2']]
     # random.seed(10)
     embedding_downsampling, sampling_ixs, knn_embedding = downsampling_embedding(data_df,
                                                                                  para='neighbors',
                                                                                  target_amount=0,
-                                                                                 step=step,
-                                                                                 n_neighbors=n_neighbors,
-                                                                                 mode=mode,
-                                                                                 transfer_mode=transfer_mode,
-                                                                                 pca_n_components=pca_n_components,
-                                                                                 umap_n=umap_n,
-                                                                                 umap_n_components=umap_n_components)
+                                                                                 step=speed_up,
+                                                                                 n_neighbors=projection_neighbor_size,
+                                                                                 projection_neighbor_choice=projection_neighbor_choice,
+                                                                                 expression_scale=expression_scale,
+                                                                                 pca_n_components=None,
+                                                                                 umap_n=None,
+                                                                                 umap_n_components=None)
     
 
-    # mode only provides neighborlist, use embedding(from raw data) to compute cell velocity
-    embedding = load_cellDancer_input[load_cellDancer_input.gene_name == 
+    # projection_neighbor_choice only provides neighborlist, use embedding(from raw data) to compute cell velocity
+    embedding = cellDancer_df_input[cellDancer_df_input.gene_name == 
             gene_list[0]][['embedding1', 'embedding2']]
     embedding = embedding.to_numpy()
     velocity_embedding = velocity_projection(
@@ -131,23 +119,23 @@ def compute_cell_velocity(load_cellDancer,
             embedding[sampling_ixs, :], 
             knn_embedding)
 
-    if set(['velocity1','velocity2']).issubset(load_cellDancer.columns):
+    if set(['velocity1','velocity2']).issubset(cellDancer_df.columns):
         print("Caution! Overwriting the \'velocity\' columns.") 
-        load_cellDancer.drop(['velocity1','velocity2'], axis=1, inplace=True)
+        cellDancer_df.drop(['velocity1','velocity2'], axis=1, inplace=True)
 
-    sampling_ixs_all_genes = load_cellDancer_input[load_cellDancer_input.cellIndex.isin(sampling_ixs)].index
-    load_cellDancer_input.loc[sampling_ixs_all_genes,'velocity1'] = np.tile(velocity_embedding[:,0], n_genes)
-    load_cellDancer_input.loc[sampling_ixs_all_genes,'velocity2'] = np.tile(velocity_embedding[:,1], n_genes)
+    sampling_ixs_all_genes = cellDancer_df_input[cellDancer_df_input.cellIndex.isin(sampling_ixs)].index
+    cellDancer_df_input.loc[sampling_ixs_all_genes,'velocity1'] = np.tile(velocity_embedding[:,0], n_genes)
+    cellDancer_df_input.loc[sampling_ixs_all_genes,'velocity2'] = np.tile(velocity_embedding[:,1], n_genes)
     print("After downsampling, there are ", len(sampling_ixs), "cells.")
-    return(load_cellDancer_input)
+    return(cellDancer_df_input)
 
 def corr_coeff(ematrix, vmatrix, i):
         '''
         Calculate the correlation between the predict velocity (velocity_matrix[:,i])
         and the displacement between a cell and every other (cell_matrix - cell_matrix[:, i])
+        ematrix = cell_matrix
+        vmatrix = velocity_matrix
         '''
-        # ematrix = cell_matrix
-        # vmatrix = velocity_matrix
         ematrix = ematrix.T
         vmatrix = vmatrix.T
         ematrix = ematrix - ematrix[i, :]
@@ -164,20 +152,20 @@ def corr_coeff(ematrix, vmatrix, i):
         return cor.T
 
 
-def data_reshape(load_cellDancer): # pengzhi version
+def data_reshape(cellDancer_df): # pengzhi version
     '''
     load detail file
     return expression matrix and velocity (ngenes, ncells)
     '''
     psc = 1
-    gene_names = load_cellDancer['gene_name'].drop_duplicates().to_list()
+    gene_names = cellDancer_df['gene_name'].drop_duplicates().to_list()
     # PZ uncommented this.
-    cell_number = load_cellDancer[load_cellDancer['gene_name']==gene_names[0]].shape[0]
-    load_cellDancer['index'] = np.tile(range(cell_number),len(gene_names))
+    cell_number = cellDancer_df[cellDancer_df['gene_name']==gene_names[0]].shape[0]
+    cellDancer_df['index'] = np.tile(range(cell_number),len(gene_names))
 
-    s0_reshape = load_cellDancer.pivot(
+    s0_reshape = cellDancer_df.pivot(
         index='gene_name', values='s0', columns='index')
-    s1_reshape = load_cellDancer.pivot(
+    s1_reshape = cellDancer_df.pivot(
         index='gene_name', values='s1', columns='index')
     dMatrix = s1_reshape-s0_reshape
     np_s0_reshape = np.array(s0_reshape)

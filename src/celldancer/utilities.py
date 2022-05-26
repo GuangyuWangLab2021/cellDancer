@@ -26,7 +26,6 @@ def tqdm_joblib(tqdm_object):
     finally:
         joblib.parallel.BatchCompletionCallBack = old_batch_callback
         tqdm_object.close()
-# end - progress bar
 
 ######### pseudotime rsquare
 from statsmodels.nonparametric.kernel_regression import KernelReg
@@ -475,77 +474,3 @@ def extract_from_df(load_cellDancer, attr_list, gene_name=None):
     data = load_cellDancer[one_gene_idx][attr_list].dropna()
     return data.to_numpy()
 
-
-def set_rcParams(fontsize=12): 
-    try:
-        import IPython
-        ipython_format = ["png2x"]
-        IPython.display.set_matplotlib_formats(*ipython_format)
-    except:
-        pass
-
-    from matplotlib import rcParams
-
-    # dpi options (mpl default: 100, 100)
-    rcParams["figure.dpi"] = 100
-    rcParams["savefig.dpi"] = 150
-
-    # figure (mpl default: 0.125, 0.96, 0.15, 0.91)
-    rcParams["figure.figsize"] = (6, 4)
-    rcParams["figure.subplot.left"] = 0.18
-    rcParams["figure.subplot.right"] = 0.96
-    rcParams["figure.subplot.bottom"] = 0.15
-    rcParams["figure.subplot.top"] = 0.91
-
-    # lines (defaults:  1.5, 6, 1)
-    rcParams["lines.linewidth"] = 1.5  # the line width of the frame
-    rcParams["lines.markersize"] = 6
-    rcParams["lines.markeredgewidth"] = 1
-
-    # font
-    rcParams["font.sans-serif"] = [
-        "Arial",
-        "Helvetica",
-        "DejaVu Sans",
-        "Bitstream Vera Sans",
-        "sans-serif",
-    ]
-
-    fontsize = fontsize
-    labelsize = 0.92 * fontsize
-
-    # fonsizes (mpl default: 10, medium, large, medium)
-    rcParams["font.size"] = fontsize
-    rcParams["legend.fontsize"] = labelsize
-    rcParams["axes.titlesize"] = fontsize
-    rcParams["axes.labelsize"] = labelsize
-
-    # legend (mpl default: 1, 1, 2, 0.8)
-    rcParams["legend.numpoints"] = 1
-    rcParams["legend.scatterpoints"] = 1
-    rcParams["legend.handlelength"] = 0.5
-    rcParams["legend.handletextpad"] = 0.4
-
-    # axes
-    rcParams["axes.linewidth"] = 0.8
-    rcParams["axes.edgecolor"] = "black"
-    rcParams["axes.facecolor"] = "white"
-
-    # ticks (mpl default: k, k, medium, medium)
-    rcParams["xtick.color"] = "k"
-    rcParams["ytick.color"] = "k"
-    rcParams["xtick.labelsize"] = labelsize
-    rcParams["ytick.labelsize"] = labelsize
-
-    # axes grid (mpl default: False, #b0b0b0)
-    rcParams["axes.grid"] = False
-    rcParams["grid.color"] = ".8"
-
-    # color map
-    rcParams["image.cmap"] = "RdBu_r"
-
-
-
-if __name__ == "__main__":
-    import sys
-    sys.path.append('.')
