@@ -31,9 +31,9 @@ celldancer
    :toctree: 
 
    velocity_estimation.velocity
-   compute_cell_velocity.compute_cell_velocity
+   compute_cell_velocity.compute
    pseudo_time.pseudo_time
-   embedding_kinetic_para.embedding_kinetic_para
+   embedding_kinetic_para.embedding
 
 
 plotting

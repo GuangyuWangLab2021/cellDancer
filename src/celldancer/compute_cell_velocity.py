@@ -17,12 +17,12 @@ else:
         from sampling import *
 
 
-def compute_cell_velocity(
+def compute(
     cellDancer_df,
     gene_list=None,
-    projection_neighbor_size=200,
     speed_up=(60,60),
     expression_scale=None,
+    projection_neighbor_size=200,
     projection_neighbor_choice=None):
 
     """Compute the cell velocity.
@@ -30,26 +30,25 @@ def compute_cell_velocity(
     Arguments
     ---------
     cellDancer_df: `pandas.DataFrame`
-        Data frame of velocity estimation results. Columns=['cellIndex', 'gene_name', 's0', 'u0', 's1', 'u1', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2']
-    gene_list: `list` (default: None)
+        Data frame of velocity estimation results. Columns=['cellIndex', 'gene_name', 's0', 'u0', 's1', 'u1', 'alpha', 'beta', 'gamma', 'loss', 'cellID, 'clusters', 'embedding1', 'embedding2']
+    gene_list: `list` (optional, default: None)
         Genes selected to calculate the cell velocity. None if all genes in the cellDancer_df is to be used.
-    projection_neighbor_size: `int` (default: '200')
-        The amount neighbors.
-    speed_up: `tuple` (default: (60,60))
-        Speed up by giving the sampling grid to downsample cells.
-        None use all cells to compute cell velocity.
-    expression_scale: `str` (default: None)
-        None if no expression scale is to be used.
-        'power10' if the 10th power is been used to scale s0 and u0.
-    projection_neighbor_choice: `str` (default: 'embedding')
-        'embedding' if use the embedding to obtain the neighbors.
-        'gene' if use the s0 of all genes to obtain the neighbors.
+    speed_up: `tuple` (optional, default: (60,60))
+        Speed up by giving the sampling grid to downsample cells. 
+        `None` use all cells to compute cell velocity. 
+    expression_scale: `str` (optional, default: None)
+        `None` if no expression scale is to be used. 
+        `'power10'` if the 10th power is been used to scale spliced and unspliced reads.
+    projection_neighbor_size: `int` (optional, default: '200')
+        The number of neighboring cells used for transition probability matrix for one cell.
+    projection_neighbor_choice: `str` (optional, default: 'embedding')
+        `'embedding'` if use the embedding to obtain the neighbors. 
+        `'gene'` if use the spliced reads of all genes to obtain the neighbors.
 
     Returns
     -------
-    Returns the updated cellDancer_df with additional columns ['velocity1','velocity2'].
-    `cellDancer_df` (pandas.DataFrame)
-
+    cellDancer_df: `pandas.DataFrame`
+        The updated cellDancer_df with additional columns ['velocity1', 'velocity2'].
     """
 
     def velocity_correlation(cell_matrix, velocity_matrix):

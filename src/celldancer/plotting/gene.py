@@ -27,45 +27,45 @@ def scatter_gene(
     arrow_grid = (15,15),
     save_path=None):
 
-    """Plot the velocity（spliced-unspliced） of a gene, or plot the parameter ('alpha', 'beta', 'gamma', 'spliced', 'unspliced') in pseudotime, or customize the parameters in x-axis and y-axis of a gene.
+    """Plot the velocity (spliced-unspliced) of a gene, or plot the parameter ('alpha', 'beta', 'gamma', 'spliced', 'unspliced') in pseudotime, or customize the parameters in x-axis and y-axis of a gene.
         
     Arguments
     ---------
     ax: `ax of plt.subplots()`
         ax to add subplot.
     x: `str`
-        one of {'s0', 'u0', 's1', 'u1', 'alpha', 'beta', 'gamma', 'pseudotime}
+        Set x axis as one of {'s0', 'u0', 'alpha', 'beta', 'gamma', 'pseudotime'}.
     y: `str`
-        one of {'s0', 'u0', 's1', 'u1', 'alpha', 'beta', 'gamma', 'pseudotime}
+        Set y axis as one of {'s0', 'u0', 'alpha', 'beta', 'gamma', 'pseudotime'}.
     cellDancer_df: `pandas.DataFrame`
         Data frame of velocity estimation, cell velocity, and pseudotime results. Columns=['cellIndex', 'gene_name', 's0', 'u0', 's1', 'u1', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
     colors: `list`, `dict`, or `str`
-        `list` -> build a colormap dictionary for a list of cell type as input;
-        `dict` -> the customized color map dict of each cell type;
-        `str` -> one of {'alpha', 'beta', 'gamma', 'spliced', 'unspliced', 'pseudotime'}.
-    custom_xlim: `float` (default: None)
-        Set the x limits of the current axes.
-    custom_ylim: `float` (default: None)
-        Set the y limits of the current axes.
-    vmin: `float` (default: None)
-        Set the minimun color limits of the current image.
-    vmax: `float` (default: None)
-        Set the maximum color limits of the current image.
-    alpha: `float` (default: 0.5)
+        When input is a list: build a colormap dictionary for a list of cell type; 
+        When input is a dictionary: the customized color map dictionary of each cell type; 
+        When input is a str: one of {'alpha', 'beta', 'gamma', 'spliced', 'unspliced', 'pseudotime'} is used as value of color.
+    custom_xlim: `float` (optional, default: None)
+        Set the x limit of the current axes.
+    custom_ylim: `float` (optional, default: None)
+        Set the y limit of the current axes.
+    vmin: `float` (optional, default: None)
+        Set the minimun color limit of the current image.
+    vmax: `float` (optional, default: None)
+        Set the maximum color limit of the current image.
+    alpha: `float` (optional, default: 0.5)
         The alpha blending value, between 0 (transparent) and 1 (opaque).
-    s: `float` (default: 5)
-        The marker size in points**2.
-    velocity: `bool` (default: False)
-        True if velocity in gene level is to be plotted.
-    gene: `str` (default: None)
-        The gene selected for the plot of alpha, beta, gamma, spliced, or unspliced in embedding level.
-    legend: `str` (default: 'off')
-        'off' if the color map of cell type legend is not to be plotted;
-        'only' if to only plot the cell type legend.
-    arrow_grid: `tuple` (default: (15,15))
-        The size of the grid for the gene velocity to display.
-    save_path: `str` (default: None)
-        Directory to save the plot.
+    s: `float` (optional, default: 5)
+        The marker size.
+    velocity: `bool` (optional, default: False)
+        `True` if velocity in gene level is to be plotted.
+    gene: `str` (optional, default: None)
+        Gene name for the plot of alpha, beta, gamma, spliced, unspliced or pseudotime in embedding level.
+    legend: `str` (optional, default: 'off')
+        `‘off’` if the color map of cell type legend is not to be plotted;
+        `‘only’` if only plot the cell type legend.
+    arrow_grid: `tuple` (optional, default: (15,15))
+        The sparsity of the grids of velocity arrows. The larger, the more compact and more arrows to be shown.
+    save_path: `str` (optional, default: None)
+        Path to save the plot.
 
     Returns
     -------

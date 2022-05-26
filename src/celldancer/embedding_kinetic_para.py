@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-def embedding_kinetic_para(
+def embedding(
     cellDancer_df,
     kinetic_para,
     umap_n=25
@@ -13,14 +13,14 @@ def embedding_kinetic_para(
     cellDancer_df: `pandas.Dataframe`
         Data frame of velocity estimation results. Columns=['cellIndex', 'gene_name', 's0', 'u0', 's1', 'u1', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2']
     kinetic_para: `str`
-        The selected parameter to calculate the embedding by using umap, could be selected from {'alpha', 'beta', 'gamma', 'alpha_beta_gamma'}.
-    umap_n: `int` (default: 25)
+        Which parameter is used to calculate embedding space, could be selected from {'alpha', 'beta', 'gamma', 'alpha_beta_gamma'}.
+    umap_n: `int` (optional, default: 25)
         The size of local neighborhood (in terms of number of neighboring sample points) used for manifold approximation in UMAP.
 
     Returns
     -------
-    Returns the updated cellDancer_df with additional column of UMAP based on kinetic parameter(s).
-    `cellDancer_df` (pandas.DataFrame)
+    cellDancer_df: `pandas.DataFrame`
+        The updated cellDancer_df with additional column of UMAP based on kinetic parameter(s).
 
     """  
     import umap

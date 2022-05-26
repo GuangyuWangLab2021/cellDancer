@@ -43,7 +43,7 @@
     <link rel="top" title="celldancer  documentation" href="index.html"/>
         <link rel="up" title="API - cellDancer key applications" href="API.html"/>
         <link rel="next" title="celldancer.plotting.cell.scatter_cell" href="celldancer.plotting.cell.scatter_cell.html"/>
-        <link rel="prev" title="celldancer.embedding_kinetic_para.embedding_kinetic_para" href="celldancer.embedding_kinetic_para.embedding_kinetic_para.html"/> 
+        <link rel="prev" title="celldancer.embedding_kinetic_para.embedding" href="celldancer.embedding_kinetic_para.embedding.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -94,9 +94,9 @@
 <li class="toctree-l1"><a class="reference internal" href="about.html">About celldancer</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="API.html">API - cellDancer key applications</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="celldancer.velocity_estimation.velocity.html">celldancer.velocity_estimation.velocity</a></li>
-<li class="toctree-l2"><a class="reference internal" href="celldancer.compute_cell_velocity.compute_cell_velocity.html">celldancer.compute_cell_velocity.compute_cell_velocity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="celldancer.compute_cell_velocity.compute.html">celldancer.compute_cell_velocity.compute</a></li>
 <li class="toctree-l2"><a class="reference internal" href="celldancer.pseudo_time.pseudo_time.html">celldancer.pseudo_time.pseudo_time</a></li>
-<li class="toctree-l2"><a class="reference internal" href="celldancer.embedding_kinetic_para.embedding_kinetic_para.html">celldancer.embedding_kinetic_para.embedding_kinetic_para</a></li>
+<li class="toctree-l2"><a class="reference internal" href="celldancer.embedding_kinetic_para.embedding.html">celldancer.embedding_kinetic_para.embedding</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">celldancer.plotting.gene.scatter_gene</a></li>
 <li class="toctree-l2"><a class="reference internal" href="celldancer.plotting.cell.scatter_cell.html">celldancer.plotting.cell.scatter_cell</a></li>
 </ul>
@@ -180,29 +180,29 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="celldancer.plotting.gene.scatter_gene">
 <span class="sig-prename descclassname"><span class="pre">celldancer.plotting.gene.</span></span><span class="sig-name descname"><span class="pre">scatter_gene</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cellDancer_df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">velocity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gene</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'off'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arrow_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(15,</span> <span class="pre">15)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#celldancer.plotting.gene.scatter_gene" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot the velocity（spliced-unspliced） of a gene, or plot the parameter (‘alpha’, ‘beta’, ‘gamma’, ‘spliced’, ‘unspliced’) in pseudotime, or customize the parameters in x-axis and y-axis of a gene.</p>
+<dd><p>Plot the velocity (spliced-unspliced) of a gene, or plot the parameter (‘alpha’, ‘beta’, ‘gamma’, ‘spliced’, ‘unspliced’) in pseudotime, or customize the parameters in x-axis and y-axis of a gene.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ax</strong> (<cite>ax of plt.subplots()</cite>) – ax to add subplot.</p></li>
-<li><p><strong>x</strong> (<cite>str</cite>) – one of {‘s0’, ‘u0’, ‘s1’, ‘u1’, ‘alpha’, ‘beta’, ‘gamma’, ‘pseudotime}</p></li>
-<li><p><strong>y</strong> (<cite>str</cite>) – one of {‘s0’, ‘u0’, ‘s1’, ‘u1’, ‘alpha’, ‘beta’, ‘gamma’, ‘pseudotime}</p></li>
+<li><p><strong>x</strong> (<cite>str</cite>) – Set x axis as one of {‘s0’, ‘u0’, ‘alpha’, ‘beta’, ‘gamma’, ‘pseudotime’}.</p></li>
+<li><p><strong>y</strong> (<cite>str</cite>) – Set y axis as one of {‘s0’, ‘u0’, ‘alpha’, ‘beta’, ‘gamma’, ‘pseudotime’}.</p></li>
 <li><p><strong>cellDancer_df</strong> (<cite>pandas.DataFrame</cite>) – Data frame of velocity estimation, cell velocity, and pseudotime results. Columns=[‘cellIndex’, ‘gene_name’, ‘s0’, ‘u0’, ‘s1’, ‘u1’, ‘alpha’, ‘beta’, ‘gamma’, ‘loss’, ‘cellID’, ‘clusters’, ‘embedding1’, ‘embedding2’, ‘velocity1’, ‘velocity2’, ‘pseudotime’]</p></li>
-<li><p><strong>colors</strong> (<cite>list</cite>, <cite>dict</cite>, or <cite>str</cite>) – <cite>list</cite> -&gt; build a colormap dictionary for a list of cell type as input;
-<cite>dict</cite> -&gt; the customized color map dict of each cell type;
-<cite>str</cite> -&gt; one of {‘alpha’, ‘beta’, ‘gamma’, ‘spliced’, ‘unspliced’, ‘pseudotime’}.</p></li>
-<li><p><strong>custom_xlim</strong> (<cite>float</cite> (default: None)) – Set the x limits of the current axes.</p></li>
-<li><p><strong>custom_ylim</strong> (<cite>float</cite> (default: None)) – Set the y limits of the current axes.</p></li>
-<li><p><strong>vmin</strong> (<cite>float</cite> (default: None)) – Set the minimun color limits of the current image.</p></li>
-<li><p><strong>vmax</strong> (<cite>float</cite> (default: None)) – Set the maximum color limits of the current image.</p></li>
-<li><p><strong>alpha</strong> (<cite>float</cite> (default: 0.5)) – The alpha blending value, between 0 (transparent) and 1 (opaque).</p></li>
-<li><p><strong>s</strong> (<cite>float</cite> (default: 5)) – The marker size in points**2.</p></li>
-<li><p><strong>velocity</strong> (<cite>bool</cite> (default: False)) – True if velocity in gene level is to be plotted.</p></li>
-<li><p><strong>gene</strong> (<cite>str</cite> (default: None)) – The gene selected for the plot of alpha, beta, gamma, spliced, or unspliced in embedding level.</p></li>
-<li><p><strong>legend</strong> (<cite>str</cite> (default: ‘off’)) – ‘off’ if the color map of cell type legend is not to be plotted;
-‘only’ if to only plot the cell type legend.</p></li>
-<li><p><strong>arrow_grid</strong> (<cite>tuple</cite> (default: (15,15))) – The size of the grid for the gene velocity to display.</p></li>
-<li><p><strong>save_path</strong> (<cite>str</cite> (default: None)) – Directory to save the plot.</p></li>
+<li><p><strong>colors</strong> (<cite>list</cite>, <cite>dict</cite>, or <cite>str</cite>) – When input is a list: build a colormap dictionary for a list of cell type;
+When input is a dictionary: the customized color map dictionary of each cell type;
+When input is a str: one of {‘alpha’, ‘beta’, ‘gamma’, ‘spliced’, ‘unspliced’, ‘pseudotime’} is used as value of color.</p></li>
+<li><p><strong>custom_xlim</strong> (<cite>float</cite> (optional, default: None)) – Set the x limit of the current axes.</p></li>
+<li><p><strong>custom_ylim</strong> (<cite>float</cite> (optional, default: None)) – Set the y limit of the current axes.</p></li>
+<li><p><strong>vmin</strong> (<cite>float</cite> (optional, default: None)) – Set the minimun color limit of the current image.</p></li>
+<li><p><strong>vmax</strong> (<cite>float</cite> (optional, default: None)) – Set the maximum color limit of the current image.</p></li>
+<li><p><strong>alpha</strong> (<cite>float</cite> (optional, default: 0.5)) – The alpha blending value, between 0 (transparent) and 1 (opaque).</p></li>
+<li><p><strong>s</strong> (<cite>float</cite> (optional, default: 5)) – The marker size.</p></li>
+<li><p><strong>velocity</strong> (<cite>bool</cite> (optional, default: False)) – <cite>True</cite> if velocity in gene level is to be plotted.</p></li>
+<li><p><strong>gene</strong> (<cite>str</cite> (optional, default: None)) – Gene name for the plot of alpha, beta, gamma, spliced, unspliced or pseudotime in embedding level.</p></li>
+<li><p><strong>legend</strong> (<cite>str</cite> (optional, default: ‘off’)) – <cite>‘off’</cite> if the color map of cell type legend is not to be plotted;
+<cite>‘only’</cite> if only plot the cell type legend.</p></li>
+<li><p><strong>arrow_grid</strong> (<cite>tuple</cite> (optional, default: (15,15))) – The sparsity of the grids of velocity arrows. The larger, the more compact and more arrows to be shown.</p></li>
+<li><p><strong>save_path</strong> (<cite>str</cite> (optional, default: None)) – Path to save the plot.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -227,7 +227,7 @@
         <a href="celldancer.plotting.cell.scatter_cell.html" class="btn btn-neutral float-right" title="celldancer.plotting.cell.scatter_cell" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="celldancer.embedding_kinetic_para.embedding_kinetic_para.html" class="btn btn-neutral" title="celldancer.embedding_kinetic_para.embedding_kinetic_para" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="celldancer.embedding_kinetic_para.embedding.html" class="btn btn-neutral" title="celldancer.embedding_kinetic_para.embedding" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

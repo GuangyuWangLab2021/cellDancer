@@ -94,9 +94,9 @@
 <li class="toctree-l1"><a class="reference internal" href="about.html">About celldancer</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="API.html">API - cellDancer key applications</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="celldancer.velocity_estimation.velocity.html">celldancer.velocity_estimation.velocity</a></li>
-<li class="toctree-l2"><a class="reference internal" href="celldancer.compute_cell_velocity.compute_cell_velocity.html">celldancer.compute_cell_velocity.compute_cell_velocity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="celldancer.compute_cell_velocity.compute.html">celldancer.compute_cell_velocity.compute</a></li>
 <li class="toctree-l2"><a class="reference internal" href="celldancer.pseudo_time.pseudo_time.html">celldancer.pseudo_time.pseudo_time</a></li>
-<li class="toctree-l2"><a class="reference internal" href="celldancer.embedding_kinetic_para.embedding_kinetic_para.html">celldancer.embedding_kinetic_para.embedding_kinetic_para</a></li>
+<li class="toctree-l2"><a class="reference internal" href="celldancer.embedding_kinetic_para.embedding.html">celldancer.embedding_kinetic_para.embedding</a></li>
 <li class="toctree-l2"><a class="reference internal" href="celldancer.plotting.gene.scatter_gene.html">celldancer.plotting.gene.scatter_gene</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">celldancer.plotting.cell.scatter_cell</a></li>
 </ul>
@@ -186,31 +186,30 @@
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ax</strong> (<cite>ax</cite>) – ax of plt.subplots()</p></li>
 <li><p><strong>cellDancer_df</strong> (<cite>pandas.DataFrame</cite>) – Data frame of velocity estimation, cell velocity, and pseudotime results. Columns=[‘cellIndex’, ‘gene_name’, ‘s0’, ‘u0’, ‘s1’, ‘u1’, ‘alpha’, ‘beta’, ‘gamma’, ‘loss’, ‘cellID’, ‘clusters’, ‘embedding1’, ‘embedding2’, ‘velocity1’, ‘velocity2’, ‘pseudotime’]</p></li>
-<li><p><strong>colors</strong> (<cite>list</cite>, <cite>dict</cite>, or <cite>str</cite>) – <cite>list</cite> -&gt; build a colormap dictionary for a list of cell type as input;
-<cite>dict</cite> -&gt; the customized color map dict of each cell type;
-<cite>str</cite> -&gt; one of {‘alpha’,’beta’,’gamma’,’spliced’,’unspliced’,’pseudotime’}.</p></li>
-<li><p><strong>custom_xlim</strong> (<cite>float</cite> (default: None)) – Set the x limits of the current axes.</p></li>
-<li><p><strong>custom_ylim</strong> (<cite>float</cite> (default: None)) – Set the y limits of the current axes.</p></li>
-<li><p><strong>vmin</strong> (<cite>float</cite> (default: None)) – Set the minimun color limits of the current image.</p></li>
-<li><p><strong>vmax</strong> (<cite>float</cite> (default: None)) – Set the maximum color limits of the current image.</p></li>
-<li><p><strong>alpha</strong> (<cite>float</cite> (default: 0.5)) – The alpha blending value, between 0 (transparent) and 1 (opaque).</p></li>
-<li><p><strong>s</strong> (<cite>float</cite> (default: 5)) – The marker size in points**2.</p></li>
-<li><p><strong>velocity</strong> (<cite>bool</cite> (default: False)) – True if velocity in cell level is to be plotted.</p></li>
-<li><p><strong>gene</strong> (<cite>str</cite> (default: None)) – The gene been selected for the plot of alpha, beta, gamma, spliced, or unspliced in embedding level.</p></li>
-<li><p><strong>legend</strong> (<cite>str</cite> (default: ‘off’)) – ‘off’ if the color map of cell legend is not to be plotted.
-‘only’ if to only plot the cell type legend.</p></li>
-<li><p><strong>colorbar</strong> (<cite>str</cite> (default: ‘on’)) – ‘on’ if the colorbar of of the plot of alpha, beta, gamma, spliced, or unspliced is to be shown.</p></li>
-<li><p><strong>min_mass</strong> (<cite>float</cite> (default: 2)) – Filter by using the isotropic gaussian kernel to display the grid. The less, the more arrows.</p></li>
-<li><p><strong>arrow_grid</strong> (<cite>tuple</cite> (default: (30,30))) – The size of the grid for the cell velocity to display.</p></li>
-<li><p><strong>save_path</strong> (<cite>str</cite> (default: None)) – Directory to save the plot.</p></li>
+<li><p><strong>colors</strong> (<cite>list</cite>, <cite>dict</cite>, or <cite>str</cite>) – When the input is a list: build a colormap dictionary for a list of cell type ;
+When the input is a dictionary: it is the customized color map dictionary of each cell type;
+When the input is a str: one of {‘alpha’, ‘beta’, ‘gamma’, ‘spliced’, ‘unspliced’, ‘pseudotime’} is used as input.</p></li>
+<li><p><strong>custom_xlim</strong> (<cite>float</cite> (optional, default: None)) – Set the x limit of the current axes.</p></li>
+<li><p><strong>custom_ylim</strong> (<cite>float</cite> (optional, default: None)) – Set the y limit of the current axes.</p></li>
+<li><p><strong>vmin</strong> (<cite>float</cite> (optional, default: None)) – Set the minimun color limit of the current image.</p></li>
+<li><p><strong>vmax</strong> (<cite>float</cite> (optional, default: None)) – Set the maximum color limit of the current image.</p></li>
+<li><p><strong>alpha</strong> (<cite>float</cite> (optional, default: 0.5)) – The alpha blending value, between 0 (transparent) and 1 (opaque).</p></li>
+<li><p><strong>s</strong> (<cite>float</cite> (optional, default: 5)) – The marker size.</p></li>
+<li><p><strong>velocity</strong> (<cite>bool</cite> (optional, default: False)) – <cite>True</cite> if plot velocity.</p></li>
+<li><p><strong>gene</strong> (<cite>str</cite> (optional, default: None)) – Gene name for plotting.</p></li>
+<li><p><strong>legend</strong> (<cite>str</cite> (optional, default: ‘off’)) – <cite>‘off’</cite> if the color map of cell legend is not plotted.
+<cite>‘only’</cite> if only plot the cell type legend.</p></li>
+<li><p><strong>colorbar</strong> (<cite>str</cite> (optional, default: ‘on’)) – <cite>‘on’</cite> if the colorbar of the plot of alpha, beta, gamma, spliced, or unspliced is to be shown. <cite>‘off’</cite> if the colorbar is not shown.</p></li>
+<li><p><strong>min_mass</strong> (<cite>float</cite> (optional, default: 2)) – Filter by using the isotropic gaussian kernel to display the arrow on grids. The less, the more arrows.</p></li>
+<li><p><strong>arrow_grid</strong> (<cite>tuple</cite> (optional, default: (30,30))) – The sparsity of the grids of velocity arrows. The larger, the more compact and more arrows to be shown.</p></li>
+<li><p><strong>save_path</strong> (<cite>str</cite> (optional, default: None)) – Path to save the plot.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><em>Returns the ax of the plot.</em></p></li>
-<li><p><cite>im</cite> (ax.scatter())</p></li>
-</ul>
-</p>
+<dd class="field-even"><p><strong>im</strong> – The ax of the plot.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>ax.scatter()</cite></p>
 </dd>
 </dl>
 </dd></dl>

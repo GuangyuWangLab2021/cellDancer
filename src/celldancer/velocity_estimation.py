@@ -581,30 +581,33 @@ def velocity( # use train_thread # change name to velocity estiminate
     ---------
     cell_type_u_s: `pandas.DataFrame`
         Data frame of raw data. Columns=['gene_name', 'u0' ,'s0' ,'cellID' ,'clusters' ,'embedding1' ,'embedding2']
-    gene_list: `list` (default: None)
-        Gene set selected to train. None if to estimate the velocity of all genes.
-    max_epoches: `int` (default: 200)
-        Stop training once this number of epochs is reached.
-    check_val_every_n_epoch: `int` (default: 10)
-        Check loss every n train epochs. 
-    patience: `int` (default: 3)
-        Number of checks with no improvement after which training will be stopped. Under the default configuration, 3 check happens after every training epoch. 
-    permutation_ratio: `float` (default: 0.125)
+    gene_list: `list` (optional, default: None)
+        Gene list for velocity estimation. `None` if to estimate the velocity of all genes.
+    max_epoches: `int` (optional, default: 200)
+        Stop to update network once this number of epochs is reached.
+    check_val_every_n_epoch: `int` (optional, default: 10)
+        Check loss every n train epochs.
+    patience: `int` (optional, default: 3)
+        Number of checks with no improvement after which training will be stopped.
+    permutation_ratio: `float` (optional, default: 0.125)
         Sampling ratio of cells in each epoch when training each gene.
-    speed_up: `bool` (default: True)
-        True if speed up by downsampling cells. False if to use all cells to train the model.
-    norm_u_s: `bool` (default: True)
-        True to normalize u0 and s0 if u0 or s0 of genes in this dataset that too high.
-    norm_cell_distribution: `bool` (default: True)
-        True if the bias of cell distribution is to be romoved on embedding space (many cell share same embedding position).
-    n_jobs: `int` (default: -1)
+    speed_up: `bool` (optional, default: True)
+        `True` if speed up by downsampling cells. False if to use all cells to train the model.
+    norm_u_s: `bool` (optional, default: True)
+        `True` if normalize unspliced (and spliced) reads by dividing max value of unspliced (and spliced) reads.
+    norm_cell_distribution: `bool` (optional, default: True)
+        `True` if the bias of cell distribution is to be romoved on embedding space (many cells share same embedding position).
+    n_jobs: `int` (optional, default: -1)
         The maximum number of concurrently running jobs.
-    save_path: `str` (default: 200)
-        The directory to save the result of velocity estimation.
+    save_path: `str` (optional, default: 200)
+        Path to save the result of velocity estimation.
 
     Returns
     -------
-    `loss_df` (pandas.DataFrame), `cellDancer_df` (pandas.DataFrame)
+    loss_df: `pandas.DataFrame`
+        The record of loss.
+    cellDancer_df: `pandas.DataFrame`
+        The result of velocity estimation.
     """
 
     # set output dir

@@ -17,14 +17,14 @@ from scipy import interpolate
 from matplotlib.pyplot import cm
 from matplotlib.colors import ListedColormap
 
-if __name__ == "__main__":# developer test
+if __name__ == "__main__":
     from diffusion import *
-    from compute_cell_velocity import compute_cell_velocity
+    from compute_cell_velocity import compute
     import cdplt
 else:
-    from celldancer.diffusion import *
-    from celldancer.compute_cell_velocity import compute_cell_velocity
-    import celldancer.cdplt as cdplt
+     from celldancer.diffusion import *
+     from celldancer.compute_cell_velocity import compute
+     import celldancer.cdplt as cdplt
     
 def compute_trajectory_displacement(traj):
     traj = np.array(traj)
@@ -40,7 +40,6 @@ def compute_trajectory_similarity(traj1, traj2, numPicks=10):
     '''
     Computes the similarity between two curves based on average distance of 
     a selection of closest pairs
-
     Input: 
     - numpy arrays (nsteps1, 2), (nsteps2, 2); nsteps1 >= nsteps2 
     - numPicks: number of representative points on the shorter curve traj2
@@ -157,7 +156,6 @@ def cell_fate_tuning(embedding, cell_clusters, n_neighbors=20):
     
     cell_clusters: dictionary of length n_clusters
         A dictionary of starting cell positions (cluster_size, 2) 
-
     n_neighbors: float
         
     Return
@@ -290,7 +288,6 @@ def recur_cell_time_assignment_intracluster(
     ----------
     unresolved_cell_time_cluster: dictionary {cellID : time}
         cellIDs and corresponding unresolved time for a specific cluster
-
     cell_time_subclusters: list of dictionaries {cellID : time}
         resolved cell time (yet to be adjusted between subclusters)
     
@@ -304,7 +301,6 @@ def recur_cell_time_assignment_intracluster(
     resolved_cell_time_cluster: dictionary
     
     cell_time_subclusters: list
-
     sorted_refPaths: list
         a list of longest trajectories used for cell time projection
     '''
@@ -491,28 +487,22 @@ def cell_time_assignment_intercluster(
     '''
     Consolidate cell time between clusters according to the intersection
     between cells from any two clusters.
-
     Assumption: No cyclic behavior between clusters. Else, return None.
     We construct a directed graph to detect cycles.
     CT --> inter-cluster time gap (transfer)
-
     Parameters
     ----------
     unresolved_cell_time: list
         a list of dictionary {cellID : time}
         cellIDs and corresponding unresolved time for all cells.
-
     cell_fate: dictionary
         {cell:cluster}
-
     cell_embedding: numpy ndarray
         all downsampled cell embedding
-
     Return
     ------
     resolved_cell_time_cluster: list
         a list of dictionaries {cellID : time}
-
     '''
 
     print("\nintercluster cell time adjustment")
@@ -766,7 +756,6 @@ def find_uniq_cell_pairs(pairs, distances):
     ----------
     pairs: tuple (np.where output format) 
     distances: 1d np.array <- pairwise distance 
-
     Return
     ------
     np.ndarray
