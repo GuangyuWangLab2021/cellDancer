@@ -644,7 +644,7 @@ def velocity(
     data_len = len(gene_list)
     
     id_ranges=list()
-    interval=n_jobs
+    interval=40
     for i in range(0,data_len,interval):
         idx_start=i
         if data_len<i+interval:
