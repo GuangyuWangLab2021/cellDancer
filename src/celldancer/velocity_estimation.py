@@ -24,7 +24,7 @@ import logging
 logging.getLogger("pytorch_lightning").setLevel(logging.WARNING)
 from .sampling import *
 
-class DNN_Module(nn.Module):
+class DNN_layer(nn.Module):
 
     """Define network structure.
     """
@@ -35,8 +35,8 @@ class DNN_Module(nn.Module):
         self.l2 = nn.Linear(h1, h2)
         self.l3 = nn.Linear(h2, 3)
 
-    def forward(self, u0, s0, alpha0, beta0, gamma0, dt):
-        input = torch.tensor(np.array([np.array(u0), np.array(s0)]).T)
+    def forward(self, unsplice, splice, alpha0, beta0, gamma0, dt):
+        input = torch.tensor(np.array([np.array(unsplice), np.array(splice)]).T)
         x = self.l1(input)
         x = F.leaky_relu(x)
         x = self.l2(x)
@@ -51,9 +51,9 @@ class DNN_Module(nn.Module):
         beta =  beta * beta0
         gamma = gamma * gamma0
 
-        u1 = u0 + (alphas - beta*u0)*dt
-        s1 = s0 + (beta*u0 - gamma*s0)*dt
-        return u1, s1, alphas, beta, gamma
+        unsplice_predict = unsplice + (alphas - beta*unsplice)*dt
+        splice_predict = splice + (beta*unsplice - gamma*splice)*dt
+        return unsplice_predict, splice_predict, alphas, beta, gamma
 
     def save(self, model_path):
         torch.save({
@@ -68,11 +68,11 @@ class DNN_Module(nn.Module):
         self.l2 = checkpoint["l2"]
         self.l3 = checkpoint["l3"]
 
-class deep_learning_module(nn.Module):
+class DNN_module(nn.Module):
     '''
     calculate loss function
-    load network "DNN_Module"
-    predict s1 u1
+    load network "DNN_layer"
+    predict splice_predict and unsplice_predict
     '''
     def __init__(self, module, n_neighbors=30):
         super().__init__()
@@ -80,8 +80,8 @@ class deep_learning_module(nn.Module):
         self.n_neighbors = n_neighbors
 
     def velocity_calculate(self, 
-                           u0, 
-                           s0, 
+                           unsplice, 
+                           splice, 
                            alpha0, 
                            beta0, 
                            gamma0,
@@ -97,7 +97,7 @@ class deep_learning_module(nn.Module):
         add embedding
         for real dataset
         calculate loss function
-        predict u1 s1 from network 
+        predict unsplice_predict splice_predict from network 
         '''
         #generate neighbor indices and expr dataframe
         points = np.array([embedding1.numpy(), embedding2.numpy()]).transpose()
@@ -106,22 +106,22 @@ class deep_learning_module(nn.Module):
         nbrs = NearestNeighbors(n_neighbors=self.n_neighbors, algorithm='ball_tree').fit(points)
         
         distances, indices = nbrs.kneighbors(points) # indices: row -> individe cell, col -> nearby cells, value -> index of cells, the fist col is the index of row
-        expr = pd.merge(pd.DataFrame(s0, columns=['s0']), pd.DataFrame(u0, columns=['u0']), left_index=True, right_index=True)
+        expr = pd.merge(pd.DataFrame(splice, columns=['splice']), pd.DataFrame(unsplice, columns=['unsplice']), left_index=True, right_index=True)
         if barcode is not None:
             expr.index = barcode
-        u0 = torch.tensor(expr['u0'])
-        s0 = torch.tensor(expr['s0'])
+        unsplice = torch.tensor(expr['unsplice'])
+        splice = torch.tensor(expr['splice'])
         indices = torch.tensor(indices)
-        u1, s1, alphas, beta, gamma = self.module(u0, s0, alpha0, beta0, gamma0, dt)
+        unsplice_predict, splice_predict, alphas, beta, gamma = self.module(unsplice, splice, alpha0, beta0, gamma0, dt)
 
-        def cosine_similarity(u0, s0, u1, s1, indices):
+        def cosine_similarity(unsplice, splice, unsplice_predict, splice_predict, indices):
             """Cost function
             Return:
                 list of cosine distance and a list of the index of the next cell
             """
             
-            uv, sv = u1-u0, s1-s0 # Velocity from (u0, s0) to (u1, s1)
-            unv, snv = u0[indices.T[1:]] - u0, s0[indices.T[1:]] - s0 # Velocity from (u0, s0) to its neighbors
+            uv, sv = unsplice_predict-unsplice, splice_predict-splice # Velocity from (unsplice, splice) to (unsplice_predict, splice_predict)
+            unv, snv = unsplice[indices.T[1:]] - unsplice, splice[indices.T[1:]] - splice # Velocity from (unsplice, splice) to its neighbors
             den = torch.sqrt(unv**2 + snv**2) * torch.sqrt(uv**2+sv**2)
             den[den==0] = -1
             cosine = torch.where(den!=-1, (unv*uv + snv*sv) / den, torch.tensor(1.)) # cosine: column -> individuel cell (cellI); row -> nearby cells of cell id ; value -> cosine between col and row cells
@@ -131,10 +131,8 @@ class deep_learning_module(nn.Module):
             cell_idx = torch.diag(indices[:, cosine_max_idx+1])
             return 1 - cosine_max, cell_idx
         
-        def trace_cost(u0, s0, u1, s1, idx,version):
-            '''
-            '''
-            uv, sv = u1-u0, s1-s0
+        def trace_cost(unsplice, splice, unsplice_predict, splice_predict, idx,version):
+            uv, sv = unsplice_predict-unsplice, splice_predict-splice
             tan = torch.where(sv!=1000000, uv/sv, torch.tensor(0.00001))
             atan_theta = torch.atan(tan) + torch.pi/2
             atan_theta2=atan_theta[idx]
@@ -146,34 +144,34 @@ class deep_learning_module(nn.Module):
                 
             return(cost)
 
-        def corrcoef_cost(alphas, u0, beta, s0):
-            corrcoef1 = torch.corrcoef(torch.tensor([alphas.detach().numpy(),u0.detach().numpy()]))[1,0]
-            corrcoef2 = torch.corrcoef(torch.tensor([beta.detach().numpy(), s0.detach().numpy()]))[1,0]
+        def corrcoef_cost(alphas, unsplice, beta, splice):
+            corrcoef1 = torch.corrcoef(torch.tensor([alphas.detach().numpy(),unsplice.detach().numpy()]))[1,0]
+            corrcoef2 = torch.corrcoef(torch.tensor([beta.detach().numpy(), splice.detach().numpy()]))[1,0]
             corrcoef = corrcoef1 + corrcoef2
             cost=torch.where(corrcoef>=torch.tensor(0.0), torch.tensor(0.0), torch.tensor(-corrcoef))
             return(cost)
             
         
         if trace_cost_ratio==0 and corrcoef_cost_ratio==0:
-            cost1 = cosine_similarity(u0, s0, u1, s1, indices)[0]
+            cost1 = cosine_similarity(unsplice, splice, unsplice_predict, splice_predict, indices)[0]
             cost_fin=torch.mean(cost1)
 
         else:
             # cosin cost
-            cost1,idx = cosine_similarity(u0, s0, u1, s1, indices)
+            cost1,idx = cosine_similarity(unsplice, splice, unsplice_predict, splice_predict, indices)
             cost1_normalize=(cost1-torch.min(cost1))/torch.max(cost1)
             cost1_mean = torch.mean(cost1_normalize)
 
             # trace cost
             if trace_cost_ratio>0:
-                cost2 = trace_cost(u0, s0, u1, s1, idx,"v2")
+                cost2 = trace_cost(unsplice, splice, unsplice_predict, splice_predict, idx,"v2")
                 cost2_normalize=(cost2-torch.min(cost2))/torch.max(cost2)
                 cost2_mean = torch.mean(cost2_normalize)
                 cost2_relu=(max((cost2_mean-cost2_cutoff), 0))
 
             # corrcoef cost
             if corrcoef_cost_ratio>0:
-                corrcoef_cost=corrcoef_cost(alphas, u0, beta, s0)
+                corrcoef_cost=corrcoef_cost(alphas, unsplice, beta, splice)
 
             # sum all cost
             cosin_cost_ratio=1-trace_cost_ratio-corrcoef_cost_ratio
@@ -181,17 +179,17 @@ class deep_learning_module(nn.Module):
                        trace_cost_ratio*cost2_relu + \
                        corrcoef_cost_ratio*corrcoef_cost
             
-        return cost_fin, u1, s1, alphas, beta, gamma
+        return cost_fin, unsplice_predict, splice_predict, alphas, beta, gamma
 
 
     def summary_para_validation(self, cost_mean): 
         loss_df = pd.DataFrame({'cost': cost_mean}, index=[0])
         return(loss_df)
 
-    def summary_para(self, u0, s0, u1, s1, alphas, beta, gamma, cost): 
-        cellDancer_df = pd.merge(pd.DataFrame(s0, columns=['s0']), pd.DataFrame(u0, columns=['u0']), left_index=True, right_index=True) 
-        cellDancer_df['s1'] = s1
-        cellDancer_df['u1'] = u1
+    def summary_para(self, unsplice, splice, unsplice_predict, splice_predict, alphas, beta, gamma, cost): 
+        cellDancer_df = pd.merge(pd.DataFrame(unsplice, columns=['unsplice']),pd.DataFrame(splice, columns=['splice']), left_index=True, right_index=True) 
+        cellDancer_df['unsplice_predict'] = unsplice_predict
+        cellDancer_df['splice_predict'] = splice_predict
         cellDancer_df['alpha'] = alphas
         cellDancer_df['beta'] = beta
         cellDancer_df['gamma'] = gamma
@@ -200,7 +198,7 @@ class deep_learning_module(nn.Module):
 
 class ltModule(pl.LightningModule):
     '''
-    tainn network using loss function "deep_learning_module"
+    train network using "DNN_module"
     '''
     def __init__(self, 
                 backbone, 
@@ -253,16 +251,16 @@ class ltModule(pl.LightningModule):
         
         '''
 
-        u0s, s0s, gene_names, u0maxs, s0maxs, embedding1s, embedding2s = batch
-        u0, s0, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
+        unsplices, splices, gene_names, unsplicemaxs, splicemaxs, embedding1s, embedding2s = batch
+        unsplice, splice, unsplicemax, splicemax, embedding1, embedding2  = unsplices[0], splices[0], unsplicemaxs[0], splicemaxs[0], embedding1s[0], embedding2s[0]
         
-        umax = u0max
-        smax = s0max
+        umax = unsplicemax
+        smax = splicemax
         alpha0 = np.float32(umax*self.initial_zoom)
         beta0 = np.float32(1.0)
         gamma0 = np.float32(umax/smax*self.initial_strech)
 
-        cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio)
+        cost, unsplice_predict, splice_predict, alphas, beta, gamma = self.backbone.velocity_calculate(unsplice, splice, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio)
         if self.cost_type=='average': # keep the window len <= check_val_every_n_epoch
             if len(self.cost_window)<self.average_cost_window_size:
                 self.cost_window.append(cost)
@@ -301,19 +299,17 @@ class ltModule(pl.LightningModule):
         '''
         steps after finished each epoch
         '''
-
         loss = torch.stack([x["loss"] for x in outputs]).mean()
         beta = torch.stack([x["beta"] for x in outputs]).mean()
         gamma = torch.stack([x["gamma"] for x in outputs]).mean()
 
-    def validation_step(self, batch, batch_idx):# name cannot be changed 
+    def validation_step(self, batch, batch_idx):
         '''
-        predict u1, s1 on the training dataset 
-        caculate every 10 times taining
+        predict unsplice_predict, splice_predict on the training dataset
         '''
 
-        u0s, s0s, gene_names, u0maxs, s0maxs, embedding1s, embedding2s = batch
-        u0, s0,gene_name, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], gene_names[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
+        unsplices, splices, gene_names, unsplicemaxs, splicemaxs, embedding1s, embedding2s = batch
+        unsplice, splice,gene_name, unsplicemax, splicemax, embedding1, embedding2  = unsplices[0], splices[0], gene_names[0], unsplicemaxs[0], splicemaxs[0], embedding1s[0], embedding2s[0]
         if self.current_epoch!=0:
             cost = self.get_loss.data.numpy()
             loss_df = self.backbone.summary_para_validation(cost)
@@ -325,19 +321,16 @@ class ltModule(pl.LightningModule):
                 self.validation_loss_df = self.validation_loss_df.append(loss_df)
 
     def test_step(self, batch, batch_idx):
-        '''
-        define test_step
-        '''
-        u0s, s0s, gene_names, u0maxs, s0maxs, embedding1s, embedding2s = batch
-        u0, s0, gene_name, u0max, s0max, embedding1, embedding2  = u0s[0], s0s[0], gene_names[0], u0maxs[0], s0maxs[0], embedding1s[0], embedding2s[0]
-        umax = u0max
-        smax = s0max
+        unsplices, splices, gene_names, unsplicemaxs, splicemaxs, embedding1s, embedding2s = batch
+        unsplice, splice, gene_name, unsplicemax, splicemax, embedding1, embedding2  = unsplices[0], splices[0], gene_names[0], unsplicemaxs[0], splicemaxs[0], embedding1s[0], embedding2s[0]
+        umax = unsplicemax
+        smax = splicemax
         alpha0 = np.float32(umax*2)
         beta0 = np.float32(1.0)
         gamma0 = np.float32(umax/smax)
-        cost, u1, s1, alphas, beta, gamma = self.backbone.velocity_calculate(u0, s0, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio)
+        cost, unsplice_predict, splice_predict, alphas, beta, gamma = self.backbone.velocity_calculate(unsplice, splice, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio)
         self.test_cellDancer_df= self.backbone.summary_para(
-            u0, s0, u1.data.numpy(), s1.data.numpy(), 
+            unsplice, splice, unsplice_predict.data.numpy(), splice_predict.data.numpy(), 
             alphas.data.numpy(), beta.data.numpy(), gamma.data.numpy(), 
             cost.data.numpy())
         
@@ -345,7 +338,7 @@ class ltModule(pl.LightningModule):
         self.test_cellDancer_df.insert(0, "cellIndex", self.test_cellDancer_df.index)
 
 
-class getItem(Dataset): # TO DO: Change to a suitable name
+class getItem(Dataset): 
     def __init__(self, data_fit=None, data_predict=None,datastatus="predict_dataset", permutation_ratio=0.1,norm_u_s=True,norm_cell_distribution=False): 
         self.data_fit=data_fit
         self.data_predict=data_predict
@@ -353,29 +346,29 @@ class getItem(Dataset): # TO DO: Change to a suitable name
         self.permutation_ratio=permutation_ratio
         self.gene_name=list(data_fit.gene_name.drop_duplicates())
         self.norm_u_s=norm_u_s
-        self.norm_max_u0=None
-        self.norm_max_s0=None
+        self.norm_max_unsplice=None
+        self.norm_max_splice=None
         self.norm_cell_distribution=norm_cell_distribution
 
-    def __len__(self):# name cannot be changed 
+    def __len__(self):
         return len(self.gene_name) # gene count
 
-    def __getitem__(self, idx):# name cannot be changed
+    def __getitem__(self, idx):
         gene_name = self.gene_name[idx]
 
         if self.datastatus=="fit_dataset":
-            data_fitting=self.data_fit[self.data_fit.gene_name==gene_name] # u0 & s0 for cells for one gene
+            data_fitting=self.data_fit[self.data_fit.gene_name==gene_name] # unsplice & splice for cells for one gene
             if self.norm_cell_distribution==True:    # select cells to train using norm_cell_distribution methods
-                u0 = data_fitting.u0
-                s0 = data_fitting.s0
-                u0max_fit = np.float32(max(u0))
-                s0max_fit = np.float32(max(s0))
-                u0 = np.round(u0/u0max_fit, 2)*u0max_fit
-                s0 = np.round(s0/s0max_fit, 2)*s0max_fit
-                upoints = np.unique(np.array([u0, s0]), axis=1)
-                u0 = upoints[0]
-                s0 = upoints[1]
-                data_fitting = pd.DataFrame({'gene_name':gene_name,'u0':u0, 's0':s0,'embedding1':u0,'embedding2':s0})
+                unsplice = data_fitting.unsplice
+                splice = data_fitting.splice
+                unsplicemax_fit = np.float32(max(unsplice))
+                splicemax_fit = np.float32(max(splice))
+                unsplice = np.round(unsplice/unsplicemax_fit, 2)*unsplicemax_fit
+                splice = np.round(splice/splicemax_fit, 2)*splicemax_fit
+                upoints = np.unique(np.array([unsplice, splice]), axis=1)
+                unsplice = upoints[0]
+                splice = upoints[1]
+                data_fitting = pd.DataFrame({'gene_name':gene_name,'unsplice':unsplice, 'splice':splice,'embedding1':unsplice,'embedding2':splice})
         
             # random sampling in each epoch
             if self.permutation_ratio==1:
@@ -385,24 +378,24 @@ class getItem(Dataset): # TO DO: Change to a suitable name
             else:
                 print('sampling ratio is wrong!')
         elif self.datastatus=="predict_dataset":
-            data_pred=self.data_predict[self.data_predict.gene_name==gene_name] # u0 & s0 for cells for one gene
+            data_pred=self.data_predict[self.data_predict.gene_name==gene_name] # unsplice & splice for cells for one gene
             data=data_pred
             
-        data_pred=self.data_predict[self.data_predict.gene_name==gene_name] # u0 & s0 for cells for one gene
+        data_pred=self.data_predict[self.data_predict.gene_name==gene_name] # unsplice & splice for cells for one gene
 
-        u0max = np.float32(max(data_pred["u0"]))
-        s0max = np.float32(max(data_pred["s0"]))
-        u0 = np.array(data.u0.copy().astype(np.float32))
-        s0 = np.array(data.s0.copy().astype(np.float32))
+        unsplicemax = np.float32(max(data_pred["unsplice"]))
+        splicemax = np.float32(max(data_pred["splice"]))
+        unsplice = np.array(data.unsplice.copy().astype(np.float32))
+        splice = np.array(data.splice.copy().astype(np.float32))
         if self.norm_u_s:
-            u0=u0/u0max
-            s0=s0/s0max
+            unsplice=unsplice/unsplicemax
+            splice=splice/splicemax
 
         # add embedding
         embedding1 = np.array(data.embedding1.copy().astype(np.float32))
         embedding2 = np.array(data.embedding2.copy().astype(np.float32))
 
-        return u0, s0, gene_name, u0max, s0max, embedding1, embedding2
+        return unsplice, splice, gene_name, unsplicemax, splicemax, embedding1, embedding2
 
 
 
@@ -445,14 +438,14 @@ def _train_thread(datamodule,
     torch.manual_seed(seed)
     random.seed(seed)
     np.random.seed(seed)
-    backbone = deep_learning_module(DNN_Module(100, 100))    # iniate network (DNN_Module) and loss function (DynamicModule)
+    backbone = DNN_module(DNN_layer(100, 100))    # iniate network (DNN_layer) and loss function (DynamicModule)
     model = ltModule(backbone=backbone)
 
     selected_data = datamodule.subset(data_indices)
 
-    u0, s0, this_gene_name, u0max, s0max, embedding1, embedding2=selected_data.fit_dataset.__getitem__(0)
+    unsplice, splice, this_gene_name, unsplicemax, splicemax, embedding1, embedding2=selected_data.fit_dataset.__getitem__(0)
 
-    data_df=pd.DataFrame({'u0':u0,'s0':s0,'embedding1':embedding1,'embedding2':embedding2})
+    data_df=pd.DataFrame({'unsplice':unsplice,'splice':splice,'embedding1':embedding1,'embedding2':embedding2})
     data_df['gene_name']=this_gene_name
 
     _, sampling_ixs_select_model, _ = downsampling_embedding(data_df, # for select model
@@ -503,18 +496,18 @@ def _train_thread(datamodule,
     cellDancer_df = model.test_cellDancer_df
 
     if norm_u_s:
-        cellDancer_df.s0=cellDancer_df.s0*s0max
-        cellDancer_df.u0=cellDancer_df.u0*u0max
-        cellDancer_df.s1=cellDancer_df.s1*s0max
-        cellDancer_df.u1=cellDancer_df.u1*u0max
-        cellDancer_df.beta=cellDancer_df.beta*u0max
-        cellDancer_df.gamma=cellDancer_df.gamma*s0max
+        cellDancer_df.unsplice=cellDancer_df.unsplice*unsplicemax
+        cellDancer_df.splice=cellDancer_df.splice*splicemax
+        cellDancer_df.unsplice_predict=cellDancer_df.unsplice_predict*unsplicemax
+        cellDancer_df.splice_predict=cellDancer_df.splice_predict*splicemax
+        cellDancer_df.beta=cellDancer_df.beta*unsplicemax
+        cellDancer_df.gamma=cellDancer_df.gamma*splicemax
 
     if(model_save_path != None):
         model.save(model_save_path)
     
     header_loss_df=['gene_name','epoch','loss']
-    header_cellDancer_df=['cellIndex','gene_name','s0','u0','s1','u1','alpha','beta','gamma','loss']
+    header_cellDancer_df=['cellIndex','gene_name','unsplice','splice','unsplice_predict','splice_predict','alpha','beta','gamma','loss']
     
     loss_df.to_csv(os.path.join(save_path,'TEMP', ('loss'+'_'+this_gene_name+'.csv')),header=header_loss_df,index=False)
     cellDancer_df.to_csv(os.path.join(save_path,'TEMP', ('celldancer_estimation_'+this_gene_name+'.csv')),header=header_cellDancer_df,index=False)
@@ -533,15 +526,15 @@ def build_datamodule(cell_type_u_s,
                    downsample_target_amount=None):
     
     '''
-    set fitting data, data to be predicted, and sampling ratio in fitting data
+    set fitting data, data to be predicted, and sampling ratio when fitting
     '''
     step_i=step[0]
     step_j=step[1]
     
     if gene_list is None:
-        data_df=cell_type_u_s[['gene_name', 'u0','s0','embedding1','embedding2','cellID']]
+        data_df=cell_type_u_s[['gene_name', 'unsplice','splice','embedding1','embedding2','cellID']]
     else:
-        data_df=cell_type_u_s[['gene_name', 'u0','s0','embedding1','embedding2','cellID']][cell_type_u_s.gene_name.isin(gene_list)]
+        data_df=cell_type_u_s[['gene_name', 'unsplice','splice','embedding1','embedding2','cellID']][cell_type_u_s.gene_name.isin(gene_list)]
 
     if speed_up:
         _, sampling_ixs, _ = downsampling_embedding(data_df,
@@ -561,7 +554,7 @@ def build_datamodule(cell_type_u_s,
     return(feed_data)
 
 
-def velocity( # use train_thread # change name to velocity estiminate
+def velocity(
     cell_type_u_s,
     gene_list=None,
     max_epoches=200, 
@@ -580,26 +573,26 @@ def velocity( # use train_thread # change name to velocity estiminate
     Arguments
     ---------
     cell_type_u_s: `pandas.DataFrame`
-        Data frame of raw data. Columns=['gene_name', 'u0' ,'s0' ,'cellID' ,'clusters' ,'embedding1' ,'embedding2']
-    gene_list: `list` (optional, default: None)
+        Data frame of raw data. Columns=['gene_name', 'unsplice', 'splice' ,'cellID' ,'clusters' ,'embedding1' ,'embedding2']
+    gene_list: optional, `list` (default: None)
         Gene list for velocity estimation. `None` if to estimate the velocity of all genes.
-    max_epoches: `int` (optional, default: 200)
+    max_epoches: optional, `int` (default: 200)
         Stop to update network once this number of epochs is reached.
-    check_val_every_n_epoch: `int` (optional, default: 10)
+    check_val_every_n_epoch: optional, `int` (default: 10)
         Check loss every n train epochs.
-    patience: `int` (optional, default: 3)
+    patience: optional, `int` (default: 3)
         Number of checks with no improvement after which training will be stopped.
-    permutation_ratio: `float` (optional, default: 0.125)
+    permutation_ratio: optional, `float` (default: 0.125)
         Sampling ratio of cells in each epoch when training each gene.
-    speed_up: `bool` (optional, default: True)
-        `True` if speed up by downsampling cells. False if to use all cells to train the model.
-    norm_u_s: `bool` (optional, default: True)
-        `True` if normalize unspliced (and spliced) reads by dividing max value of unspliced (and spliced) reads.
-    norm_cell_distribution: `bool` (optional, default: True)
+    speed_up: optional, `bool` (default: True)
+        `True` if speed up by downsampling cells. `False` if to use all cells to train the model.
+    norm_u_s: optional, `bool` (default: True)
+        `True` if normalize unsplice (and splice) reads by dividing max value of unsplice (and splice) reads.
+    norm_cell_distribution: optional, `bool` (default: True)
         `True` if the bias of cell distribution is to be romoved on embedding space (many cells share same embedding position).
-    n_jobs: `int` (optional, default: -1)
+    n_jobs: optional, `int` (default: -1)
         The maximum number of concurrently running jobs.
-    save_path: `str` (optional, default: 200)
+    save_path: optional, `str` (default: 200)
         Path to save the result of velocity estimation.
 
     Returns
@@ -651,7 +644,7 @@ def velocity( # use train_thread # change name to velocity estiminate
     data_len = len(gene_list)
     
     id_ranges=list()
-    interval=40
+    interval=n_jobs
     for i in range(0,data_len,interval):
         idx_start=i
         if data_len<i+interval:
@@ -659,6 +652,16 @@ def velocity( # use train_thread # change name to velocity estiminate
         else:
             idx_end=i+interval
         id_ranges.append((idx_start,idx_end))
+
+
+    print('Arranging genes for parallel job.')
+    if len(id_ranges)==1:
+        if id_ranges==1:
+            print(data_len,' gene was arranged to ',len(id_ranges),' portion.')
+        else:
+            print(data_len,' genes were arranged to ',len(id_ranges),' portion.')
+    else: 
+        print(data_len,' genes were arranged to ',len(id_ranges),' portions.')
     for id_range in tqdm(id_ranges,desc="Velocity Estimation", total=len(id_ranges)):
         gene_list_batch=gene_list[id_range[0]:id_range[1]]
         datamodule=build_datamodule(cell_type_u_s,speed_up,norm_u_s,permutation_ratio,norm_cell_distribution,gene_list=gene_list_batch)
@@ -719,13 +722,13 @@ def select_initial_net(gene, gene_downsampling, data_df):
     gene_u_s = gene_downsampling[gene_downsampling.gene_name==gene]
     gene_u_s_full = data_df[data_df.gene_name==gene]
     
-    s_max=np.max(gene_u_s.s0)
-    u_max = np.max(gene_u_s.u0)
+    s_max=np.max(gene_u_s.splice)
+    u_max = np.max(gene_u_s.unsplice)
     s_max_90per = 0.9*s_max
     u_max_90per = 0.9*u_max
     
     gene_u_s_full['position'] = 'position_cells'
-    gene_u_s_full.loc[(gene_u_s_full.s0>s_max_90per) & (gene_u_s_full.u0>u_max_90per), 'position'] = 'cells_corner'
+    gene_u_s_full.loc[(gene_u_s_full.splice>s_max_90per) & (gene_u_s_full.unsplice>u_max_90per), 'position'] = 'cells_corner'
 
     if gene_u_s_full.loc[gene_u_s_full['position']=='cells_corner'].shape[0]>0.001*gene_u_s_full.shape[0]:
         # model in circle shape

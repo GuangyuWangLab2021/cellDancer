@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from .colormap import *
 
-if __name__ == "__main__":# developer test
+if __name__ == "__main__":
     sys.path.append('..')
     from utilities import find_nn_neighbors, extract_from_df
 else:
@@ -26,54 +26,51 @@ def scatter_cell(
     vmax=None,
     alpha=0.5, 
     s = 5,
-    velocity=False,
     gene=None,
+    velocity=False,
     legend='off',
     colorbar='on',
     min_mass=2,
-    arrow_grid=(30,30),
-    save_path=None
+    arrow_grid=(30,30)
 ): 
 
-    """Plot the the cell velocity; or plot the parameters ('alpha', 'beta', 'gamma', 'spliced', 'unspliced', or 'pseudotime') of one gene in embedding level.
+    """Plot the the cell velocity; or plot the parameters ('alpha', 'beta', 'gamma', 'splice', 'unsplice', or 'pseudotime') of one gene in embedding level.
         
     Arguments
     ---------
     ax: `ax`
         ax of plt.subplots()
     cellDancer_df: `pandas.DataFrame`
-        Data frame of velocity estimation, cell velocity, and pseudotime results. Columns=['cellIndex', 'gene_name', 's0', 'u0', 's1', 'u1', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
+        Data frame of velocity estimation, cell velocity, and pseudotime results. Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
     colors: `list`, `dict`, or `str`
         When the input is a list: build a colormap dictionary for a list of cell type ;  
         When the input is a dictionary: it is the customized color map dictionary of each cell type; 
-        When the input is a str: one of {'alpha', 'beta', 'gamma', 'spliced', 'unspliced', 'pseudotime'} is used as input.
-    custom_xlim: `float` (optional, default: None)
+        When the input is a str: one of {'alpha', 'beta', 'gamma', 'splice', 'unsplice', 'pseudotime'} is used as input.
+    custom_xlim: optional, `float` (default: None)
         Set the x limit of the current axes.
-    custom_ylim: `float` (optional, default: None)
+    custom_ylim: optional, `float` (default: None)
         Set the y limit of the current axes.
-    vmin: `float` (optional, default: None)
+    vmin: optional, `float` (default: None)
         Set the minimun color limit of the current image.
-    vmax: `float` (optional, default: None)
+    vmax: optional, `float` (default: None)
         Set the maximum color limit of the current image.
-    alpha: `float` (optional, default: 0.5)
+    alpha: optional, `float` (default: 0.5)
         The alpha blending value, between 0 (transparent) and 1 (opaque).
-    s: `float` (optional, default: 5)
+    s: optional, `float` (default: 5)
         The marker size.
-    velocity: `bool` (optional, default: False)
-        `True` if plot velocity.
-    gene: `str` (optional, default: None)
+    gene: optional, `str` (default: None)
         Gene name for plotting.
-    legend: `str` (optional, default: 'off')
+    velocity: optional, `bool` (default: False)
+        `True` if plot velocity.
+    legend: optional, `str` (default: 'off')
         `'off'` if the color map of cell legend is not plotted. 
         `'only'` if only plot the cell type legend.
-    colorbar: `str` (optional, default: 'on')
-        `‘on’` if the colorbar of the plot of alpha, beta, gamma, spliced, or unspliced is to be shown. `'off'` if the colorbar is not shown.
-    min_mass: `float` (optional, default: 2)
+    colorbar: optional, `str` (default: 'on')
+        `‘on’` if the colorbar of the plot of alpha, beta, gamma, splice, or unsplice is to be shown. `'off'` if the colorbar is not shown.
+    min_mass: optional, `float` (default: 2)
         Filter by using the isotropic gaussian kernel to display the arrow on grids. The less, the more arrows.
-    arrow_grid: `tuple` (optional, default: (30,30))
-        The sparsity of the grids of velocity arrows. The larger, the more compact and more arrows to be shown.
-    save_path: `str` (optional, default: None)
-        Path to save the plot.
+    arrow_grid: optional, `tuple` (default: (30,30))
+        The sparsity of the grids of velocity arrows. The larger, the more compact and more arrows will be shown.
 
     Returns
     -------
@@ -114,9 +111,9 @@ def scatter_cell(
             
 
             cmap = LinearSegmentedColormap.from_list("mycmap", color_map_single_alpha_beta_gamma)
-        if colors in ['spliced', 'unspliced']:
+        if colors in ['splice', 'unsplice']:
             assert gene, '\nError! gene is required!\n'
-            colors = {'spliced':'s0', 'unspliced':'u0'}[colors]
+            colors = {'splice':'splice', 'unsplice':'unsplice'}[colors]
             cmap = LinearSegmentedColormap.from_list("mycmap", color_map_alpha_beta_gamma)
         if colors in ['pseudotime']:
             cmap = 'viridis'
@@ -158,19 +155,6 @@ def scatter_cell(
     if custom_ylim is not None:
         ax.set_ylim(custom_ylim[0], custom_ylim[1])
     
-    
-    if save_path is not None:
-        file_name_parts = ['embedding', attr, gene]
-        if velocity:
-            file_name_parts.insert(0, 'velocity')
-        
-        save_file_name = os.path.join(save_path, "_".join(file_name_parts)+'.pdf')
-        
-        print("saved the file as", save_file_name)
-        extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-        plt.savefig(save_file_name, 
-                bbox_inches=extent,
-                bbox_extra_artists=bbox_extra_artists)
     return im
 
 def grid_curve(
@@ -251,12 +235,10 @@ def grid_curve(
     XY_filtered, UZ_head_filtered, UZ_tail_filtered, UZ_head2_filtered, UZ_tail2_filtered, mass_filter, grs = calculate_two_end_grid(
         embedding_ds, velocity_embedding, smooth=0.8, steps=arrow_grid, min_mass=min_mass)
 
-    #######################################################
-    ############ connect two end grid to curve ############
-    #######################################################
+    # connect two end grid to curve
     n_curves = XY_filtered.shape[0]
     s_vals = np.linspace(0.0, 1.5, 15) # TODO check last
-    ############ get longest distance len and norm ratio ############
+    # get longest distance len and norm ratio
     XYM = XY_filtered
     UVT = UZ_tail_filtered
     UVH = UZ_head_filtered
@@ -289,10 +271,8 @@ def grid_curve(
         return(norm_ratio)
 
     norm_ratio = norm_arrow_display_ratio(XYM, UVT, UVH, UVT2, UVH2, grs, s_vals)
-    ############ end --- get longest distance len and norm ratio ############
 
-    ############ plot the curve arrow for cell velocity ############
-
+    # plot the curve arrow for cell velocity
     XYM = XY_filtered
     UVT = UZ_tail_filtered * norm_ratio
     UVH = UZ_head_filtered * norm_ratio
@@ -318,12 +298,11 @@ def grid_curve(
                         scale=1, linewidth=0, color='black', alpha=1, minlength=0, width=0.1)
 
     plot_cell_velocity_curve(XYM, UVT, UVH, UVT2, UVH2, s_vals)
-    ############ end --- plot the curve arrow for cell velocity ############
 
 
 def plot_kinetic_para(
-    cellDancer_df,
     kinetic_para,
+    cellDancer_df,
     gene=None,
     color_map=None,
     save_path=None,
@@ -336,7 +315,7 @@ def plot_kinetic_para(
     Arguments
     ---------
     cellDancer_df: `pandas.Dataframe`
-        Data frame of velocity estimation results. Columns=['cellIndex', 'gene_name', 's0', 'u0', 's1', 'u1', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2']
+        Data frame of velocity estimation results. Columns=['cellIndex', 'gene_name', 'splice', 'unsplice', 'splice_predict', 'unsplice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2']
     kinetic_para: `str`
         Which parameter is used to generate the embedding space, could be selected from {'alpha', 'beta', 'gamma', 'alpha_beta_gamma'}.
     gene: `str` (optional, default: None)
@@ -372,10 +351,10 @@ def plot_kinetic_para(
     else:
         onegene=cellDancer_df[cellDancer_df.gene_name==gene]
         plt.figure()
-        plt.scatter(umap_para[:,0], umap_para[:,1],c=np.log(onegene.s0+0.0001),s=15,alpha=1,edgecolor="none")
+        plt.scatter(umap_para[:,0], umap_para[:,1],c=np.log(onegene.splice+0.0001),s=15,alpha=1,edgecolor="none")
         plt.axis('square')
         plt.axis('off')
-        plt.colorbar(label=gene+" s0")
+        plt.colorbar(label=gene+" splice")
 
     if save_path is not None:
         plt.savefig(save_path,bbox_inches='tight',bbox_extra_artists=(lgd,))

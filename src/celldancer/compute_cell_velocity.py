@@ -30,18 +30,18 @@ def compute(
     Arguments
     ---------
     cellDancer_df: `pandas.DataFrame`
-        Data frame of velocity estimation results. Columns=['cellIndex', 'gene_name', 's0', 'u0', 's1', 'u1', 'alpha', 'beta', 'gamma', 'loss', 'cellID, 'clusters', 'embedding1', 'embedding2']
-    gene_list: `list` (optional, default: None)
+        Data frame of velocity estimation results. Columns=['cellIndex', 'gene_name', unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID, 'clusters', 'embedding1', 'embedding2']
+    gene_list: optional, `list` (default: None)
         Genes selected to calculate the cell velocity. None if all genes in the cellDancer_df is to be used.
-    speed_up: `tuple` (optional, default: (60,60))
+    speed_up: optional, `tuple` (default: (60,60))
         Speed up by giving the sampling grid to downsample cells. 
-        `None` use all cells to compute cell velocity. 
-    expression_scale: `str` (optional, default: None)
+        `None` if all cells are used to compute cell velocity. 
+    expression_scale: optional, `str` (default: None)
         `None` if no expression scale is to be used. 
         `'power10'` if the 10th power is been used to scale spliced and unspliced reads.
-    projection_neighbor_size: `int` (optional, default: '200')
+    projection_neighbor_size: optional, `int` (default: '200')
         The number of neighboring cells used for transition probability matrix for one cell.
-    projection_neighbor_choice: `str` (optional, default: 'embedding')
+    projection_neighbor_choice: optional, `str` (default: 'embedding')
         `'embedding'` if use the embedding to obtain the neighbors. 
         `'gene'` if use the spliced reads of all genes to obtain the neighbors.
 
@@ -77,7 +77,7 @@ def compute(
             gene expression matrix
         velocity_matrix: np.ndarray (ngenes, ncells)
         '''
-        # cell_matrix = np_s0[:,sampling_ixs]
+        # cell_matrix = np_splice[:,sampling_ixs]
         # velocity_matrix = np_dMatrix[:,sampling_ixs]
         sigma_corr = 0.05
         cell_matrix[np.isnan(cell_matrix)] = 0
@@ -111,14 +111,14 @@ def compute(
     cellDancer_df_input = cellDancer_df[
             cellDancer_df.gene_name.isin(gene_list)].reset_index(drop=True)
 
-    np_s0_all, np_dMatrix_all= data_reshape(cellDancer_df_input)
+    np_splice_all, np_dMatrix_all= data_reshape(cellDancer_df_input)
     print("(genes, cells): ", end="")
-    print(np_s0_all.shape)
-    n_genes, n_cells = np_s0_all.shape
+    print(np_splice_all.shape)
+    n_genes, n_cells = np_splice_all.shape
 
     # This creates a new dataframe
     data_df = cellDancer_df_input.loc[:, 
-            ['gene_name', 'u0', 's0', 'cellID','embedding1', 'embedding2']]
+            ['gene_name', 'unsplice', 'splice', 'cellID','embedding1', 'embedding2']]
     # random.seed(10)
     embedding_downsampling, sampling_ixs, knn_embedding = downsampling_embedding(data_df,
                                                                                  para='neighbors',
@@ -137,7 +137,7 @@ def compute(
             gene_list[0]][['embedding1', 'embedding2']]
     embedding = embedding.to_numpy()
     velocity_embedding = velocity_projection(
-            np_s0_all[:, sampling_ixs], 
+            np_splice_all[:, sampling_ixs], 
             np_dMatrix_all[:, sampling_ixs], 
             embedding[sampling_ixs, :], 
             knn_embedding)
@@ -186,14 +186,14 @@ def data_reshape(cellDancer_df): # pengzhi version
     cell_number = cellDancer_df[cellDancer_df['gene_name']==gene_names[0]].shape[0]
     cellDancer_df['index'] = np.tile(range(cell_number),len(gene_names))
 
-    s0_reshape = cellDancer_df.pivot(
-        index='gene_name', values='s0', columns='index')
-    s1_reshape = cellDancer_df.pivot(
-        index='gene_name', values='s1', columns='index')
-    dMatrix = s1_reshape-s0_reshape
-    np_s0_reshape = np.array(s0_reshape)
+    splice_reshape = cellDancer_df.pivot(
+        index='gene_name', values='splice', columns='index')
+    splice_predict_reshape = cellDancer_df.pivot(
+        index='gene_name', values='splice_predict', columns='index')
+    dMatrix = splice_predict_reshape-splice_reshape
+    np_splice_reshape = np.array(splice_reshape)
     np_dMatrix = np.array(dMatrix)
     np_dMatrix2 = np.sqrt(np.abs(np_dMatrix) + psc) * \
         np.sign(np_dMatrix)
-    return(np_s0_reshape, np_dMatrix2)
+    return(np_splice_reshape, np_dMatrix2)
 

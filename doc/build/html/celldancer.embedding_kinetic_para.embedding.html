@@ -184,9 +184,9 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>cellDancer_df</strong> (<cite>pandas.Dataframe</cite>) – Data frame of velocity estimation results. Columns=[‘cellIndex’, ‘gene_name’, ‘s0’, ‘u0’, ‘s1’, ‘u1’, ‘alpha’, ‘beta’, ‘gamma’, ‘loss’, ‘cellID’, ‘clusters’, ‘embedding1’, ‘embedding2’]</p></li>
-<li><p><strong>kinetic_para</strong> (<cite>str</cite>) – Which parameter is used to calculate embedding space, could be selected from {‘alpha’, ‘beta’, ‘gamma’, ‘alpha_beta_gamma’}.</p></li>
-<li><p><strong>umap_n</strong> (<cite>int</cite> (optional, default: 25)) – The size of local neighborhood (in terms of number of neighboring sample points) used for manifold approximation in UMAP.</p></li>
+<li><p><strong>cellDancer_df</strong> (<cite>pandas.Dataframe</cite>) – Data frame of velocity estimation results. Columns=[‘cellIndex’, ‘gene_name’, ‘unsplice’, ‘splice’, ‘unsplice_predict’, ‘splice_predict’, ‘alpha’, ‘beta’, ‘gamma’, ‘loss’, ‘cellID’, ‘clusters’, ‘embedding1’, ‘embedding2’]</p></li>
+<li><p><strong>kinetic_para</strong> (<cite>str</cite>) – Choose Which parameter is used to calculate embedding space, could be selected from {‘alpha’, ‘beta’, ‘gamma’, ‘alpha_beta_gamma’}.</p></li>
+<li><p><strong>umap_n</strong> (optional, <cite>int</cite> (default: 25)) – The size of local neighborhood (in terms of number of neighboring sample points) used for manifold approximation in UMAP.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>

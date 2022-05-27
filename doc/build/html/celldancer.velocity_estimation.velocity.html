@@ -184,17 +184,17 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>cell_type_u_s</strong> (<cite>pandas.DataFrame</cite>) – Data frame of raw data. Columns=[‘gene_name’, ‘u0’ ,’s0’ ,’cellID’ ,’clusters’ ,’embedding1’ ,’embedding2’]</p></li>
-<li><p><strong>gene_list</strong> (<cite>list</cite> (optional, default: None)) – Gene list for velocity estimation. <cite>None</cite> if to estimate the velocity of all genes.</p></li>
-<li><p><strong>max_epoches</strong> (<cite>int</cite> (optional, default: 200)) – Stop to update network once this number of epochs is reached.</p></li>
-<li><p><strong>check_val_every_n_epoch</strong> (<cite>int</cite> (optional, default: 10)) – Check loss every n train epochs.</p></li>
-<li><p><strong>patience</strong> (<cite>int</cite> (optional, default: 3)) – Number of checks with no improvement after which training will be stopped.</p></li>
-<li><p><strong>permutation_ratio</strong> (<cite>float</cite> (optional, default: 0.125)) – Sampling ratio of cells in each epoch when training each gene.</p></li>
-<li><p><strong>speed_up</strong> (<cite>bool</cite> (optional, default: True)) – <cite>True</cite> if speed up by downsampling cells. False if to use all cells to train the model.</p></li>
-<li><p><strong>norm_u_s</strong> (<cite>bool</cite> (optional, default: True)) – <cite>True</cite> if normalize unspliced (and spliced) reads by dividing max value of unspliced (and spliced) reads.</p></li>
-<li><p><strong>norm_cell_distribution</strong> (<cite>bool</cite> (optional, default: True)) – <cite>True</cite> if the bias of cell distribution is to be romoved on embedding space (many cells share same embedding position).</p></li>
-<li><p><strong>n_jobs</strong> (<cite>int</cite> (optional, default: -1)) – The maximum number of concurrently running jobs.</p></li>
-<li><p><strong>save_path</strong> (<cite>str</cite> (optional, default: 200)) – Path to save the result of velocity estimation.</p></li>
+<li><p><strong>cell_type_u_s</strong> (<cite>pandas.DataFrame</cite>) – Data frame of raw data. Columns=[‘gene_name’, ‘unsplice’, ‘splice’ ,’cellID’ ,’clusters’ ,’embedding1’ ,’embedding2’]</p></li>
+<li><p><strong>gene_list</strong> (optional, <cite>list</cite> (default: None)) – Gene list for velocity estimation. <cite>None</cite> if to estimate the velocity of all genes.</p></li>
+<li><p><strong>max_epoches</strong> (optional, <cite>int</cite> (default: 200)) – Stop to update network once this number of epochs is reached.</p></li>
+<li><p><strong>check_val_every_n_epoch</strong> (optional, <cite>int</cite> (default: 10)) – Check loss every n train epochs.</p></li>
+<li><p><strong>patience</strong> (optional, <cite>int</cite> (default: 3)) – Number of checks with no improvement after which training will be stopped.</p></li>
+<li><p><strong>permutation_ratio</strong> (optional, <cite>float</cite> (default: 0.125)) – Sampling ratio of cells in each epoch when training each gene.</p></li>
+<li><p><strong>speed_up</strong> (optional, <cite>bool</cite> (default: True)) – <cite>True</cite> if speed up by downsampling cells. <cite>False</cite> if to use all cells to train the model.</p></li>
+<li><p><strong>norm_u_s</strong> (optional, <cite>bool</cite> (default: True)) – <cite>True</cite> if normalize unsplice (and splice) reads by dividing max value of unsplice (and splice) reads.</p></li>
+<li><p><strong>norm_cell_distribution</strong> (optional, <cite>bool</cite> (default: True)) – <cite>True</cite> if the bias of cell distribution is to be romoved on embedding space (many cells share same embedding position).</p></li>
+<li><p><strong>n_jobs</strong> (optional, <cite>int</cite> (default: -1)) – The maximum number of concurrently running jobs.</p></li>
+<li><p><strong>save_path</strong> (optional, <cite>str</cite> (default: 200)) – Path to save the result of velocity estimation.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>

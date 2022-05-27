@@ -24,48 +24,45 @@ def scatter_gene(
     velocity=False,
     gene=None,
     legend='off',
-    arrow_grid = (15,15),
-    save_path=None):
+    arrow_grid = (15,15)):
 
-    """Plot the velocity (spliced-unspliced) of a gene, or plot the parameter ('alpha', 'beta', 'gamma', 'spliced', 'unspliced') in pseudotime, or customize the parameters in x-axis and y-axis of a gene.
+    """Plot the velocity (splice-unsplice) of a gene, or plot the parameter ('alpha', 'beta', 'gamma', 'splice', 'unsplice') in pseudotime, or customize the parameters in x-axis and y-axis of a gene.
         
     Arguments
     ---------
     ax: `ax of plt.subplots()`
         ax to add subplot.
     x: `str`
-        Set x axis as one of {'s0', 'u0', 'alpha', 'beta', 'gamma', 'pseudotime'}.
+        Set x axis as one of {'splice', 'unsplice', 'alpha', 'beta', 'gamma', 'pseudotime'}.
     y: `str`
-        Set y axis as one of {'s0', 'u0', 'alpha', 'beta', 'gamma', 'pseudotime'}.
+        Set y axis as one of {'splice', 'unsplice', 'alpha', 'beta', 'gamma', 'pseudotime'}.
     cellDancer_df: `pandas.DataFrame`
-        Data frame of velocity estimation, cell velocity, and pseudotime results. Columns=['cellIndex', 'gene_name', 's0', 'u0', 's1', 'u1', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
+        Data frame of velocity estimation, cell velocity, and pseudotime results. Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
     colors: `list`, `dict`, or `str`
         When input is a list: build a colormap dictionary for a list of cell type; 
         When input is a dictionary: the customized color map dictionary of each cell type; 
-        When input is a str: one of {'alpha', 'beta', 'gamma', 'spliced', 'unspliced', 'pseudotime'} is used as value of color.
-    custom_xlim: `float` (optional, default: None)
+        When input is a str: one of {'alpha', 'beta', 'gamma', 'splice', 'unsplice', 'pseudotime'} is used as value of color.
+    custom_xlim: optional, `float` (default: None)
         Set the x limit of the current axes.
-    custom_ylim: `float` (optional, default: None)
+    custom_ylim: optional, `float` (default: None)
         Set the y limit of the current axes.
-    vmin: `float` (optional, default: None)
+    vmin: optional, `float` (default: None)
         Set the minimun color limit of the current image.
-    vmax: `float` (optional, default: None)
+    vmax: optional, `float` (default: None)
         Set the maximum color limit of the current image.
-    alpha: `float` (optional, default: 0.5)
+    alpha: optional, `float` (default: 0.5)
         The alpha blending value, between 0 (transparent) and 1 (opaque).
-    s: `float` (optional, default: 5)
+    s: optional, `float` (default: 5)
         The marker size.
-    velocity: `bool` (optional, default: False)
+    velocity: optional, `bool` (default: False)
         `True` if velocity in gene level is to be plotted.
-    gene: `str` (optional, default: None)
-        Gene name for the plot of alpha, beta, gamma, spliced, unspliced or pseudotime in embedding level.
-    legend: `str` (optional, default: 'off')
+    gene: optional, `str` (default: None)
+        Gene name for the plot of alpha, beta, gamma, splice, unsplice or pseudotime in embedding level.
+    legend: optional, `str` (default: 'off')
         `‘off’` if the color map of cell type legend is not to be plotted;
         `‘only’` if only plot the cell type legend.
-    arrow_grid: `tuple` (optional, default: (15,15))
-        The sparsity of the grids of velocity arrows. The larger, the more compact and more arrows to be shown.
-    save_path: `str` (optional, default: None)
-        Path to save the plot.
+    arrow_grid: optional, `tuple` (default: (15,15))
+        The sparsity of the grids of velocity arrows. The larger, the more compact and more arrows will be shown.
 
     Returns
     -------
@@ -103,9 +100,9 @@ def scatter_gene(
         if colors in ['alpha', 'beta', 'gamma']:
             assert gene, '\nError! gene is required!\n'
             cmap = ListedColormap(zissou2)
-        if colors in ['spliced', 'unspliced']:
+        if colors in ['splice', 'unsplice']:
             assert gene, '\nError! gene is required!\n'
-            colors = {'spliced':'s0', 'unspliced':'u0'}[colors]
+            colors = {'splice':'splice', 'unsplice':'unsplice'}[colors]
             cmap = ListedColormap(fireworks3)
         if colors in ['pseudotime']:
             cmap = 'viridis'
@@ -119,10 +116,10 @@ def scatter_gene(
         c = '#95D9EF'
     
     
-    if x in ['spliced', 'unspliced']:
-        x = {'spliced':'s0', 'unspliced':'u0'}[x]
-    if y in ['spliced', 'unspliced']:
-        y = {'spliced':'s0', 'unspliced':'u0'}[y]
+    if x in ['splice', 'unsplice']:
+        x = {'splice':'splice', 'unsplice':'unsplice'}[x]
+    if y in ['splice', 'unsplice']:
+        y = {'splice':'splice', 'unsplice':'unsplice'}[y]
 
 
     assert gene, '\nError! gene is required!\n'
@@ -144,8 +141,8 @@ def scatter_gene(
 
                                  
     if velocity:
-        assert (x,y) in [('u0', 's0'), ('s0', 'u0')]
-        u_s = extract_from_df(cellDancer_df, ['u0','s0','u1','s1'], gene)
+        assert (x,y) in [('unsplice', 'splice'), ('splice', 'unsplice')]
+        u_s = extract_from_df(cellDancer_df, ['unsplice','splice','unsplice_predict','splice_predict'], gene)
         sampling_idx=sampling_neighbors(u_s[:,0:2], step=arrow_grid, percentile=15) # Sampling
         u_s_downsample = u_s[sampling_idx,0:4]
 
@@ -154,18 +151,6 @@ def scatter_gene(
                    u_s_downsample[:, 3]-u_s_downsample[:, 1], 
                    u_s_downsample[:, 2]-u_s_downsample[:, 0],
                    angles='xy', clim=(0., 1.))
-            
-    if save_path is not None:
-        file_name_parts = [y+'-'+x, 'coloring-'+attr, gene]
-        if velocity:
-            file_name_parts.insert(0, 'velocity')
-
-        save_file_name = os.path.join(save_path, "_".join(file_name_parts)+'.pdf')
-
-        print("saved the file as", save_file_name)
-        plt.savefig(save_file_name,
-                bbox_inches='tight',
-                bbox_extra_artists=bbox_extra_artists)
 
     return ax
 

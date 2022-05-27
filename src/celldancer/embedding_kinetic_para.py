@@ -11,10 +11,10 @@ def embedding(
     Arguments
     ---------
     cellDancer_df: `pandas.Dataframe`
-        Data frame of velocity estimation results. Columns=['cellIndex', 'gene_name', 's0', 'u0', 's1', 'u1', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2']
+        Data frame of velocity estimation results. Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2']
     kinetic_para: `str`
-        Which parameter is used to calculate embedding space, could be selected from {'alpha', 'beta', 'gamma', 'alpha_beta_gamma'}.
-    umap_n: `int` (optional, default: 25)
+        Choose Which parameter is used to calculate embedding space, could be selected from {'alpha', 'beta', 'gamma', 'alpha_beta_gamma'}.
+    umap_n: optional, `int` (default: 25)
         The size of local neighborhood (in terms of number of neighboring sample points) used for manifold approximation in UMAP.
 
     Returns
