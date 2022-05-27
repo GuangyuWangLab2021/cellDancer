@@ -102,7 +102,7 @@ def scatter_gene(
             cmap = ListedColormap(zissou2)
         if colors in ['splice', 'unsplice']:
             assert gene, '\nError! gene is required!\n'
-            colors = {'splice':'splice', 'unsplice':'unsplice'}[colors]
+            #colors = {'splice':'splice', 'unsplice':'unsplice'}[colors]
             cmap = ListedColormap(fireworks3)
         if colors in ['pseudotime']:
             cmap = 'viridis'
@@ -116,10 +116,10 @@ def scatter_gene(
         c = '#95D9EF'
     
     
-    if x in ['splice', 'unsplice']:
-        x = {'splice':'splice', 'unsplice':'unsplice'}[x]
-    if y in ['splice', 'unsplice']:
-        y = {'splice':'splice', 'unsplice':'unsplice'}[y]
+#    if x in ['splice', 'unsplice']:
+#        x = {'splice':'splice', 'unsplice':'unsplice'}[x]
+#    if y in ['splice', 'unsplice']:
+#        y = {'splice':'splice', 'unsplice':'unsplice'}[y]
 
 
     assert gene, '\nError! gene is required!\n'
