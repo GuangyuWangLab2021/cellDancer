@@ -921,7 +921,7 @@ def assign_all_cell_fate(embedding, sampling_ixs, cell_fate):
 
 
 def compute_all_cell_time(
-        load_cellDancer, 
+        cellDancer_df, 
         embedding, 
         cell_embedding, 
         path_clusters, 
@@ -1049,16 +1049,16 @@ def compute_all_cell_time(
     print("There are %d cells." % (len(all_cell_fate)))
     plot_cell_clusters(all_cell_fate, embedding)
     
-    # write cell time to load_cellDancer
-    gene_names = load_cellDancer['gene_name'].drop_duplicates().to_list()
-    if len(load_cellDancer) == len(gene_names) * len(all_cell_time):
-        load_cellDancer['pseudotime'] = np.tile(all_cell_time, len(gene_names))
-        load_cellDancer = load_cellDancer.astype({"pseudotime": float})
-    return load_cellDancer
+    # write cell time to cellDancer_df
+    gene_names = cellDancer_df['gene_name'].drop_duplicates().to_list()
+    if len(cellDancer_df) == len(gene_names) * len(all_cell_time):
+        cellDancer_df['pseudotime'] = np.tile(all_cell_time, len(gene_names))
+        cellDancer_df = cellDancer_df.astype({"pseudotime": float})
+    return cellDancer_df
 
 
 def pseudo_time(
-        load_cellDancer, 
+        cellDancer_df, 
         grid, 
         dt, 
         t_total, 
@@ -1066,22 +1066,22 @@ def pseudo_time(
         psrng_seeds_diffusion=None,
         activate_umap_paths_divider=False,
         n_jobs = -1,
-        downsample_step=(60, 60), 
+        speed_up=(60, 60), 
         n_paths=5,
         save=False, 
         output_path=None):
 
     start_time = time.time()
 
-    gene_choice = load_cellDancer[~load_cellDancer['velocity1'].isna()]['gene_name']
+    gene_choice = cellDancer_df[~cellDancer_df['velocity1'].isna()]['gene_name']
     gene_choice = gene_choice.drop_duplicates()
     one_gene = gene_choice.to_list()[0]
-    embedding = load_cellDancer[load_cellDancer['gene_name'] == 
+    embedding = cellDancer_df[cellDancer_df['gene_name'] == 
             one_gene][['embedding1', 'embedding2']]
     embedding = embedding.to_numpy()
 
     # This could be problematic if it's not in the gene_choice
-    velocity_embedding = load_cellDancer[load_cellDancer.gene_name ==
+    velocity_embedding = cellDancer_df[cellDancer_df.gene_name ==
             one_gene][['velocity1', 'velocity2']].dropna()
     sampling_ixs = velocity_embedding.index
 
@@ -1092,10 +1092,10 @@ def pseudo_time(
 
     
     if activate_umap_paths_divider:
-        load_cellDancer = cdplt.cell.calculate_para_umap(
-                load_cellDancer, 'alpha_beta_gamma')
+        cellDancer_df = cdplt.cell.calculate_para_umap(
+                cellDancer_df, 'alpha_beta_gamma')
 
-        abr_umap = load_cellDancer[load_cellDancer['gene_name'] ==
+        abr_umap = cellDancer_df[cellDancer_df['gene_name'] ==
                 one_gene][['alpha_beta_gamma_umap1', 'alpha_beta_gamma_umap2']]
         _, normalized_abr_umap = embedding_normalization(
                 abr_umap.loc[sampling_ixs], abr_umap, mode='minmax', NORM_ALL_CELLS=True)
@@ -1189,8 +1189,8 @@ def pseudo_time(
 
     # NNN show path clusters
     #plot_path_clusters(path_clusters, cell_clusters, cell_embedding)    
-    load_cellDadncer = compute_all_cell_time(
-        load_cellDancer,
+    cellDancer_df = compute_all_cell_time(
+        cellDancer_df,
         normalized_embedding, 
         cell_embedding, 
         path_clusters, 
@@ -1199,7 +1199,7 @@ def pseudo_time(
         cell_grid_idx=cell_grid_idx, 
         grid_mass=grid_mass, 
         sampling_ixs=sampling_ixs, 
-        step=downsample_step,
+        step=speed_up,
         dt=dt, 
         t_total=t_total, 
         n_repeats = n_repeats, 
@@ -1221,27 +1221,27 @@ def pseudo_time(
             outfile = outname
 
         print("\nExporting data to:\n ", outfile)
-        load_cellDancer.to_csv(outfile, index=False)
-    return load_cellDancer
+        cellDancer_df.to_csv(outfile, index=False)
+    return cellDancer_df
 
     
 
 
 # TOREMOVE
-# deprecated since I'm going to get load_cellDancer as input.
+# deprecated since I'm going to get cellDancer_df as input.
 def load_velocity(detail_result_path, n_neighbors, step):
     detail_files = glob.iglob(os.path.join(detail_result_path, '*detail*.csv'))
     lcd = list()
     for f in detail_files:
-        load_cellDancer_temp = pd.read_csv(f)
-        load_cellDancer_temp.rename(columns = {'Unnamed: 0':'cellIndex'}, inplace = True)
-        load_cellDancer_temp = load_cellDancer_temp.sort_values(by = ['gene_name', 'cellIndex'], ascending = [True, True])
-        lcd.append(load_cellDancer_temp)
-    load_cellDancer = pd.concat(lcd)
+        cellDancer_df_temp = pd.read_csv(f)
+        cellDancer_df_temp.rename(columns = {'Unnamed: 0':'cellIndex'}, inplace = True)
+        cellDancer_df_temp = cellDancer_df_temp.sort_values(by = ['gene_name', 'cellIndex'], ascending = [True, True])
+        lcd.append(cellDancer_df_temp)
+    cellDancer_df = pd.concat(lcd)
     
-    gene_choice=list(set(load_cellDancer.gene_name))
+    gene_choice=list(set(cellDancer_df.gene_name))
     compute_cell_velocity(
-        load_cellDancer=load_cellDancer,
+        cellDancer_df=cellDancer_df,
         gene_list=gene_choice,
         mode="gene",
         n_neighbors=n_neighbors,

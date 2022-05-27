@@ -74,16 +74,16 @@ def velocity_normalization(downsampled_vel, all_vel=None, mode="max", NORM_ALL_C
         return em
     
 
-def discretize(coordinate, xmin, xmax, steps, capping=False):
+def discretize(coordinate, xmin, xmax, n_grids, capping=False):
     '''
     '''
     grid_size = np.array(xmax) - np.array(xmin)
-    grid_size = grid_size / np.array(steps)
+    grid_size = grid_size / np.array(n_grids)
 
     grid_idx = np.int64(np.floor((coordinate-xmin)/grid_size))
     
     if capping:
-        grid_idx = np.where(grid_idx > steps, steps, grid_idx)
+        grid_idx = np.where(grid_idx > n_grids, n_grids, grid_idx)
         grid_idx = np.where(grid_idx <0, 0, grid_idx)
     
     grid_coor = xmin + grid_size * (grid_idx+0.5)
@@ -95,24 +95,24 @@ def generate_grid(
         embedding, 
         velocity_embedding, 
         abr_umap = None, 
-        steps = None):
+        n_grids = None):
 
     xmin = np.min(cell_embedding, axis=0)
     xmax = np.max(cell_embedding, axis=0)
-    steps = np.array(steps, dtype=int)
+    n_grids = np.array(n_grids, dtype=int)
 
     cell_grid_idx, cell_grid_coor = discretize(cell_embedding, 
             xmin=xmin, 
             xmax=xmax, 
-            steps=steps)
+            n_grids=n_grids)
 
-    # The actual steps need to allow a leeway +1 in each dimension.
-    mesh = np.zeros(np.append(steps+1,len(steps)))
+    # The actual n_grids need to allow a leeway +1 in each dimension.
+    mesh = np.zeros(np.append(n_grids+1,len(n_grids)))
 
-    cnt = np.zeros(steps+1)
+    cnt = np.zeros(n_grids+1)
     for index in range(cell_grid_idx.shape[0]):
         grid_index = cell_grid_idx[index]
-        if np.any(grid_index > steps) or np.any(grid_index < 0):
+        if np.any(grid_index > n_grids) or np.any(grid_index < 0):
             continue
         grid_index = toTuple(grid_index)
         mesh[grid_index] += velocity_embedding[index]
@@ -121,17 +121,17 @@ def generate_grid(
     mesh = np.divide(mesh, cnt, out=np.zeros_like(mesh), where=cnt>0.1)
     
     # the all cell embedding is used to generate mass
-    mass = np.zeros(steps+1)
+    mass = np.zeros(n_grids+1)
     all_cells_grid_idx, all_cells_grid_coor = \
-            discretize(embedding, xmin=xmin, xmax=xmax, steps=steps)
+            discretize(embedding, xmin=xmin, xmax=xmax, n_grids=n_grids)
     n_cells = all_cells_grid_idx.shape[0]
 
     for index in range(n_cells):
         all_cells_grid_index = all_cells_grid_idx[index]
         
-        # mass outside the grid is unneeded.
-        if np.any(all_cells_grid_index > steps) or np.any(all_cells_grid_index < 0):
-            pass
+        # mass outside the grid is not needed.
+        if np.any(all_cells_grid_index > n_grids) or np.any(all_cells_grid_index < 0):
+            continue
         all_cells_grid_index = toTuple(all_cells_grid_index)
         mass[all_cells_grid_index] += 1
 
@@ -141,7 +141,7 @@ def generate_grid(
         n_umap_dims = all_cells_grid_idx.shape[-1]
         for index in range(n_cells):
             all_cells_grid_index = all_cells_grid_idx[index]
-            if np.any(all_cells_grid_index > steps) or np.any(all_cells_grid_index < 0):
+            if np.any(all_cells_grid_index > n_grids) or np.any(all_cells_grid_index < 0):
                 all_cells_grid_index = toTuple(all_cells_grid_index)
                 grid_umap[all_cells_grid_index] = np.full((1,n_umap_dims), np.NAN)
                 pass
@@ -337,14 +337,14 @@ def diffusion_off_grid_wallbound(
     
     XMIN = np.min(cell_embedding, axis=0)
     XMAX = np.max(cell_embedding, axis=0)
-    STEPS=(vel.shape[0]-1,vel.shape[1]-1)
+    N_GRIDS=(vel.shape[0]-1,vel.shape[1]-1)
 
     # lower 5% nonzero mass set to 0.
     MAX_IGNORED_MASS= np.percentile(grid_mass[grid_mass>0], 5)
     
     def no_cells_around(xcur, xcur_d, vcur):
         xnxt = xcur + vcur*dt
-        xnxt_d, dummy = discretize(xnxt, xmin=XMIN, xmax=XMAX, steps=STEPS)
+        xnxt_d, dummy = discretize(xnxt, xmin=XMIN, xmax=XMAX, n_grids=N_GRIDS)
         try:
             mass = grid_mass[xnxt_d[0], xnxt_d[1]]
         except IndexError:
@@ -352,7 +352,7 @@ def diffusion_off_grid_wallbound(
         return mass <= MAX_IGNORED_MASS
    
     x0 = init
-    x0_d, dummy = discretize(x0, xmin=XMIN, xmax=XMAX, steps=STEPS)
+    x0_d, dummy = discretize(x0, xmin=XMIN, xmax=XMAX, n_grids=N_GRIDS)
     v0 = vel[x0_d[0],x0_d[1]]
     v0 = velocity_add_random(v0, THETA)
     trajectory = [x0]
@@ -377,7 +377,7 @@ def diffusion_off_grid_wallbound(
                 
         else:
             x = x0 + v0*dt
-            x_d, dummy = discretize(x, xmin=XMIN, xmax=XMAX, steps=STEPS)
+            x_d, dummy = discretize(x, xmin=XMIN, xmax=XMAX, n_grids=N_GRIDS)
             if (pdm is None) or (pdm[toTuple(x0_d)+toTuple(x_d)]):
                 try:
                     v = vel[x_d[0],x_d[1]]
@@ -447,14 +447,14 @@ def diffusion_on_grid_wallbound(
     
     XMIN = np.min(cell_embedding, axis=0)
     XMAX = np.max(cell_embedding, axis=0)
-    STEPS=(vel.shape[0]-1,vel.shape[1]-1)
+    N_GRIDS=(vel.shape[0]-1,vel.shape[1]-1)
     
     # lower 5% nonzero mass set to 0.
     MAX_IGNORED_MASS= np.percentile(grid_mass[grid_mass>0],5)
 
     def no_cells_around(xcur, xcur_d, vcur):
         xnxt = xcur + vcur*dt
-        xnxt_d, dummy = discretize(xnxt, xmin=XMIN, xmax=XMAX, steps=STEPS)
+        xnxt_d, dummy = discretize(xnxt, xmin=XMIN, xmax=XMAX, n_grids=N_GRIDS)
         try:
             mass = grid_mass[xnxt_d[0], xnxt_d[1]]
         except IndexError:
@@ -462,7 +462,7 @@ def diffusion_on_grid_wallbound(
         return mass < MAX_IGNORED_MASS
    
     x0 = init
-    x0_d, x0_d_coor = discretize(x0, xmin=XMIN, xmax=XMAX, steps=STEPS)
+    x0_d, x0_d_coor = discretize(x0, xmin=XMIN, xmax=XMAX, n_grids=N_GRIDS)
     v0 = vel[x0_d[0],x0_d[1]]
     v0 = velocity_add_random(v0, THETA)
     trajectory = [x0_d_coor]
@@ -487,7 +487,7 @@ def diffusion_on_grid_wallbound(
                 
         else:
             x = x0_d_coor + v0*dt
-            x_d, x_d_coor = discretize(x, xmin=XMIN, xmax=XMAX, steps=STEPS)
+            x_d, x_d_coor = discretize(x, xmin=XMIN, xmax=XMAX, n_grids=N_GRIDS)
             try:
                 v = vel[x_d[0],x_d[1]]
                 v = velocity_add_random(v, THETA)
@@ -575,8 +575,8 @@ def run_diffusion(
         init_cell = list(range(n_cells))
 
     embedding_range = cell_embedding.max(axis=0) - cell_embedding.min(axis=0)
-    steps = np.array([vel.shape[0], vel.shape[1]])
-    grid_size = embedding_range/steps
+    n_grids = np.array([vel.shape[0], vel.shape[1]])
+    grid_size = embedding_range/n_grids
     
     n_trajs = 0 
     for i in init_cell:
