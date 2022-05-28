@@ -6,14 +6,14 @@ from sklearn.neighbors import NearestNeighbors
 import matplotlib.pyplot as plt
 
 
-def sampling_neighbors(gene_u0_s0,step=(30,30),percentile=25):
+def sampling_neighbors(gene_unsplice_splice,step=(30,30),percentile=25):
 
     from scipy.stats import norm
     def gaussian_kernel(X, mu = 0, sigma=1):
         return np.exp(-(X - mu)**2 / (2*sigma**2)) / np.sqrt(2*np.pi*sigma**2)
     grs = []
-    for dim_i in range(gene_u0_s0.shape[1]):
-        m, M = np.min(gene_u0_s0[:, dim_i]), np.max(gene_u0_s0[:, dim_i])
+    for dim_i in range(gene_unsplice_splice.shape[1]):
+        m, M = np.min(gene_unsplice_splice[:, dim_i]), np.max(gene_unsplice_splice[:, dim_i])
         m = m - 0.025 * np.abs(M - m)
         M = M + 0.025 * np.abs(M - m)
         gr = np.linspace(m, M, step[dim_i])
@@ -26,8 +26,8 @@ def sampling_neighbors(gene_u0_s0,step=(30,30),percentile=25):
     
     nn = NearestNeighbors()
 
-    neighbors_1 = min((gene_u0_s0[:,0:2].shape[0]-1), 20)
-    nn.fit(gene_u0_s0[:,0:2])
+    neighbors_1 = min((gene_unsplice_splice[:,0:2].shape[0]-1), 20)
+    nn.fit(gene_unsplice_splice[:,0:2])
     dist, ixs = nn.kneighbors(gridpoints_coordinates, neighbors_1)
 
     ix_choice = ixs[:,0].flat[:]
@@ -35,19 +35,19 @@ def sampling_neighbors(gene_u0_s0,step=(30,30),percentile=25):
 
     nn = NearestNeighbors()
 
-    neighbors_2 = min((gene_u0_s0[:,0:2].shape[0]-1), 20)
-    nn.fit(gene_u0_s0[:,0:2])
-    dist, ixs = nn.kneighbors(gene_u0_s0[ix_choice, 0:2], neighbors_2)
+    neighbors_2 = min((gene_unsplice_splice[:,0:2].shape[0]-1), 20)
+    nn.fit(gene_unsplice_splice[:,0:2])
+    dist, ixs = nn.kneighbors(gene_unsplice_splice[ix_choice, 0:2], neighbors_2)
     
     density_extimate = gaussian_kernel(dist, mu=0, sigma=0.5).sum(1)
     bool_density = density_extimate > np.percentile(density_extimate, percentile)
     ix_choice = ix_choice[bool_density]
     return(ix_choice)
 
-def sampling_inverse(gene_u0_s0,target_amount=500):
-    u0 = gene_u0_s0[:,0]
-    s0 = gene_u0_s0[:,1]
-    values = np.vstack([u0,s0])
+def sampling_inverse(gene_unsplice_splice,target_amount=500):
+    unsplice = gene_unsplice_splice[:,0]
+    splice = gene_unsplice_splice[:,1]
+    values = np.vstack([unsplice,splice])
     kernel = scipy.stats.gaussian_kde(values)
     p = kernel(values)
     # p2 = (1/p)/sum(1/p)
@@ -57,10 +57,10 @@ def sampling_inverse(gene_u0_s0,target_amount=500):
     idx_choice = r.rvs(size=target_amount)
     return(idx_choice)
 
-def sampling_circle(gene_u0_s0,target_amount=500):
-    u0 = gene_u0_s0[:,0]
-    s0 = gene_u0_s0[:,1]
-    values = np.vstack([u0,s0])
+def sampling_circle(gene_unsplice_splice,target_amount=500):
+    unsplice = gene_unsplice_splice[:,0]
+    splice = gene_unsplice_splice[:,1]
+    values = np.vstack([unsplice,splice])
     kernel = scipy.stats.gaussian_kde(values)
     p = kernel(values)
     idx = np.arange(values.shape[1])
@@ -70,8 +70,8 @@ def sampling_circle(gene_u0_s0,target_amount=500):
     idx_choice = r.rvs(size=target_amount)
     return(idx_choice)
 
-def sampling_random(gene_u0_s0, target_amount=500):
-    idx = np.random.choice(gene_u0_s0.shape[0], size = target_amount, replace=False)
+def sampling_random(gene_unsplice_splice, target_amount=500):
+    idx = np.random.choice(gene_unsplice_splice.shape[0], size = target_amount, replace=False)
     return(idx)
     
 def sampling_adata(detail, 
@@ -79,16 +79,16 @@ def sampling_adata(detail,
                     target_amount=500,
                     step=(30,30)):
     if para == 'neighbors':
-        data_U_S= np.array(detail[["u0","s0"]])
+        data_U_S= np.array(detail[["unsplice","splice"]])
         idx = sampling_neighbors(data_U_S,step)
     elif para == 'inverse':
-        data_U_S= np.array(detail[["u0","s0"]])
+        data_U_S= np.array(detail[["unsplice","splice"]])
         idx = sampling_inverse(data_U_S,target_amount)
     elif para == 'circle':
-        data_U_S= np.array(detail[["u0","s0"]])
+        data_U_S= np.array(detail[["unsplice","splice"]])
         idx = sampling_circle(data_U_S,target_amount)
     elif para == 'random':
-        data_U_S= np.array(detail[["u0","s0"]])
+        data_U_S= np.array(detail[["unsplice","splice"]])
         idx = sampling_random(data_U_S,target_amount)
     else:
         print('para is neighbors or inverse or circle')
@@ -124,13 +124,13 @@ def adata_to_detail(data, para, gene):
     '''
     convert adata to detail format
     data: an anndata
-    para: the varable name of u0, s0, and gene name
+    para: the varable name of unsplice, splice, and gene name
     para = ['Mu', 'Ms']
     '''
     data2 = data[:, data.var.index.isin([gene])].copy()
-    u0 = data2.layers[para[0]][:,0].copy().astype(np.float32)
-    s0 = data2.layers[para[1]][:,0].copy().astype(np.float32)
-    detail = pd.DataFrame({'gene_name':gene, 'u0':u0, 's0':s0})
+    unsplice = data2.layers[para[0]][:,0].copy().astype(np.float32)
+    splice = data2.layers[para[1]][:,0].copy().astype(np.float32)
+    detail = pd.DataFrame({'gene_name':gene, 'unsplice':unsplice, 'splice':splice})
     return(detail)
 
 def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,expression_scale=None,projection_neighbor_choice='embedding',pca_n_components=None,umap_n=None,umap_n_components=None):
@@ -156,29 +156,29 @@ def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,express
         
     def transfer(data_df,expression_scale):
         if expression_scale=='log':
-            data_df.s0=np.log(data_df.s0+0.000001)
-            data_df.u0=np.log(data_df.u0+0.000001)
+            data_df.splice=np.log(data_df.splice+0.000001)
+            data_df.unsplice=np.log(data_df.unsplice+0.000001)
         elif expression_scale=='2power':
-            data_df.s0=2**(data_df.s0)
-            data_df.u0=2**(data_df.u0)
+            data_df.splice=2**(data_df.splice)
+            data_df.unsplice=2**(data_df.unsplice)
         elif expression_scale=='power10':
-            data_df.s0=(data_df.s0)**10
-            data_df.u0=(data_df.u0)**10
+            data_df.splice=(data_df.splice)**10
+            data_df.unsplice=(data_df.unsplice)**10
         elif expression_scale=='2power_norm_multi10':
             gene_order=data_df.gene_name.drop_duplicates()
             onegene=data_df[data_df.gene_name==data_df.gene_name[0]]
             cellAmt=len(onegene)
-            data_df_max=data_df.groupby('gene_name')[['s0','u0']].max().rename(columns={'s0': 's0_max','u0': 'u0_max'})
-            data_df_min=data_df.groupby('gene_name')[['s0','u0']].min().rename(columns={'s0': 's0_min','u0': 'u0_min'})
+            data_df_max=data_df.groupby('gene_name')[['splice','unsplice']].max().rename(columns={'splice': 'splice_max','unsplice': 'unsplice_max'})
+            data_df_min=data_df.groupby('gene_name')[['splice','unsplice']].min().rename(columns={'splice': 'splice_min','unsplice': 'unsplice_min'})
             data_df_fin=pd.concat([data_df_max,data_df_min],axis=1).reindex(gene_order)
             data_df_fin=data_df_fin.loc[data_df_fin.index.repeat(cellAmt)]
-            data_df_combined=pd.concat([data_df.reset_index(drop=True) ,data_df_fin[['s0_max','u0_max','s0_min','u0_min']].reset_index(drop=True)],axis=1)
-            data_df_combined['u0_norm']=''
-            data_df_combined['s0_norm']=''
-            data_df_combined.u0_norm=(data_df_combined.u0-data_df_combined.u0_min)/(data_df_combined.u0_max-data_df_combined.u0_min)
-            data_df_combined.s0_norm=(data_df_combined.s0-data_df_combined.s0_min)/(data_df_combined.s0_max-data_df_combined.s0_min)
-            data_df_combined.u0=2**(data_df_combined.u0_norm*10)
-            data_df_combined.s0=2**(data_df_combined.s0_norm*10)
+            data_df_combined=pd.concat([data_df.reset_index(drop=True) ,data_df_fin[['splice_max','unsplice_max','splice_min','unsplice_min']].reset_index(drop=True)],axis=1)
+            data_df_combined['unsplice_norm']=''
+            data_df_combined['splice_norm']=''
+            data_df_combined.unsplice_norm=(data_df_combined.unsplice-data_df_combined.unsplice_min)/(data_df_combined.unsplice_max-data_df_combined.unsplice_min)
+            data_df_combined.splice_norm=(data_df_combined.splice-data_df_combined.splice_min)/(data_df_combined.splice_max-data_df_combined.splice_min)
+            data_df_combined.unsplice=2**(data_df_combined.unsplice_norm*10)
+            data_df_combined.splice=2**(data_df_combined.splice_norm*10)
             data_df=data_df_combined
 
         return (data_df)
@@ -189,13 +189,13 @@ def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,express
     if projection_neighbor_choice=='gene':
         #print('using gene projection_neighbor_choice')
         cellID = data_df.loc[data_df['gene_name']==gene]['cellID']
-        data_df_pivot=data_df.pivot(index='cellID', columns='gene_name', values='s0').reindex(cellID)
+        data_df_pivot=data_df.pivot(index='cellID', columns='gene_name', values='splice').reindex(cellID)
         embedding_downsampling = data_df_pivot.iloc[idx_downSampling_embedding]
     elif projection_neighbor_choice=='pca': # not use
         from sklearn.decomposition import PCA
         #print('using pca projection_neighbor_choice')
         cellID = data_df.loc[data_df['gene_name']==gene]['cellID']
-        data_df_pivot=data_df.pivot(index='cellID', columns='gene_name', values='s0').reindex(cellID)
+        data_df_pivot=data_df.pivot(index='cellID', columns='gene_name', values='splice').reindex(cellID)
         embedding_downsampling_0 = data_df_pivot.iloc[idx_downSampling_embedding]
         pca=PCA(n_components=pca_n_components)
         pca.fit(embedding_downsampling_0)
@@ -204,7 +204,7 @@ def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,express
         from sklearn.decomposition import PCA
         #print('pca_norm')
         cellID = data_df.loc[data_df['gene_name']==gene]['cellID']
-        data_df_pivot=data_df.pivot(index='cellID', columns='gene_name', values='s0').reindex(cellID)
+        data_df_pivot=data_df.pivot(index='cellID', columns='gene_name', values='splice').reindex(cellID)
         embedding_downsampling_0 = data_df_pivot.iloc[idx_downSampling_embedding]
         pca=PCA(n_components=pca_n_components)
         pca.fit(embedding_downsampling_0)
@@ -219,7 +219,7 @@ def downsampling_embedding(data_df,para,target_amount, step, n_neighbors,express
         import umap
         #print('using umap projection_neighbor_choice')
         cellID = data_df.loc[data_df['gene_name']==gene]['cellID']
-        data_df_pivot=data_df.pivot(index='cellID', columns='gene_name', values='s0').reindex(cellID)
+        data_df_pivot=data_df.pivot(index='cellID', columns='gene_name', values='splice').reindex(cellID)
         embedding_downsampling_0 = data_df_pivot.iloc[idx_downSampling_embedding]
         
         def get_umap(df,n_neighbors=umap_n, min_dist=0.1, n_components=umap_n_components, metric='euclidean'): 
