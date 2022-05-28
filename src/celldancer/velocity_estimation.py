@@ -125,7 +125,6 @@ class DNN_module(nn.Module):
             den = torch.sqrt(unv**2 + snv**2) * torch.sqrt(uv**2+sv**2)
             den[den==0] = -1
             cosine = torch.where(den!=-1, (unv*uv + snv*sv) / den, torch.tensor(1.)) # cosine: column -> individuel cell (cellI); row -> nearby cells of cell id ; value -> cosine between col and row cells
-            
             cosine_max = torch.max(cosine, 0)[0]
             cosine_max_idx = torch.argmax(cosine, 0)
             cell_idx = torch.diag(indices[:, cosine_max_idx+1])
@@ -447,13 +446,16 @@ def _train_thread(datamodule,
 
     data_df=pd.DataFrame({'unsplice':unsplice,'splice':splice,'embedding1':embedding1,'embedding2':embedding2})
     data_df['gene_name']=this_gene_name
-
-    _, sampling_ixs_select_model, _ = downsampling_embedding(data_df, # for select model
-                        para='neighbors',
-                        step=(20,20),
-                        n_neighbors=30,
-                        target_amount=None,
-                        projection_neighbor_choice='embedding')
+    try:
+        _, sampling_ixs_select_model, _ = downsampling_embedding(data_df, # for select model
+                            para='neighbors',
+                            step=(20,20),
+                            n_neighbors=30,
+                            target_amount=None,
+                            projection_neighbor_choice='embedding')
+    except:
+        sampling_ixs_select_model=list(data_df.index)
+        
     gene_downsampling=downsampling(data_df=data_df, gene_list=[this_gene_name], downsampling_ixs=sampling_ixs_select_model)
     if ini_model=='circle':
         model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'branch.pt')).name
@@ -621,7 +623,14 @@ def velocity(
     # set gene_list if not given
     if gene_list is None:
         gene_list=list(cell_type_u_s.gene_name.drop_duplicates())
+    else:
+        cell_type_u_s=cell_type_u_s[cell_type_u_s.gene_name.isin(gene_list)]
+        all_gene_name_cell_type_u_s=list(cell_type_u_s.gene_name.drop_duplicates())
+        gene_not_in_cell_type_u_s= list(set(gene_list).difference(set(all_gene_name_cell_type_u_s)))
+        gene_list=list(list(set(all_gene_name_cell_type_u_s).intersection(set(gene_list))))
+        if len(gene_not_in_cell_type_u_s)>0: print(gene_not_in_cell_type_u_s," not in the data cell_type_u_s")
 
+    cell_type_u_s=cell_type_u_s.reset_index(drop=True)
     # buring
     gene_list_buring=[list(cell_type_u_s.gene_name.drop_duplicates())[0]]
     datamodule=build_datamodule(cell_type_u_s,speed_up,norm_u_s,permutation_ratio,norm_cell_distribution,gene_list=gene_list_buring)
