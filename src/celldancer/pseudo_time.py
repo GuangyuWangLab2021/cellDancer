@@ -689,19 +689,21 @@ def combine_clusters(cell_time_per_cluster):
     return cell_time
 
 
-def interpolate_all_cell_time(cell_time, all_cell_embedding, sampling_ixs, step):
+def interpolate_all_cell_time(cell_time, all_cell_embedding, sampling_ixs,
+        n_grids):
     x = all_cell_embedding[sampling_ixs,0]
     y = all_cell_embedding[sampling_ixs,1]
 
-    xx = np.linspace(min(x), max(x), step[0]+1)
-    yy = np.linspace(min(y), max(y), step[1]+1)
+    xx = np.linspace(min(x), max(x), n_grids[0]+1)
+    yy = np.linspace(min(y), max(y), n_grids[1]+1)
     xx, yy = np.meshgrid(xx, yy)
     
     points = np.transpose(np.vstack((x, y)))
     interp = interpolate.griddata(points, cell_time, (xx, yy), method='nearest')
     all_cell_time = list()
     for cell_coord in all_cell_embedding:
-        gd = discretize(cell_coord, xmin=(min(x), min(y)), xmax=(max(x),max(y)), steps=step, capping = True)[0]
+        gd = discretize(cell_coord, xmin=(min(x), min(y)), xmax=(max(x),max(y)),
+                n_grids=n_grids, capping = True)[0]
         all_cell_time.append(interp[gd[1], gd[0]])
 
     # drop the top 5 percentile
@@ -930,7 +932,7 @@ def compute_all_cell_time(
         cell_grid_idx, 
         grid_mass,
         sampling_ixs, 
-        step,
+        n_grids,
         dt=0.001, 
         t_total=10000, 
         n_repeats = 10, 
@@ -1036,12 +1038,12 @@ def compute_all_cell_time(
     ordered_cell_time = np.array([cell_time[cell] for cell in sorted(cell_time.keys())])
 
     # interpolate to get the time for all cells.
-    if step is not None:
+    if n_grids is not None:
         all_cell_time=interpolate_all_cell_time(
                 ordered_cell_time, 
                 embedding, 
                 sampling_ixs, 
-                step)
+                n_grids)
     else:
         all_cell_time=ordered_cell_time
 
@@ -1107,7 +1109,7 @@ def pseudo_time(
             normalized_embedding,
             velocity, 
             normalized_abr_umap, 
-            steps=grid)
+            n_grids=grid)
 
     vel_mesh = __[0] 
     grid_mass = __[1]
@@ -1199,7 +1201,7 @@ def pseudo_time(
         cell_grid_idx=cell_grid_idx, 
         grid_mass=grid_mass, 
         sampling_ixs=sampling_ixs, 
-        step=speed_up,
+        n_grids=speed_up,
         dt=dt, 
         t_total=t_total, 
         n_repeats = n_repeats, 
@@ -1229,7 +1231,7 @@ def pseudo_time(
 
 # TOREMOVE
 # deprecated since I'm going to get cellDancer_df as input.
-def load_velocity(detail_result_path, n_neighbors, step):
+def load_velocity(detail_result_path, n_neighbors, n_grids):
     detail_files = glob.iglob(os.path.join(detail_result_path, '*detail*.csv'))
     lcd = list()
     for f in detail_files:
@@ -1245,7 +1247,7 @@ def load_velocity(detail_result_path, n_neighbors, step):
         gene_list=gene_choice,
         mode="gene",
         n_neighbors=n_neighbors,
-        step=step)
+        n_grids=n_grids)
     
 
 # all plot functions
