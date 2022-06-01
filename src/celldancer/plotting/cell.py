@@ -34,7 +34,7 @@ def scatter_cell(
     arrow_grid=(30,30)
 ): 
 
-    """Plot the the cell velocity; or plot the parameters ('alpha', 'beta', 'gamma', 'splice', 'unsplice', or 'pseudotime') of one gene in embedding level.
+    """Plot the the cell velocity; or plot the parameters ('alpha', 'beta', 'gamma', 'splice', 'unsplice', or 'pseudotime') of one gene in embedding space.
         
     Arguments
     ---------
@@ -304,7 +304,6 @@ def plot_kinetic_para(
     ax,
     kinetic_para,
     cellDancer_df,
-    gene=None,
     color_map=None,
     title=None,
     legend=False
@@ -320,8 +319,6 @@ def plot_kinetic_para(
         Which parameter is used to generate the embedding space, could be selected from {'alpha', 'beta', 'gamma', 'alpha_beta_gamma'}.
     cellDancer_df: `pandas.Dataframe`
         Data frame of velocity estimation results. Columns=['cellIndex', 'gene_name', 'splice', 'unsplice', 'splice_predict', 'unsplice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2']
-    gene: `str` (optional, default: None)
-        If the gene is set, the spliced reads of this gene in the embedding space will be displayed.
     color_map: `dict` (optional, default: None)
         The color map dictionary of each cell type.
     legend: `bool` (optional, default: False)
@@ -331,7 +328,8 @@ def plot_kinetic_para(
     onegene=cellDancer_df[cellDancer_df.gene_name==cellDancer_df.gene_name[0]]
     umap_para=onegene[[(kinetic_para+'_umap1'),(kinetic_para+'_umap2')]].to_numpy()
     onegene_cluster_info=onegene.clusters
-
+    
+    gene=None
     if gene is None:
         if color_map is None:
             from .colormap import build_colormap
@@ -346,14 +344,14 @@ def plot_kinetic_para(
         im=ax.scatter(umap_para[:,0], umap_para[:,1],c=colors,s=15,alpha=0.5,edgecolor="none")
         ax.axis('square')
         ax.axis('off')
-        ax.set_title('kinetic map of '+ kinetic_para)
+        ax.set_title('UMAP of '+ kinetic_para)
 
     else:
         onegene=cellDancer_df[cellDancer_df.gene_name==gene]
         im=ax.scatter(umap_para[:,0], umap_para[:,1],c=np.log(onegene.splice+0.0001),s=15,alpha=1,edgecolor="none")
         ax.axis('square')
         ax.axis('off')
-        ax.set_title('spliced reads of '+gene+'\n in kinetic map by \n'+ kinetic_para)
+        ax.set_title('spliced reads of '+gene+'\n on UMAP of \n'+ kinetic_para)
         
         ax_divider = make_axes_locatable(ax)
         cax = ax_divider.append_axes("top", size="5%", pad="-5%")
