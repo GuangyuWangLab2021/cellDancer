@@ -295,10 +295,10 @@ def diffusion_off_grid_wallbound(
     if it hits the boundary the next timestep.
 
     The diffusion is stopped by any of the criteria:
-    1. reach t_total
-    2. the magnitude of the velocity is less than eps.
-    3. the cell goes to places where the cell mass = 0 even after turning.
-    4. the cell is out of the simulation box
+    - reach t_total
+    - the magnitude of the velocity is less than eps.
+    - the cell goes to places where the cell mass <= MAX_IGNORED_MASS even after turning.
+    - the cell is out of the simulation box
 
     Parameters
     ----------
@@ -340,7 +340,8 @@ def diffusion_off_grid_wallbound(
     N_GRIDS=(vel.shape[0]-1,vel.shape[1]-1)
 
     # lower 5% nonzero mass set to 0.
-    MAX_IGNORED_MASS= np.percentile(grid_mass[grid_mass>0], 5)
+    #MAX_IGNORED_MASS= np.percentile(grid_mass[grid_mass>0], 5)
+    MAX_IGNORED_MASS = 2
     
     def no_cells_around(xcur, xcur_d, vcur):
         xnxt = xcur + vcur*dt
@@ -363,11 +364,13 @@ def diffusion_off_grid_wallbound(
             #print("Velocity is too small")
             return np.array(trajectory)
         if no_cells_around(x0, x0_d, v0):
-            v0_cc = velocity_rotation(v0, np.pi/2)
-            v0_c = velocity_rotation(v0, -np.pi/2)
+            v0_cc = velocity_rotation(v0, THETA)
+            v0_c = velocity_rotation(v0, -THETA)
+
             # nowhere to go but null
             CC = no_cells_around(x0, x0_d, v0_cc) 
             C = no_cells_around(x0, x0_d, v0_c)
+
             if CC and C:
                 return np.array(trajectory)
             elif not C:
@@ -562,8 +565,10 @@ def run_diffusion(
     assert len(psrng_seeds_diffusion) >= n_repeats
 
     if n_jobs >= mp.cpu_count():
-        n_jobs = min(8, mp.cpu_count()-1)
-        print("Reducing n_jobs to", n_jobs, "for optimal performance.")
+        n_jobs = mp.cpu_count()
+
+    if n_jobs < 0:
+        n_jobs = mp.cpu_count() + 1 + n_jobs
 
     print("Pseudo random numbers seeds are: ", psrng_seeds_diffusion)
 
