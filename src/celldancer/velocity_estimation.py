@@ -653,7 +653,10 @@ def velocity(
     data_len = len(gene_list)
     
     id_ranges=list()
-    interval=40
+    if n_jobs==-1:
+        interval=os.cpu_count()
+    else:
+        interval=n_jobs
     for i in range(0,data_len,interval):
         idx_start=i
         if data_len<i+interval:
@@ -671,7 +674,8 @@ def velocity(
             print(data_len,' genes were arranged to ',len(id_ranges),' portion.')
     else: 
         print(data_len,' genes were arranged to ',len(id_ranges),' portions.')
-    for id_range in tqdm(id_ranges,desc="Velocity Estimation", total=len(id_ranges)):
+    
+    for id_range in tqdm(id_ranges,desc="Velocity Estimation", total=len(id_ranges),position=1,leave=False):
         gene_list_batch=gene_list[id_range[0]:id_range[1]]
         datamodule=build_datamodule(cell_type_u_s,speed_up,norm_u_s,permutation_ratio,norm_cell_distribution,gene_list=gene_list_batch)
 
