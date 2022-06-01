@@ -591,7 +591,7 @@ def velocity(
     norm_u_s: optional, `bool` (default: True)
         `True` if normalize unsplice (and splice) reads by dividing max value of unsplice (and splice) reads.
     norm_cell_distribution: optional, `bool` (default: True)
-        `True` if the bias of cell distribution is to be romoved on embedding space (many cells share same embedding position).
+        `True` if the bias of cell distribution is to be romoved on embedding space (many cells share same position of unsplice (and splice) reads).
     n_jobs: optional, `int` (default: -1)
         The maximum number of concurrently running jobs.
     save_path: optional, `str` (default: 200)

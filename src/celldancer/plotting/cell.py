@@ -140,9 +140,9 @@ def scatter_cell(
         ax_divider = make_axes_locatable(ax)
         cax = ax_divider.append_axes("top", size="5%", pad="-5%")
 
-        print("   \n ")
+        # print("   \n ")
         cbar = plt.colorbar(im, cax=cax, orientation="horizontal", shrink=0.1)
-        #cbar.set_ticks([])
+        cbar.set_ticks([])
 
     if velocity:
         sample_cells = cellDancer_df['velocity1'][:n_cells].dropna().index
