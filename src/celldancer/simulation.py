@@ -17,21 +17,43 @@ def _generate_points(u0_start, s0_start, alpha, beta, gamma, t1, t2, samples):
     t_space = np.linspace(t1, t2, samples)
 
     # PZ: should it be t1?
-    num_sol = solve_ivp(trans_dynamics, [0, t2], [s0_start, u0_start], method='RK45', dense_output=True)
+    #num_sol = solve_ivp(trans_dynamics, [0, t2], [s0_start, u0_start], method='RK45', dense_output=True)
+    num_sol = solve_ivp(
+            trans_dynamics, 
+            [t1, t2], 
+            [s0_start, u0_start], 
+            method='RK45', 
+            dense_output=True)
+
     XY_num_sol = num_sol.sol(t_space)
     S, U = XY_num_sol[0], XY_num_sol[1]
     return U, S
 
 def _jitter(U, S, scale):
-    S = S + np.random.normal(loc=0.0, scale=scale*np.percentile(S, 99) / 10, size=np.size(S))
-    U = U + np.random.normal(loc=0.0, scale=scale*np.percentile(U, 99) / 10, size=np.size(U))
+    S = S + np.random.normal(
+            loc=0.0, 
+            scale=scale*np.percentile(S, 99) / 10, 
+            size=np.size(S))
+    U = U + np.random.normal(
+            loc=0.0, 
+            scale=scale*np.percentile(U, 99) / 10, 
+            size=np.size(U))
+
     S1 = S[(S>0)&(U>0)]
     U1 = U[(S>0)&(U>0)]
     S1, U1 = np.clip(S, 0, None), np.clip(U, 0, None)
     return U1, S1
 
 def _simulate(u0_start, s0_start, alpha, beta, gamma, t1, t2, samples, dt=0.001):
-    u0, s0 = _generate_points(u0_start, s0_start, alpha, beta, gamma, t1, t2, samples)
+    u0, s0 = _generate_points(
+            u0_start, 
+            s0_start, 
+            alpha, 
+            beta, 
+            gamma, 
+            t1, 
+            t2, 
+            samples)
     u0_end, s0_end = u0[-1], s0[-1]
     #u0, s0 = _jitter(u0, s0, scale)
     u1 = u0 + (alpha - beta*u0)*dt
@@ -46,7 +68,16 @@ def _simulate(u0_start, s0_start, alpha, beta, gamma, t1, t2, samples, dt=0.001)
     expr['gamma'] = gamma
     return expr, (u0_end, s0_end)
 
-def _simulate_without_t( u0_start, s0_start, alpha, beta, gamma, percent_start_u, percent_end_u, samples, dt=0.001):
+def _simulate_without_t(
+        u0_start, 
+        s0_start, 
+        alpha, 
+        beta, 
+        gamma, 
+        percent_start_u, 
+        percent_end_u, 
+        samples, 
+        dt=0.001):
     '''percentage_u: u_end/u_max'''
 
     def inversed_u(u, expr): 
@@ -63,11 +94,19 @@ def _simulate_without_t( u0_start, s0_start, alpha, beta, gamma, percent_start_u
         u_start = u_max * (100-percent_start_u)/100
         u_end = u_max * (100-percent_end_u)/100
 
-    t_sol = solve_ivp(inversed_u, [u0_start, u_end], [0], method='RK45', dense_output=True)
+    t_sol = solve_ivp(
+            inversed_u, 
+            [u0_start, u_end], 
+            [0], 
+            method='RK45', 
+            dense_output=True)
     t1 = t_sol.sol(u_start)[0]  
     t2 = t_sol.sol(u_end)[0]  
 
-    expr, (last_u, last_s) = _simulate(u0_start, s0_start, alpha, beta, gamma, t1, t2, samples, dt)
+    expr, (last_u, last_s) = _simulate(
+            u0_start, s0_start, 
+            alpha, beta, gamma, 
+            t1, t2, samples, dt)
     return expr, (last_u, last_s), (t1, t2)
 
 def generate_with_df(gene_info, dt=0.001, noise_level=0.2):
@@ -444,40 +483,93 @@ if __name__ == "__main__":
     #random walk. Normal distribution in each steps
 
     # Circle
-    gene_info = pd.DataFrame(columns = ['gene_name', 'start_u', 'start_s', 'alpha', 'beta', 'gamma', 'start_pct', 'end_pct', 'samples'])
-    gene_info = gene_info.append({'gene_name':'g1', 'start_u':0, 'start_s':0, 'alpha':15, 'beta':10, 'gamma':12, 'start_pct':0, 'end_pct':99, 'samples':1000}, ignore_index=True)
-    gene_info = gene_info.append({'gene_name':'g1', 'start_u':None, 'start_s':None, 'alpha':0, 'beta':10, 'gamma':12, 'start_pct':0, 'end_pct':99, 'samples':1000}, ignore_index=True)
+
+    columns = ['gene_name', 
+            'start_u', 'start_s', 
+            'alpha', 'beta', 'gamma', 
+            'start_pct', 'end_pct', 
+            'samples']
+
+    upper = {'gene_name':'g1', 
+            'start_u':0, 'start_s':0, 
+            'alpha':15, 'beta':10, 'gamma':12, 
+            'start_pct':0, 'end_pct':99, 
+            'samples':1000}
+
+    lower = {'gene_name':'g1', 
+            'start_u':None, 'start_s':None, 
+            'alpha':0, 'beta':10, 'gamma':12, 
+            'start_pct':0, 'end_pct':99, 
+            'samples':1000}
+    gene_info = pd.DataFrame(columns = columns)
+    gene_info = gene_info.append(upper, ignore_index=True)
+    gene_info = gene_info.append(lower, ignore_index=True)
     gene_info, expr = generate_with_df(gene_info)
-    data_cell = generate_by_each_cell_normal(expr, rw_scale=0.01, rw_basic=0.002, t=gene_info['t2'].sum())
+    data_cell = generate_by_each_cell_normal(
+            expr, 
+            rw_scale=0.01, 
+            rw_basic=0.002, 
+            t=gene_info['t2'].sum())
+
     plt.scatter(data_cell['s0'], data_cell['u0'], c=data_cell['alpha'], s=1)
     plt.xlabel("s")
     plt.ylabel("u")
     plt.show()
     ## Overlapped randomwalk
-    #data_cell = generate_by_each_cell_normal(expr, rw_scale=0.01, rw_basic=0.002,  t=gene_info['t2'].sum(), times=20)
+#    data_cell = generate_by_each_cell_normal(
+#            expr, 
+#            rw_scale=0.01, 
+#            rw_basic=0.002,  
+#            t=gene_info['t2'].sum(), 
+#            times=20)
     #plt.scatter(data_cell['s0'], data_cell['u0'], c=data_cell['alpha'], s=1)
     #plt.xlabel("s")
     #plt.ylabel("u")
     #plt.show()
 
     # Accerate
-    gene_info = pd.DataFrame(columns = ['gene_name', 'start_u', 'start_s', 'alpha', 'beta', 'gamma', 'start_pct', 'end_pct', 'samples'])
-    gene_info = gene_info.append({'gene_name':'g1', 'start_u':0, 'start_s':0, 'alpha':10, 'beta':10, 'gamma':12, 'start_pct':0, 'end_pct':99, 'samples':500}, ignore_index=True)
-    gene_info = gene_info.append({'gene_name':'g1', 'start_u':None, 'start_s':None, 'alpha':40, 'beta':10, 'gamma':12, 'start_pct':0, 'end_pct':99, 'samples':500}, ignore_index=True)
+    gene_info = pd.DataFrame(columns = columns)
+    step_1 = {'gene_name':'g1', 
+            'start_u':0, 'start_s':0, 
+            'alpha':10, 'beta':10, 'gamma':12, 
+            'start_pct':0, 'end_pct':99, 
+            'samples':500}
+    step_2 = {'gene_name':'g1', 
+            'start_u':None, 'start_s':None, 
+            'alpha':40, 'beta':10, 'gamma':12, 
+            'start_pct':0, 'end_pct':99, 
+            'samples':500}
+    gene_info = gene_info.append(step_1, ignore_index=True)
+    gene_info = gene_info.append(step_2, ignore_index=True)
     gene_info, expr = generate_with_df(gene_info)
-    #plt.scatter(expr['s0'], expr['u0'], c='red', s=10)
-    #plt.show()
-    data_cell = generate_by_each_cell_normal(expr, rw_scale=0.01, rw_basic=0.002, t=gene_info['t2'].sum())
+
+    data_cell = generate_by_each_cell_normal(
+            expr, 
+            rw_scale=0.01, 
+            rw_basic=0.002, 
+            t=gene_info['t2'].sum())
+
     plt.scatter(data_cell['s0'], data_cell['u0'], c=data_cell['alpha'], s=1)
     plt.xlabel("s")
     plt.ylabel("u")
     plt.show()
 
     # Degrade
-    gene_info = pd.DataFrame(columns = ['gene_name', 'start_u', 'start_s', 'alpha', 'beta', 'gamma', 'start_pct', 'end_pct', 'samples'])
-    gene_info = gene_info.append({'gene_name':'g1', 'start_u':1.5, 'start_s':1.2, 'alpha':0, 'beta':10, 'gamma':12, 'start_pct':0, 'end_pct':99, 'samples':1000}, ignore_index=True)
+    gene_info = pd.DataFrame(columns = columns)
+    lower = {'gene_name':'g1', 
+            'start_u':1.5, 'start_s':1.2, 
+            'alpha':0, 'beta':10, 'gamma':12, 
+            'start_pct':0, 'end_pct':99, 
+            'samples':1000}
+    gene_info = gene_info.append(lower, ignore_index=True)
     gene_info, expr = generate_with_df(gene_info)
-    data_cell = generate_by_each_cell_normal(expr, rw_scale=0.01, rw_basic=0.002, t=gene_info['t2'].sum())
+
+    data_cell = generate_by_each_cell_normal(
+            expr, 
+            rw_scale=0.01, 
+            rw_basic=0.002, 
+            t=gene_info['t2'].sum())
+
     plt.scatter(data_cell['s0'], data_cell['u0'], c=data_cell['alpha'], s=1)
     plt.xlabel("s")
     plt.ylabel("u")

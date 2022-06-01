@@ -136,7 +136,7 @@ def scatter_cell(
                 vmax=vmax,
                 alpha=alpha,
                 edgecolor="none")
-    if colorbar == 'on' and  isinstance(colors, str):
+    if colorbar == 'on' and isinstance(colors, str):
         ax_divider = make_axes_locatable(ax)
         cax = ax_divider.append_axes("top", size="5%", pad="-5%")
 
