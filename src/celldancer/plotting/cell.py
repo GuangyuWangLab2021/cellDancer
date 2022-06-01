@@ -301,11 +301,11 @@ def grid_curve(
 
 
 def plot_kinetic_para(
+    ax,
     kinetic_para,
     cellDancer_df,
     gene=None,
     color_map=None,
-    save_path=None,
     title=None,
     legend=False
 ):
@@ -314,16 +314,16 @@ def plot_kinetic_para(
         
     Arguments
     ---------
-    cellDancer_df: `pandas.Dataframe`
-        Data frame of velocity estimation results. Columns=['cellIndex', 'gene_name', 'splice', 'unsplice', 'splice_predict', 'unsplice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2']
+    ax: `ax`
+        ax of plt.subplots()
     kinetic_para: `str`
         Which parameter is used to generate the embedding space, could be selected from {'alpha', 'beta', 'gamma', 'alpha_beta_gamma'}.
+    cellDancer_df: `pandas.Dataframe`
+        Data frame of velocity estimation results. Columns=['cellIndex', 'gene_name', 'splice', 'unsplice', 'splice_predict', 'unsplice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2']
     gene: `str` (optional, default: None)
         If the gene is set, the spliced reads of this gene in the embedding space will be displayed.
     color_map: `dict` (optional, default: None)
         The color map dictionary of each cell type.
-    save_path: `str` (optional, default: None)
-        Path to save the plot.
     legend: `bool` (optional, default: False)
         `True` if the color map of cell legend is to be plotted. 
 
@@ -334,7 +334,7 @@ def plot_kinetic_para(
 
     if gene is None:
         if color_map is None:
-            from plotting.colormap import build_colormap
+            from .colormap import build_colormap
             color_map=build_colormap(onegene_cluster_info)
 
         colors = list(map(lambda x: color_map.get(x, 'black'), onegene_cluster_info))
@@ -343,19 +343,23 @@ def plot_kinetic_para(
             markers = [plt.Line2D([0,0],[0,0],color=color, marker='o', linestyle='') for color in color_map.values()]
             lgd=plt.legend(markers, color_map.keys(), numpoints=1,loc='upper left',bbox_to_anchor=(1.01, 1))
                 
-        plt.figure()
-        plt.scatter(umap_para[:,0], umap_para[:,1],c=colors,s=15,alpha=0.5,edgecolor="none")
-        plt.axis('square')
-        plt.axis('off')
+        im=ax.scatter(umap_para[:,0], umap_para[:,1],c=colors,s=15,alpha=0.5,edgecolor="none")
+        ax.axis('square')
+        ax.axis('off')
+        ax.set_title('kinetic map of '+ kinetic_para)
 
     else:
         onegene=cellDancer_df[cellDancer_df.gene_name==gene]
-        plt.figure()
-        plt.scatter(umap_para[:,0], umap_para[:,1],c=np.log(onegene.splice+0.0001),s=15,alpha=1,edgecolor="none")
-        plt.axis('square')
-        plt.axis('off')
-        plt.colorbar(label=gene+" splice")
-
-    if save_path is not None:
-        plt.savefig(save_path,bbox_inches='tight',bbox_extra_artists=(lgd,))
+        im=ax.scatter(umap_para[:,0], umap_para[:,1],c=np.log(onegene.splice+0.0001),s=15,alpha=1,edgecolor="none")
+        ax.axis('square')
+        ax.axis('off')
+        ax.set_title('spliced reads of '+gene+'\n in kinetic map by \n'+ kinetic_para)
+        
+        ax_divider = make_axes_locatable(ax)
+        cax = ax_divider.append_axes("top", size="5%", pad="-5%")
+        cbar = plt.colorbar(im, cax=cax, orientation="horizontal", shrink=0.1)
+        cbar.set_ticks([])
+        
     umap_df=pd.concat([pd.DataFrame({'umap1':umap_para[:,0],'umap2':umap_para[:,1]})],axis=1)
+    
+    return im

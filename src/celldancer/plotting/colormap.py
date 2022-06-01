@@ -39,9 +39,11 @@ colormap_pancreas={
 'Epsilon':'#03B3B0'
 }
 
+color_template = ["#08A8CE","#017351",'#56A65A',"#03c383","#aad962","#fbbf45","#ef6a32","#ed0345","#a12a5e","#710162","#3B9AB2"]
+
 def build_colormap(cluster_list):
     from itertools import cycle
-    color_list=grove2
+    color_list=color_template
     colors = dict(zip(cluster_list, cycle(color_list)) if len(cluster_list) > len(color_list) else zip(cycle(cluster_list), color_list))
     return colors
 
