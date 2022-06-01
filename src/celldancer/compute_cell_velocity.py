@@ -23,7 +23,7 @@ def compute(
     speed_up=(60,60),
     expression_scale=None,
     projection_neighbor_size=200,
-    projection_neighbor_choice=None):
+    projection_neighbor_choice='embedding'):
 
     """Compute the cell velocity.
         
@@ -101,9 +101,7 @@ def compute(
     row_has_NaN = is_NaN. any(axis=1)
     cellDancer_df = cellDancer_df[~row_has_NaN].reset_index(drop=True)
     
-    if gene_list is not None:
-        print("Selected genes: ", gene_list)
-    else:
+    if gene_list is None:
         gene_list=cellDancer_df.gene_name.drop_duplicates()
 
 
@@ -112,8 +110,8 @@ def compute(
             cellDancer_df.gene_name.isin(gene_list)].reset_index(drop=True)
 
     np_splice_all, np_dMatrix_all= data_reshape(cellDancer_df_input)
-    print("(genes, cells): ", end="")
-    print(np_splice_all.shape)
+    # print("(genes, cells): ", end="")
+    # print(np_splice_all.shape)
     n_genes, n_cells = np_splice_all.shape
 
     # This creates a new dataframe
@@ -149,7 +147,7 @@ def compute(
     sampling_ixs_all_genes = cellDancer_df_input[cellDancer_df_input.cellIndex.isin(sampling_ixs)].index
     cellDancer_df_input.loc[sampling_ixs_all_genes,'velocity1'] = np.tile(velocity_embedding[:,0], n_genes)
     cellDancer_df_input.loc[sampling_ixs_all_genes,'velocity2'] = np.tile(velocity_embedding[:,1], n_genes)
-    print("After downsampling, there are ", len(sampling_ixs), "cells.")
+    # print("After downsampling, there are ", len(sampling_ixs), "cells.")
     return(cellDancer_df_input)
 
 def corr_coeff(ematrix, vmatrix, i):

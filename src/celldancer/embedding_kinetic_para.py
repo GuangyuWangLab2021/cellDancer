@@ -1,5 +1,8 @@
 import numpy as np
 import pandas as pd
+import os 
+
+os.environ['KMP_WARNINGS'] = '0'
 
 def embedding(
     cellDancer_df,
