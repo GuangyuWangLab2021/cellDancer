@@ -291,7 +291,8 @@ def diffusion_off_grid_wallbound(
         pdm = None):
     
     '''
-    Simulate the diffusion of a cell in the velocity field (off grid), the cell's velocity will turn 90 degrees
+    Simulate the diffusion of a cell in the velocity field (off grid), the
+    cell's velocity will turn 30 degrees
     if it hits the boundary the next timestep.
 
     The diffusion is stopped by any of the criteria:
