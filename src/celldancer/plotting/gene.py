@@ -57,7 +57,7 @@ def scatter_gene(
     velocity: optional, `bool` (default: False)
         `True` if velocity in gene level is to be plotted.
     gene: optional, `str` (default: None)
-        Gene name for the plot of alpha, beta, gamma, splice, unsplice or pseudotime in embedding level.
+        Gene name for the plot of alpha, beta, gamma, splice, unsplice or pseudotime in embedding space.
     legend: optional, `str` (default: 'off')
         `‘off’` if the color map of cell type legend is not to be plotted;
         `‘only’` if only plot the cell type legend.

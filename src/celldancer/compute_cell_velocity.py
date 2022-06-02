@@ -106,9 +106,7 @@ def compute(
 
 
     # This creates a new dataframe
-    cellDancer_df_input = cellDancer_df[
-            cellDancer_df.gene_name.isin(gene_list)].reset_index(drop=True)
-
+    cellDancer_df_input = cellDancer_df[cellDancer_df.gene_name.isin(gene_list)].reset_index(drop=True)
     np_splice_all, np_dMatrix_all= data_reshape(cellDancer_df_input)
     # print("(genes, cells): ", end="")
     # print(np_splice_all.shape)
