@@ -1,5 +1,5 @@
-color_map_single_alpha_beta_gamma = ["#007EB7","#3B9AB2", "#78B7C5", "#EBCC2A", "#E1AF00", "#F21A00"] 
-color_map_alpha_beta_gamma = ["#2488F0","#7F3F98","#E22929","#FCB31A"]
+colors_alpha_beta_gamma = ["#007EB7","#3B9AB2", "#78B7C5", "#EBCC2A", "#E1AF00", "#F21A00"] 
+colors_splice_unsplice = ["#2488F0","#7F3F98","#E22929","#FCB31A"]
 
 colormap_erythroid={
 'Haematoendothelial progenitors':'#3361A5',

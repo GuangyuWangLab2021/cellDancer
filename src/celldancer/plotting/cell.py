@@ -103,18 +103,17 @@ def scatter_cell(
             bbox_extra_artists=None
 
         c=np.vectorize(colors.get)(extract_from_df(cellDancer_df, 'clusters', gene))
-        cmap=ListedColormap(list(colors.keys()))
+        cmap=ListedColormap(list(colors.values()))
     elif isinstance(colors, str):
         attr = colors
         if colors in ['alpha', 'beta', 'gamma']:
             assert gene, '\nError! gene is required!\n'
-            
-
-            cmap = LinearSegmentedColormap.from_list("mycmap", color_map_single_alpha_beta_gamma)
+            cmap = LinearSegmentedColormap.from_list("mycmap", colors_alpha_beta_gamma)
         if colors in ['splice', 'unsplice']:
             assert gene, '\nError! gene is required!\n'
             colors = {'splice':'splice', 'unsplice':'unsplice'}[colors]
-            cmap = LinearSegmentedColormap.from_list("mycmap", color_map_alpha_beta_gamma)
+            cmap = LinearSegmentedColormap.from_list("mycmap",
+                    colors_splice_unsplice)
         if colors in ['pseudotime']:
             cmap = 'viridis'
         c = extract_from_df(cellDancer_df, [colors], gene)

@@ -93,17 +93,16 @@ def scatter_gene(
             bbox_extra_artists=None
 
         c=np.vectorize(colors.get)(extract_from_df(cellDancer_df, 'clusters'))
-        cmap=ListedColormap(list(colors.keys()))
+        cmap=ListedColormap(list(colors.values()))
 
     elif isinstance(colors, str):
         attr = colors
         if colors in ['alpha', 'beta', 'gamma']:
             assert gene, '\nError! gene is required!\n'
-            cmap = ListedColormap(zissou2)
+            cmap = ListedColormap(colors_alpha_beta_gamma)
         if colors in ['splice', 'unsplice']:
             assert gene, '\nError! gene is required!\n'
-            #colors = {'splice':'splice', 'unsplice':'unsplice'}[colors]
-            cmap = ListedColormap(fireworks3)
+            cmap = ListedColormap(colors_splice_unsplice)
         if colors in ['pseudotime']:
             cmap = 'viridis'
         else:
@@ -115,13 +114,6 @@ def scatter_gene(
         cmap = None
         c = '#95D9EF'
     
-    
-#    if x in ['splice', 'unsplice']:
-#        x = {'splice':'splice', 'unsplice':'unsplice'}[x]
-#    if y in ['splice', 'unsplice']:
-#        y = {'splice':'splice', 'unsplice':'unsplice'}[y]
-
-
     assert gene, '\nError! gene is required!\n'
     xy = extract_from_df(cellDancer_df, [x, y], gene)
     ax.scatter(xy[:, 0],
