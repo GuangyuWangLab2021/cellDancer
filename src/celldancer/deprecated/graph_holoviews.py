@@ -54,9 +54,9 @@ def graph(
         The node colors. 
         Possible values:
 
-            - `'clusters'`: color according to the clusters information of the
+            - 'clusters': color according to the clusters information of the
               respective cells.
-            - `'pseudotime'`: colors according to the pseudotime of the 
+            - 'pseudotime': colors according to the pseudotime of the 
               repspective cells.
             - A single color format string.
 
