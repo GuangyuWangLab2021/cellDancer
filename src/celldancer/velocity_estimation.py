@@ -458,9 +458,11 @@ def _train_thread(datamodule,
         
     gene_downsampling=downsampling(data_df=data_df, gene_list=[this_gene_name], downsampling_ixs=sampling_ixs_select_model)
     if ini_model=='circle':
-        model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'branch.pt')).name
+        model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'circle.pt')).name
     if ini_model=='branch':
         model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'branch.pt')).name
+    # if ini_model=='normal':
+    #     model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'normal.pt')).name
     else:
         model_path=select_initial_net(this_gene_name, gene_downsampling, data_df)
     model.load(model_path)
