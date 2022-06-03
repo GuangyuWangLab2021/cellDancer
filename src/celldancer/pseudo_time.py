@@ -65,7 +65,8 @@ def compute_trajectory_similarity(traj1, traj2, numPicks=10):
 
 
 def compute_similarity_matrix(traj, numPicks=10):
-    import itertools
+    # UNUSED
+    # This is only to be used for serious clustering.
     traj_length = np.array([compute_trajectory_length(np.array(i)) 
         for i in traj])
     traj_order = np.argsort(traj_length) # 1d array
@@ -210,7 +211,7 @@ def cell_fate_tuning(embedding, cell_clusters, n_neighbors=20):
     return np.array(cell_fate_tuned)
 
 
-def cell_time_projection_cluster(embedding, rep_path, cluster, cell_fate):
+def projection_cell_time_one_cluster(embedding, rep_path, cluster, cell_fate):
     '''
     Parameters
     ----------
@@ -279,8 +280,8 @@ def recur_cell_time_assignment_intracluster(
     n_repeats = 10, 
     n_jobs = -1,
     psrng_seeds_diffusion = None,
-    MAX_ZERO_TIME_CELLS = 0.05,
-    MAX_TERM_CELLS = 0.05):
+    MAX_ALLOWED_ZERO_TIME_CELLS = 0.05,
+    MAX_ALLOWED_TERM_CELLS = 0.05):
     '''
     Recursive function to consolidate cell time within a cluster.
     
@@ -310,19 +311,19 @@ def recur_cell_time_assignment_intracluster(
     ZERO = 0
     TERMINAL_TIME = max(unresolved_cell_time_cluster.values())
 
-    if isinstance(MAX_ZERO_TIME_CELLS, float):
-        MAX_ZERO_TIME_CELLS = int(MAX_ZERO_TIME_CELLS \
+    if isinstance(MAX_ALLOWED_ZERO_TIME_CELLS, float):
+        MAX_ALLOWED_ZERO_TIME_CELLS = int(MAX_ALLOWED_ZERO_TIME_CELLS \
                 * len(unresolved_cell_time_cluster))
-    MAX_ZERO_TIME_CELLS = max(MAX_ZERO_TIME_CELLS, 10)
+    MAX_ALLOWED_ZERO_TIME_CELLS = max(MAX_ALLOWED_ZERO_TIME_CELLS, 10)
 
-    if isinstance(MAX_TERM_CELLS, float):
-        MAX_TERM_CELLS = int(MAX_TERM_CELLS \
+    if isinstance(MAX_ALLOWED_TERM_CELLS, float):
+        MAX_ALLOWED_TERM_CELLS = int(MAX_ALLOWED_TERM_CELLS \
                 * len(unresolved_cell_time_cluster))
-    MAX_TERM_CELLS = max(MAX_TERM_CELLS, 10)
+    MAX_ALLOWED_TERM_CELLS = max(MAX_ALLOWED_TERM_CELLS, 10)
 
     print("Total cells in the cluster: ", len(unresolved_cell_time_cluster))
-    print("MAX allowed zero time cells: ", MAX_ZERO_TIME_CELLS)
-    print("MAX allowed terminal cells: ", MAX_TERM_CELLS)
+    print("MAX allowed zero time cells: ", MAX_ALLOWED_ZERO_TIME_CELLS)
+    print("MAX allowed terminal cells: ", MAX_ALLOWED_TERM_CELLS)
 
     zero_time_cells = [cellid for cellid, celltime in 
             unresolved_cell_time_cluster.items() if celltime <= ZERO]
@@ -332,8 +333,8 @@ def recur_cell_time_assignment_intracluster(
 
     # non-zero/non-terminal time cells form a subcluster.
     cell_time_mid=dict()
-    NO_ZERO = len(zero_time_cells) < MAX_ZERO_TIME_CELLS
-    NO_TERM = len(terminal_cells) < MAX_TERM_CELLS
+    NO_ZERO = len(zero_time_cells) < MAX_ALLOWED_ZERO_TIME_CELLS
+    NO_TERM = len(terminal_cells) < MAX_ALLOWED_TERM_CELLS
     if NO_ZERO:
         print("Only ", len(zero_time_cells), " zero cells left. ")
         print(zero_time_cells)
@@ -390,7 +391,7 @@ def recur_cell_time_assignment_intracluster(
         ref_path = sorted_traj[0]
 
         # re-assign time for zero time cells
-        sub_cell_time = cell_time_projection_cluster(
+        sub_cell_time = projection_cell_time_one_cluster(
                 cell_embedding, 
                 ref_path, 
                 cluster, 
@@ -413,8 +414,8 @@ def recur_cell_time_assignment_intracluster(
                 n_repeats = n_repeats, 
                 n_jobs = n_jobs,
                 psrng_seeds_diffusion = psrng_seeds_diffusion,
-                MAX_ZERO_TIME_CELLS=MAX_ZERO_TIME_CELLS,
-                MAX_TERM_CELLS=MAX_TERM_CELLS)
+                MAX_ALLOWED_ZERO_TIME_CELLS=MAX_ALLOWED_ZERO_TIME_CELLS,
+                MAX_ALLOWED_TERM_CELLS=MAX_ALLOWED_TERM_CELLS)
         cell_time_subclusters, sorted_refPaths = zero_out[0], zero_out[1]
 
     if not NO_TERM:
@@ -449,7 +450,7 @@ def recur_cell_time_assignment_intracluster(
         ref_path = sorted_traj[0]
 
         # re-assign time for zero time cells
-        sub_cell_time = cell_time_projection_cluster(
+        sub_cell_time = projection_cell_time_one_cluster(
                 cell_embedding, 
                 ref_path, 
                 cluster, 
@@ -472,8 +473,8 @@ def recur_cell_time_assignment_intracluster(
                 n_repeats = n_repeats, 
                 n_jobs = n_jobs,
                 psrng_seeds_diffusion = psrng_seeds_diffusion,
-                MAX_ZERO_TIME_CELLS=MAX_ZERO_TIME_CELLS,
-                MAX_TERM_CELLS=MAX_TERM_CELLS)
+                MAX_ALLOWED_ZERO_TIME_CELLS=MAX_ALLOWED_ZERO_TIME_CELLS,
+                MAX_ALLOWED_TERM_CELLS=MAX_ALLOWED_TERM_CELLS)
         cell_time_subclusters, sorted_refPaths = term_out[0], term_out[1]
 
     return cell_time_subclusters, sorted_refPaths
@@ -922,7 +923,7 @@ def assign_all_cell_fate(embedding, sampling_ixs, cell_fate):
     return all_cell_fate
 
 
-def compute_all_cell_time(
+def compute_cell_time(
         cellDancer_df, 
         embedding, 
         cell_embedding, 
@@ -948,12 +949,12 @@ def compute_all_cell_time(
     print("There are %d clusters." % (n_clusters))
     print(np.array(clusters))
     
-    cell_time_per_cluster = [cell_time_projection_cluster(cell_embedding, 
+    cell_time_per_cluster = [projection_cell_time_one_cluster(cell_embedding, 
         path_clusters[cluster][0], cluster, cell_fate) for cluster in clusters]
 
-    path_per_cluster = [path_clusters[cluster][0] for cluster in clusters] 
+    repPath_clusters = [path_clusters[cluster][0] for cluster in clusters] 
 
-    plot_celltime_clusters(cell_time_per_cluster, path_per_cluster, cell_embedding)
+    plot_celltime_clusters(cell_time_per_cluster, repPath_clusters, cell_embedding)
 
     # intra-cluster time assignment
     clusterIndex=0
@@ -981,10 +982,11 @@ def compute_all_cell_time(
                 n_repeats=n_repeats, 
                 n_jobs=n_jobs,
                 psrng_seeds_diffusion = psrng_seeds_diffusion,
-                MAX_ZERO_TIME_CELLS = 0.05,
-                MAX_TERM_CELLS = 0.05)
+                MAX_ALLOWED_ZERO_TIME_CELLS = 0.05,
+                MAX_ALLOWED_TERM_CELLS = 0.05)
         cell_time_subclusters, refPaths = cluster_out[0], cluster_out[1]
-        print("number of paths: ", len(cell_time_subclusters), len(refPaths))
+        print("number of paths: ", len(refPaths))
+        print("number of subclusters: ", len(cell_time_subclusters))
 
         print("\nDisplay reference paths for cluster", clusterID)
         fig, ax = plt.subplots(figsize=(6,6))
@@ -1013,11 +1015,12 @@ def compute_all_cell_time(
                     cell_fate_subclusters_dict[cell] = subclusterID
                 subclusterID += 1
 
-            cell_time_per_cluster[clusterIndex]=cell_time_assignment_intercluster(
-                    cell_time_subclusters,
-                    cell_fate_subclusters_dict, 
-                    cell_embedding, 
-                    tau = 0.05)
+            cell_time_per_cluster[clusterIndex]= \
+                    cell_time_assignment_intercluster(
+                        cell_time_subclusters,
+                        cell_fate_subclusters_dict, 
+                        cell_embedding, 
+                        tau = 0.05)
             cell_time_per_cluster[clusterIndex] = \
                     combine_clusters(cell_time_per_cluster[clusterIndex])
 
@@ -1063,15 +1066,92 @@ def pseudo_time(
         cellDancer_df, 
         grid, 
         dt, 
-        t_total, 
-        n_repeats,
+        t_total=1000, 
+        n_repeats=10,
         psrng_seeds_diffusion=None,
         activate_umap_paths_divider=False,
-        n_jobs = -1,
+        n_jobs=-1,
         speed_up=(60, 60), 
         n_paths=5,
         save=False, 
         output_path=None):
+
+    """Compute the gene-shared pseudotime based on the RNA cell velocities.
+
+    Arguments
+    ---------
+    cellDancer_df: `pandas.DataFrame`
+        Data frame of velocity estimation results.
+        Columns=['cellIndex', 'gene_name', unsplice', 'splice',
+        'unsplice_predict', 'splice_predict',
+        'alpha', 'beta', 'gamma', 'loss', 'cellID, 'clusters',
+        'embedding1', 'embedding2', 'velocity1', 'velocity2']
+
+    grid: `tuple`
+        (n_x, n_y), where n_x, n_y are integers.
+        The embedding space (2d, [xmin, xmax] x [ymin, ymax]) is divided into
+        n_x * n_y grids. The cells in the same grid share the same velocity
+        (mean), however, they may not share the pseudotime.
+
+        If it's set to `None`, then a recommended value for n_x and n_y is
+        the square root of the number of selected cells (rounded to the nearest
+        tenth.)
+
+    dt: `float` (default: 0.01)
+        Time step used to advance a cell on the embedding for generation of
+        cell diffusion trajectories. Parameter `dt` should be set together
+        with `t_total`. Excessively small values of `dt` demand large `t_total`,
+        and drastically increase computing time; Excessively large values of
+        `dt` lead to low-resolution and unrealistic pseudotime estimation.
+
+    t_total: `float` (default: 1000)
+        Total number of time steps used for generation of cell diffusion
+        trajectories.
+        The diffusion is stopped by any of the criteria:
+        - reach `t_total`;
+        - the magnitude of the velocity is less than a cutoff `eps`;
+        - the cell goes to where no cell resides;
+        - the cell is out of the diffusion box (the `grid`)
+
+    n_repeats: `int` (default: 10)
+        Number of repeated diffusion of each cell used for generation of cell
+        diffusion trajectories.
+
+    psrng_seeds_diffusion: optional, `list-like: list, tuple, or 1-d numpy
+    array` (default: `None`)
+        Pseudo random number generator seeds for all the replicas in generation
+        of cell diffusion trajectories. Its length = `n_repeats`. Set this for
+        reproducibility.
+
+    speed_up: optional, `tuple` (default: (60,60))
+        The sampling grid used in *compute_cell_velocity.compute*.
+        This grid is used for interpolating pseudotime for all cells.
+
+    n_jobs: optional, `int` (default: -1)
+        Number of threads or processes used for cell diffusion. It follows the
+        scikit-learn convention. -1 means all possible threads.
+
+    n_paths: `int` (default: 5)
+        Number of representative paths to extract for cell pseudotime estimation.
+        Note this parameter is very sensitive. For best outcome, please set the
+        number based on biological knowledge about the cell embedding.
+
+    save: `bool` (default: `False`)
+        Whether to save the pseudotime-included `cellDancer_df` as .csv file.
+
+    output_path: `str` (default: `None`)
+        Save file path. By default, the .csv file is saved in current directory.
+
+    activate_umap_paths_divider: `bool` (default: `False`)
+        Whether to use UMAP embeddding (calculated from alpha, beta, and gamma)
+        in generation of cell diffusion trajectories. Not recommended because
+        switching it on drastically increases computational time.
+
+    Returns
+    -------
+    cellDancer_df: `pandas.DataFrame`
+        The updated cellDancer_df with additional columns ['velocity1', 'velocity2'].
+    """
 
     start_time = time.time()
 
@@ -1124,12 +1204,14 @@ def pseudo_time(
     else:
         path_divider_matrix = None
 
+    # v_eps is used to stop a trajectory if mag of velocity < v_eps
+    v_eps = 1e-3
     paths=run_diffusion(cell_embedding, 
                         vel_mesh, 
                         grid_mass, 
                         dt=dt, 
                         t_total=t_total,
-                        eps=1e-5, 
+                        eps=v_eps, 
                         off_cell_init=False, 
                         n_repeats = n_repeats, 
                         psrng_seeds_diffusion = psrng_seeds_diffusion,
@@ -1162,26 +1244,26 @@ def pseudo_time(
         n_clusters = len(clusters)
         return n_clusters, cell_fate, path_clusters
 
-    def binary_search(s_high, s_low, n_path_h, n_path_l):
-        if n_path_h >= n_paths:
+    def binary_search(s_high, s_low, n_path_min, n_path_max):
+        if n_path_min >= n_paths:
             return s_high
-        if n_path_l < n_paths:
+        if n_path_max < n_paths:
             return s_low
 
         s_mid = (s_high + s_low)/2.
-        n_path_m = decide_cell_fate(s_mid)[0]
-        if n_path_m == n_paths:
+        n_path_mid = decide_cell_fate(s_mid)[0]
+        if n_path_mid == n_paths:
             return s_mid
-        elif n_path_m < n_paths:
-            return binary_search(s_mid, s_low, n_path_m, n_path_l)
+        elif n_path_mid < n_paths:
+            return binary_search(s_mid, s_low, n_path_mid, n_path_max)
         else:
-            return binary_search(s_high, s_mid, n_path_h, n_path_m)
+            return binary_search(s_high, s_mid, n_path_min, n_path_mid)
 
     s_high = 0.4
     s_low = 0.1
-    n_path_h = decide_cell_fate(s_high)[0] 
-    n_path_l = decide_cell_fate(s_low)[0] 
-    path_similarity = binary_search(s_high, s_low, n_path_h, n_path_l)
+    n_path_min = decide_cell_fate(s_high)[0] 
+    n_path_max = decide_cell_fate(s_low)[0] 
+    path_similarity = binary_search(s_high, s_low, n_path_min, n_path_max)
     print("use path_similarity: ", path_similarity)
     n_clusters, cell_fate, path_clusters = decide_cell_fate(path_similarity)
 
@@ -1191,7 +1273,7 @@ def pseudo_time(
 
     # NNN show path clusters
     #plot_path_clusters(path_clusters, cell_clusters, cell_embedding)    
-    cellDancer_df = compute_all_cell_time(
+    cellDancer_df = compute_cell_time(
         cellDancer_df,
         normalized_embedding, 
         cell_embedding, 
@@ -1204,19 +1286,21 @@ def pseudo_time(
         n_grids=speed_up,
         dt=dt, 
         t_total=t_total, 
-        n_repeats = n_repeats, 
+        n_repeats=n_repeats, 
+        eps=v_eps,
         n_jobs=n_jobs,
         psrng_seeds_diffusion=psrng_seeds_diffusion)
     
     print("--- %s seconds ---" % (time.time() - start_time))
 
     if save:
-        outname = 'pseudo_time'+ \
-            '__grid' + str(grid[0])+'x'+str(grid[1])+ \
-            '__dt' + str(dt)+ \
-            '__ttotal' + str(t_total)+ \
-            '__nrepeats' + str(n_repeats) + \
-            '.csv'
+        outname = 'cellDancer'+\
+                '_pseudo_time'+ \
+                '__grid' + str(grid[0])+'x'+str(grid[1])+ \
+                '__dt' + str(dt)+ \
+                '__ttotal' + str(t_total)+ \
+                '__nrepeats' + str(n_repeats) + \
+                '.csv'
         if output_path is not None:
             outfile = os.path.join(output_path, outname)
         else:
@@ -1319,7 +1403,7 @@ def plot_celltime_clusters(cell_time_per_cluster, path_clusters, embedding):
         lead_path = path_clusters[i]
         
         plt.scatter(cells[:,0], cells[:,1], 
-                c=cell_time, s=20, cmap = colormap)
+                c=cell_time, s=20, cmap = colormap, alpha =0.8)
         plt.scatter(lead_path[:,0], lead_path[:,1], 
                 c=range(len(lead_path)), s=5, cmap = 'Reds_r')
         ax.set_aspect('equal', adjustable='box')
