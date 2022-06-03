@@ -936,6 +936,7 @@ def compute_cell_time(
         n_grids,
         dt=0.001, 
         t_total=10000, 
+        eps=1e-3,
         n_repeats = 10, 
         n_jobs = -1,
         psrng_seeds_diffusion = None):
