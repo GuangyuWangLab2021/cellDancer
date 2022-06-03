@@ -16,11 +16,9 @@ def _generate_points(u0_start, s0_start, alpha, beta, gamma, t1, t2, samples):
 
     t_space = np.linspace(t1, t2, samples)
 
-    # PZ: should it be t1?
-    #num_sol = solve_ivp(trans_dynamics, [0, t2], [s0_start, u0_start], method='RK45', dense_output=True)
     num_sol = solve_ivp(
             trans_dynamics, 
-            [t1, t2], 
+            [0, t2], 
             [s0_start, u0_start], 
             method='RK45', 
             dense_output=True)
@@ -476,8 +474,8 @@ def test_solve_ivp():
 if __name__ == "__main__":
     import sys
     sys.path.append('.')
-    from utilities import set_rcParams
-    set_rcParams()
+#    from utilities import set_rcParams
+#    set_rcParams()
 
     #########################################
     #random walk. Normal distribution in each steps
