@@ -40,7 +40,7 @@ def graph(
         node_layout='forcedirected', 
         use_edge_bundling=True, 
         node_colors='clusters', 
-        edge_length=1, 
+        edge_length=3, 
         node_sizes='pseudotime', 
         colorbar='on',
         legend='on')
@@ -107,7 +107,8 @@ def graph(
     if node_layout in ['forceatlas2', 'forcedirected']:
         # Current version of datashader.layout does not support reading a layout (x,y) and perform layout function
         # It does not support other attributes except index.
-        forcedirected = forceatlas2_layout(nodes[['index']], edges, weight='weight', iterations=200, seed=10)
+        forcedirected = forceatlas2_layout(nodes[['index']], edges,
+                weight='weight', iterations=1000, k=0.1, seed=10)
         nodes['x'] = forcedirected['x']
         nodes['y'] = forcedirected['y']
 
