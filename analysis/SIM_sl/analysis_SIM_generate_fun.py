@@ -85,6 +85,22 @@ def two_alpha(alpha1, alpha2, beta1, beta2, gamma1, gamma2, percent_u1, percent_
     expr.index = range(len(expr))
     return expr
 
+def boost_path(alpha1, alpha2, beta1, beta2, gamma1, gamma2, percent_u1, percent_u2, samples1, samples2, dt=0.001, noise_level=1):
+
+    #expr1, (new_u0_start, new_s0_start) = _simulate_without_t(0, 0, alpha1, beta1, gamma1, 0, percent_u1, samples1, dt, noise_level)
+    #expr2, end2 = _simulate_without_t(new_u0_start, new_s0_start, alpha2, beta2, gamma2, 0, percent_u2, samples2, dt, noise_level
+    expr1, end1 = _simulate_without_t(0, 0, alpha1, beta1, gamma1, 0, percent_u1, samples1, dt, noise_level)
+    expr2, end2 = _simulate_without_t(0, 0, alpha2, beta2, gamma2, 0, percent_u2, samples2, dt, noise_level)
+
+    # boosted induction starts from the end of the previous induction.
+    expr2['u0'] += alpha1/beta1
+    expr2['s0'] += alpha1/gamma1
+    expr2['u1'] += alpha1/beta1
+    expr2['s1'] += alpha1/gamma1
+    expr = expr1.append(expr2)
+    expr.index = range(len(expr))
+    return expr
+
 def two_alpha2(alpha1, alpha2, beta1, beta2, gamma1, gamma2, percent_u1, percent_u2, samples1, samples2, dt=0.001, noise_level=1):
     expr1, end1 = _simulate_without_t(0, 0, alpha1, beta1, gamma1, 0, percent_u1, samples1, dt, noise_level)
     expr2, end2  = _simulate_without_t(0, 0, alpha2, beta2, gamma2, 0, percent_u2, samples2, dt, noise_level)
@@ -155,6 +171,9 @@ def generate(type, gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1
         elif type == "two_alpha3":
             expr = two_alpha3(alpha1=alpha1, alpha2=alpha2, beta1=beta1, beta2=beta2, gamma1=gamma1, gamma2=gamma2, percent_u1=path1_pct, percent_u2=path2_pct, 
                     samples1=samples1, samples2=samples2, noise_level=noise_level)
+        elif type == "boost":
+            expr = boost_path(alpha1=alpha1, alpha2=alpha2, beta1=beta1, beta2=beta2, gamma1=gamma1, gamma2=gamma2, percent_u1=path1_pct, percent_u2=path2_pct, 
+                    samples1=samples1, samples2=samples2, noise_level=noise_level)
         else:
             print("type not match")
         expr.u0, expr.s0 = _jitter(expr.u0, expr.s0, noise_level)
@@ -191,6 +210,9 @@ def generate(type, gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1
     data_onegene = pd.DataFrame()
     for g in genelist_all:
         data_onegene = data_onegene.append(adata_to_detail(adata, para=['u0s', 's0s', 'alphas', 'betas', "gammas"], gene=g))
+    data_onegene=data_onegene.rename(columns={"u0": "unsplice", "s0": "splice","gene_list": "gene_name"})
+    data_onegene.loc[:,'cellID']=list(range(len(data_onegene)))
+    data_onegene.loc[:,'clusters']=None
     return data_onegene
 
 def generate_forward(gene_num, alpha, beta, gamma, sample, noise_level):
@@ -201,6 +223,11 @@ def generate_backward(gene_num, alpha, beta, gamma, sample, noise_level):
 
 def generate_onepath(gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level):
     return generate("two_alpha", gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level)
+
+def generate_boost_path(gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level):
+    return generate("boost", gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level)
+
+
 
 def generate_multipath(gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level):
     return generate("two_alpha2", gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level)
