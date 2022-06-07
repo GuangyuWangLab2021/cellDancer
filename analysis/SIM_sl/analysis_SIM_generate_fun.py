@@ -218,8 +218,8 @@ def generate(type, gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1
 def generate_forward(gene_num, alpha, beta, gamma, sample, noise_level):
     return generate("forwad", gene_num, alpha, 0, beta, 0, gamma, 0, 0, 0, sample, 0, noise_level)
 
-def generate_backward(gene_num, alpha, beta, gamma, sample, noise_level):
-    return generate("backward", gene_num, alpha, 0, beta, 0, gamma, 0, 0, 0, sample, 0, noise_level)
+# def generate_backward(gene_num, alpha, beta, gamma, sample, noise_level):
+#     return generate("backward", gene_num, alpha, 0, beta, 0, gamma, 0, 0, 0, sample, 0, noise_level)
 
 def generate_onepath(gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level):
     return generate("two_alpha", gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level)
@@ -246,15 +246,18 @@ def generate_2circle():
     plt.scatter(expr['s0'], expr['u0'], c=expr['alpha'], s=1)
     plt.show()
 
-def generate_backward(start_s1, start_s2, start_u1, start_u2, beta1, beta2, gamma1, gamma2, path1_sample, path2_sample):
+def generate_backward(start_s1, start_s2, start_u1, start_u2,alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_sample, path2_sample,noise_level=None):
     gene_info = pd.DataFrame(columns = ['gene_name', 'start_u', 'start_s', 'alpha', 'beta', 'gamma', 'start_pct', 'end_pct', 'samples'])
-    gene_info = gene_info.append({'gene_name':'g1', 'start_u':start_u1, 'start_s':start_s1, 'alpha':0, 'beta':beta1, 'gamma':gamma1, 'start_pct':0, 'end_pct':99, 'samples':path1_sample}, ignore_index=True)
-    gene_info = gene_info.append({'gene_name':'g1', 'start_u':start_u2, 'start_s':start_s2, 'alpha':0, 'beta':beta2, 'gamma':gamma2, 'start_pct':0, 'end_pct':99, 'samples':path2_sample}, ignore_index=True)
+    gene_info = gene_info.append({'gene_name':'g1', 'start_u':start_u1, 'start_s':start_s1, 'alpha':alpha1, 'beta':beta1, 'gamma':gamma1, 'start_pct':0, 'end_pct':99, 'samples':path1_sample}, ignore_index=True)
+    gene_info = gene_info.append({'gene_name':'g1', 'start_u':start_u2, 'start_s':start_s2, 'alpha':alpha2, 'beta':beta2, 'gamma':gamma2, 'start_pct':0, 'end_pct':99, 'samples':path2_sample}, ignore_index=True)
 
     
-    gene_info, expr = generate_with_df(gene_info)
+    gene_info, expr = generate_with_df(gene_info,noise_level)
     expr['embedding1']=expr['u0']
     expr['embedding2']=expr['s0']
+    expr=expr.rename(columns={"u0": "unsplice", "s0": "splice","gene_list": "gene_name"})
+    expr.loc[:,'cellID']=list(range(len(expr)))
+    expr.loc[:,'clusters']=None
     return expr
 
 
