@@ -50,6 +50,15 @@ def graph(
         colorbar='on',
         legend='on')
         
+    In this example, we use a force-directed node layout algorithm (ForceAtlas2, 
+M. Jacomy, T. Venturini, S. Heymann, M. Bastian, Plos One. 9, e98679 (2014)).
+A connection is made between any two cells within 3 (unit in the embedding). The
+resulted edge lengths indicate the time difference between nodes (the closer in
+pseudotime, the shorter the edge length). Edge bundling is applied to highlight
+important edges (trunks). The sizes of the nodes are proportional to the 
+pseudotime. The nodes are colored according to their cell types (if given in the
+input data). 
+
     Arguments
     ---------
     cellDancer_df: `pandas.DataFrame`
