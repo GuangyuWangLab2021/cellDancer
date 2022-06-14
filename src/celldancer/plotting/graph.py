@@ -29,35 +29,37 @@ def graph(
         legend='off',
         colorbar='on'):
 
-    """ Graph visualization of selected cells reflecting their orders in pseudotime 
-    Embedding and pseudotime of the cells are required.
-    Each cell makes a node and the connection between nodes are based on their
-    separation in the embedding space and the strength of the connection is
-    propotional to the pseudotime difference (the larger the pseudotime
-    difference in absolute values, the weaker the connection).
+    """ 
+    Graph visualization of selected cells reflecting their orders in
+    pseudotime. Embedding and pseudotime of the cells are required. Each cell
+    makes a node and the connection between nodes are based on their separation 
+    in the embedding space and the strength of the connection is propotional to 
+    the pseudotime difference (the larger the pseudotime difference in absolute 
+    values, the weaker the connection).
 
-    Example:
-    from celldancer.plotting import graph
-    from matplotlib import pyplot as plt
-    fig, ax = plt.subplots(figsize=(10,10))
-    graph.graph(ax, 
-        load_cellDancer, 
-        node_layout='forcedirected', 
-        use_edge_bundling=True, 
-        node_colors='clusters', 
-        edge_length=3, 
-        node_sizes='pseudotime', 
-        colorbar='on',
-        legend='on')
+    Example usage:
+    .. code-block:: python
+        from celldancer.plotting import graph
+        from matplotlib import pyplot as plt
+        fig, ax = plt.subplots(figsize=(10,10))
+        graph.graph(ax, 
+            load_cellDancer, 
+            node_layout='forcedirected', 
+            use_edge_bundling=True, 
+            node_colors='clusters', 
+            edge_length=3, 
+            node_sizes='pseudotime', 
+            colorbar='on',
+            legend='on')
         
-    In this example, we use a force-directed node layout algorithm (ForceAtlas2, 
-M. Jacomy, T. Venturini, S. Heymann, M. Bastian, Plos One. 9, e98679 (2014)).
-A connection is made between any two cells within 3 (unit in the embedding). The
-resulted edge lengths indicate the time difference between nodes (the closer in
-pseudotime, the shorter the edge length). Edge bundling is applied to highlight
-important edges (trunks). The sizes of the nodes are proportional to the 
-pseudotime. The nodes are colored according to their cell types (if given in the
-input data). 
+    In this example, we use a force-directed node layout algorithm (`ForceAtlas2 
+    <https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0098679>`)
+    A connection is made between any two cells within 3 (unit in the embedding).
+    The resulted edge lengths indicate the time difference between nodes (the
+    closer in pseudotime, the shorter the edge length). Edge bundling is applied
+    to highlight important edges (trunks). The sizes of the nodes are
+    proportional to the pseudotime. The nodes are colored according to their
+    cell types (if given by the input data). 
 
     Arguments
     ---------
