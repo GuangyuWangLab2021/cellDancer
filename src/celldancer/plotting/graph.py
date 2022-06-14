@@ -30,6 +30,11 @@ def graph(
         colorbar='on'):
 
     """ Graph visualization of selected cells reflecting their orders in pseudotime 
+    Embedding and pseudotime of the cells are required.
+    Each cell makes a node and the connection between nodes are based on their
+    separation in the embedding space and the strength of the connection is
+    propotional to the pseudotime difference (the larger the pseudotime
+    difference in absolute values, the weaker the connection).
 
     Example:
     from celldancer.plotting import graph

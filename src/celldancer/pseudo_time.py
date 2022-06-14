@@ -306,8 +306,8 @@ def recur_cell_time_assignment_intracluster(
         a list of longest trajectories used for cell time projection
     '''
     
-    print("\n\n")
-    print("Cluster ", cluster)
+    #print("\n\n")
+    #print("Cluster ", cluster)
     ZERO = 0
     TERMINAL_TIME = max(unresolved_cell_time_cluster.values())
 
@@ -321,9 +321,9 @@ def recur_cell_time_assignment_intracluster(
                 * len(unresolved_cell_time_cluster))
     MAX_ALLOWED_TERM_CELLS = max(MAX_ALLOWED_TERM_CELLS, 10)
 
-    print("Total cells in the cluster: ", len(unresolved_cell_time_cluster))
-    print("MAX allowed zero time cells: ", MAX_ALLOWED_ZERO_TIME_CELLS)
-    print("MAX allowed terminal cells: ", MAX_ALLOWED_TERM_CELLS)
+    #print("Total cells in the cluster: ", len(unresolved_cell_time_cluster))
+    #print("MAX allowed zero time cells: ", MAX_ALLOWED_ZERO_TIME_CELLS)
+    #print("MAX allowed terminal cells: ", MAX_ALLOWED_TERM_CELLS)
 
     zero_time_cells = [cellid for cellid, celltime in 
             unresolved_cell_time_cluster.items() if celltime <= ZERO]
@@ -336,15 +336,15 @@ def recur_cell_time_assignment_intracluster(
     NO_ZERO = len(zero_time_cells) < MAX_ALLOWED_ZERO_TIME_CELLS
     NO_TERM = len(terminal_cells) < MAX_ALLOWED_TERM_CELLS
     if NO_ZERO:
-        print("Only ", len(zero_time_cells), " zero cells left. ")
-        print(zero_time_cells)
+        #print("Only ", len(zero_time_cells), " zero cells left. ")
+        #print(zero_time_cells)
         for i in zero_time_cells:
             cell_time_mid[i] = unresolved_cell_time_cluster[i]
         zero_time_cells = list()
 
     if NO_TERM:
-        print("Only ", len(terminal_cells), " terminal cells left.")
-        print(terminal_cells)
+        #print("Only ", len(terminal_cells), " terminal cells left.")
+        #print(terminal_cells)
         for i in terminal_cells:
             cell_time_mid[i] = unresolved_cell_time_cluster[i]
         terminal_cells = list()
@@ -360,7 +360,7 @@ def recur_cell_time_assignment_intracluster(
     #    return cell_time_subclusters, sorted_refPaths
 
     if not NO_ZERO:
-        print(len(zero_time_cells), " zero cells left.")
+        #print(len(zero_time_cells), " zero cells left.")
         # get subsampled cell embedding & mass matrix
         sub_embedding = cell_embedding[zero_time_cells]
         sub_grid_mass = np.zeros_like(grid_mass)
@@ -368,7 +368,7 @@ def recur_cell_time_assignment_intracluster(
             i = tuple(cell_grid_idx[cell])
             sub_grid_mass[i] = grid_mass[i]
         # generate new trajectories starting from the zero-time cells
-        print("Sample trajs for zero-time cells in cluster ", cluster, "  ...")
+        #print("Sample trajs for zero-time cells in cluster ", cluster, "  ...")
         sub_traj=run_diffusion(
                 cell_embedding, 
                 vel=vel,
@@ -419,7 +419,7 @@ def recur_cell_time_assignment_intracluster(
         cell_time_subclusters, sorted_refPaths = zero_out[0], zero_out[1]
 
     if not NO_TERM:
-        print(len(terminal_cells), " terminal cells left.")
+        #print(len(terminal_cells), " terminal cells left.")
         # get subsampled cell embedding & mass matrix
         sub_embedding = cell_embedding[terminal_cells]
         sub_grid_mass = np.zeros_like(grid_mass)
@@ -427,7 +427,7 @@ def recur_cell_time_assignment_intracluster(
             i = tuple(cell_grid_idx[cell])
             sub_grid_mass[i] = grid_mass[i]
         # generate new trajectories starting from the terminal cells
-        print("Sample trajs for terminal cells in cluster ", cluster, " ...")
+        #print("Sample trajs for terminal cells in cluster ", cluster, " ...")
         sub_traj=run_diffusion(
                 cell_embedding, 
                 vel=vel,
@@ -506,14 +506,14 @@ def cell_time_assignment_intercluster(
         a list of dictionaries {cellID : time}
     '''
 
-    print("\nintercluster cell time adjustment")
-    print("number of cells: ", len(cell_fate_dict))
+    #print("\nintercluster cell time adjustment")
+    #print("number of cells: ", len(cell_fate_dict))
 
     #print(cell_fate_dict)
     clusterIDs = sorted(np.unique(list(cell_fate_dict.values())))
 
     cutoff = overlap_crit_intracluster(cell_embedding, cell_fate_dict, tau)
-    print("Cutoff is ", cutoff)
+    #print("Cutoff is ", cutoff)
 
     CT = nx.DiGraph()
     for cluster in clusterIDs:
@@ -522,7 +522,7 @@ def cell_time_assignment_intercluster(
     # nodes
     nodes = clusterIDs
     n_nodes = len(nodes)
-    print("Number of nodes: ", n_nodes)
+    #print("Number of nodes: ", n_nodes)
     # paths
     paths = list()
     # weights
@@ -547,7 +547,7 @@ def cell_time_assignment_intercluster(
     # i, j are the clusterIDs
     # they have to be converted to cluster_index to be used by
     # overlap_intercluster
-    print("clusterIDs: ", clusterIDs)
+    #print("clusterIDs: ", clusterIDs)
     for i,j in itertools.combinations(clusterIDs, 2):
         cluster0_index = clusterIDs.index(i)
         cluster1_index = clusterIDs.index(j)
@@ -563,10 +563,10 @@ def cell_time_assignment_intercluster(
         if shiftT is not None:
             shiftT = 0 if abs(shiftT) < MAX_IGNORED_TIME_SHIFT else shiftT
 
-            print("Time shift is: ", shiftT)
-            print("The overlapping cells are:",
-                    "\ncell ", overlap_cells[0], " from cluster ", i, " and ", 
-                    overlap_cells[1], " from cluster ", j)
+            #print("Time shift is: ", shiftT)
+            #print("The overlapping cells are:",
+                    #"\ncell ", overlap_cells[0], " from cluster ", i, " and ", 
+                    #overlap_cells[1], " from cluster ", j)
 
             if shiftT > 0:
                 CT.add_edge(i, j, weight = shiftT)
@@ -613,7 +613,7 @@ def cell_time_assignment_intercluster(
 #        p_w = zip(paths, w)
 #        print("Paths are: ", paths)
         for tree_nodes in nx.weakly_connected_components(CT):
-            print("Connected components: ", tree_nodes)
+            #print("Connected components: ", tree_nodes)
             temp_p = []
             temp_w = []
             for i in tree_nodes:
@@ -627,7 +627,7 @@ def cell_time_assignment_intercluster(
                 for node, time_adj in temp_w_cumm.items(): 
                     w_cumm[node] = time_adj
 
-    print("All nodes adjustment: ", w_cumm)
+    #print("All nodes adjustment: ", w_cumm)
     # update pseudotime
     #print("Before:\n", unresolved_cell_time)
     pseudotime = np.array(unresolved_cell_time, dtype=object)
@@ -796,8 +796,8 @@ def overlap_intercluster(
 
     cluster0_ID = clusterIDs[cluster0_index]
     cluster1_ID = clusterIDs[cluster1_index]
-    print("\nConsolidating time between clusters ", 
-            cluster0_ID, " and ", cluster1_ID, "...")
+    #print("\nConsolidating time between clusters ", 
+    #        cluster0_ID, " and ", cluster1_ID, "...")
 
     cluster0_cellID = list()
     cluster1_cellID = list()
@@ -819,8 +819,8 @@ def overlap_intercluster(
         
         #print(closePairs)
         if len(closePairs[0]) == 0:
-            print("No close cells between clusters\t", 
-                    (cluster0_ID, cluster1_ID))
+            #print("No close cells between clusters\t", 
+            #        (cluster0_ID, cluster1_ID))
             return None, []
         #print("\ncells in ", cluster0_index, ": \n", cluster0_cellID[closePairs[1]])
         #print("\ncells in ", cluster1_index, ": \n", cluster1_cellID[closePairs[0]])
@@ -837,7 +837,7 @@ def overlap_intercluster(
         deltaT = dict()
         for pair in idx:
             pair_cellIDs=(cluster0_cellID[pair[0]], cluster1_cellID[pair[1]])
-            print("pair_cellIDs: ", pair_cellIDs)
+            #print("pair_cellIDs: ", pair_cellIDs)
             deltaT[pair_cellIDs] = \
                     cell_time_per_cluster[cluster0_index][pair_cellIDs[0]] \
                     -cell_time_per_cluster[cluster1_index][pair_cellIDs[1]] 
@@ -849,25 +849,25 @@ def overlap_intercluster(
         if len(deltaT_values) < BARELY_OVERLAP:
             peak_mode = 'least_shift'
 
-        print("\nPeak mode: ", peak_mode)
+        #print("\nPeak mode: ", peak_mode)
         if peak_mode in ['least_shift']:
-            fig, axes = plt.subplots(nrows=1, ncols=2, 
-                    gridspec_kw={'width_ratios':[1,1]}, figsize=(8,4))
-            axes[0].title.set_text('overlapping cells between 2 clusters')
-            axes[0].scatter(cell_embedding[:,0], cell_embedding[:,1], s=1, alpha=0.3)
-            axes[0].scatter(cell_cluster0[:,0], cell_cluster0[:,1], s=5,
-                    alpha=0.3, color='orange')
-            axes[0].scatter(cell_cluster1[:,0], cell_cluster1[:,1], s=5,
-                    alpha=0.3, color='cyan')
-            axes[0].scatter(cell_cluster0[idx[:,0]][:,0],
-                    cell_cluster0[idx[:,0]][:,1], color='orange',
-                    edgecolors='k')
-            axes[0].scatter(cell_cluster1[idx[:,1]][:,0],
-                    cell_cluster1[idx[:,1]][:,1], color='cyan',
-                    edgecolors='k')
-            axes[1].title.set_text('histogram of overlapping time difference')
-            sns.histplot(ax=axes[1], data=deltaT_values, kde=False, color='skyblue')
-            plt.show()
+            #fig, axes = plt.subplots(nrows=1, ncols=2, 
+            #        gridspec_kw={'width_ratios':[1,1]}, figsize=(8,4))
+            #axes[0].title.set_text('overlapping cells between 2 clusters')
+            #axes[0].scatter(cell_embedding[:,0], cell_embedding[:,1], s=1, alpha=0.3)
+            #axes[0].scatter(cell_cluster0[:,0], cell_cluster0[:,1], s=5,
+            #        alpha=0.3, color='orange')
+            #axes[0].scatter(cell_cluster1[:,0], cell_cluster1[:,1], s=5,
+            #        alpha=0.3, color='cyan')
+            #axes[0].scatter(cell_cluster0[idx[:,0]][:,0],
+            #        cell_cluster0[idx[:,0]][:,1], color='orange',
+            #        edgecolors='k')
+            #axes[0].scatter(cell_cluster1[idx[:,1]][:,0],
+            #        cell_cluster1[idx[:,1]][:,1], color='cyan',
+            #        edgecolors='k')
+            #axes[1].title.set_text('histogram of overlapping time difference')
+            #sns.histplot(ax=axes[1], data=deltaT_values, kde=False, color='skyblue')
+            #plt.show()
 
             shiftT = deltaT_values[np.argmin(np.abs(deltaT_values))]
             closest_pair = list(deltaT.keys())[list(deltaT.values()).index(shiftT)]
@@ -955,7 +955,7 @@ def compute_cell_time(
 
     repPath_clusters = [path_clusters[cluster][0] for cluster in clusters] 
 
-    plot_celltime_clusters(cell_time_per_cluster, repPath_clusters, cell_embedding)
+    #plot_celltime_clusters(cell_time_per_cluster, repPath_clusters, cell_embedding)
 
     # intra-cluster time assignment
     clusterIndex=0
@@ -986,22 +986,22 @@ def compute_cell_time(
                 MAX_ALLOWED_ZERO_TIME_CELLS = 0.05,
                 MAX_ALLOWED_TERM_CELLS = 0.05)
         cell_time_subclusters, refPaths = cluster_out[0], cluster_out[1]
-        print("number of paths: ", len(refPaths))
-        print("number of subclusters: ", len(cell_time_subclusters))
+        #print("number of paths: ", len(refPaths))
+        #print("number of subclusters: ", len(cell_time_subclusters))
 
-        print("\nDisplay reference paths for cluster", clusterID)
-        fig, ax = plt.subplots(figsize=(6,6))
-        plt.scatter(cell_embedding[:,0], cell_embedding[:,1], alpha = 0.3)
+        #print("\nDisplay reference paths for cluster", clusterID)
+        #fig, ax = plt.subplots(figsize=(6,6))
+        #plt.scatter(cell_embedding[:,0], cell_embedding[:,1], alpha = 0.3)
         for j in range(len(refPaths)):
             path = refPaths[j]
-            plt.scatter(path[:,0], path[:,1], c=range(len(path)), s=5)
-            plt.text(path[-1,0], path[-1,1], "refPath"+str(j), fontsize=12)
+            #plt.scatter(path[:,0], path[:,1], c=range(len(path)), s=5)
+            #plt.text(path[-1,0], path[-1,1], "refPath"+str(j), fontsize=12)
             scell = cell_time_subclusters[j]
             scell = [i for i in scell]
             scell = cell_embedding[scell]
-            plt.scatter(scell[:,0], scell[:,1], s=10, alpha=1)
-        plt.axis('off')
-        plt.show()
+            #plt.scatter(scell[:,0], scell[:,1], s=10, alpha=1)
+        #plt.axis('off')
+        #plt.show()
 
         # Need to do inter-subcluster adjustment for all the subclusters in a cluster
         if len(cell_time_subclusters) > 1:
@@ -1027,7 +1027,7 @@ def compute_cell_time(
 
         clusterIndex += 1
 
-    print("\n\n\nAll intra cluster cell time has been resolved.\n\n\n")
+    #print("\n\n\nAll intra cluster cell time has been resolved.\n\n\n")
     
     # inter-cluster time alignment
     cell_fate_dict = {i:cell_fate[i] for i in range(len(cell_fate))}
@@ -1037,7 +1037,7 @@ def compute_cell_time(
             cell_embedding, 
             tau = 0.05)
 
-    print("\n\nAll inter cluster cell time has been resolved.\n\n\n")
+    #print("\n\nAll inter cluster cell time has been resolved.\n\n\n")
     cell_time = combine_clusters(resolved_cell_time)
     ordered_cell_time = np.array([cell_time[cell] for cell in sorted(cell_time.keys())])
 
@@ -1052,8 +1052,8 @@ def compute_cell_time(
         all_cell_time=ordered_cell_time
 
     all_cell_fate = assign_all_cell_fate(embedding, sampling_ixs, cell_fate)
-    print("There are %d cells." % (len(all_cell_fate)))
-    plot_cell_clusters(all_cell_fate, embedding)
+    #print("There are %d cells." % (len(all_cell_fate)))
+    #plot_cell_clusters(all_cell_fate, embedding)
     
     # write cell time to cellDancer_df
     gene_names = cellDancer_df['gene_name'].drop_duplicates().to_list()
@@ -1265,7 +1265,7 @@ def pseudo_time(
     n_path_min = decide_cell_fate(s_high)[0] 
     n_path_max = decide_cell_fate(s_low)[0] 
     path_similarity = binary_search(s_high, s_low, n_path_min, n_path_max)
-    print("use path_similarity: ", path_similarity)
+    #print("use path_similarity: ", path_similarity)
     n_clusters, cell_fate, path_clusters = decide_cell_fate(path_similarity)
 
     # make sure cluster id is continuous from 0 to n_clusters-1
