@@ -3,4 +3,4 @@
 
 
 # from . import plotting
-__all__=['cell','colormap','gene']
+__all__=['cell','colormap','gene','graph']

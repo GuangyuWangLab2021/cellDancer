@@ -11,6 +11,7 @@ import collections
 
 from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics import pairwise_distances
+from sklearn.neighbors import KernelDensity
 from scipy.spatial.distance import squareform
 from scipy import interpolate
 
@@ -587,21 +588,21 @@ def cell_time_assignment_intercluster(
         return unresolved_cell_time
 
     pos = nx.planar_layout(CT)
-    plt.figure(figsize=(5,5))
-    nx.draw(CT, 
-            pos=pos, 
-            with_labels = True, 
-            node_size=500, 
-            node_color = 'b',
-            style=':',
-            font_size = 18, 
-            font_color = 'w')
+#    plt.figure(figsize=(5,5))
+#    nx.draw(CT, 
+#            pos=pos, 
+#            with_labels = True, 
+#            node_size=500, 
+#            node_color = 'b',
+#            style=':',
+#            font_size = 18, 
+#            font_color = 'w')
 
-    weights = nx.get_edge_attributes(CT,'weight')
+#    weights = nx.get_edge_attributes(CT,'weight')
     #labels = {i:int(1/weights[i]) for i in weights}
-    labels = weights
-    nx.draw_networkx_edge_labels(CT,pos,edge_labels=labels)
-    plt.show()
+#    labels = weights
+#    nx.draw_networkx_edge_labels(CT,pos,edge_labels=labels)
+#    plt.show()
     
     if True:
 #    if not nx.is_forest(CT):
@@ -873,40 +874,44 @@ def overlap_intercluster(
             closest_pair = list(deltaT.keys())[list(deltaT.values()).index(shiftT)]
 
         elif peak_mode in ['most_frequent_shift']:
-            fig, axes = plt.subplots(nrows=1, ncols=2, 
-                    gridspec_kw={'width_ratios':[1,1]}, figsize=(8,4))
+#            fig, axes = plt.subplots(nrows=1, ncols=2, 
+#                    gridspec_kw={'width_ratios':[1,1]}, figsize=(8,4))
 
             #print("Unique close pairs\n", idx)
-            axes[0].title.set_text('overlapping cells between 2 clusters')
-            axes[0].scatter(cell_embedding[:,0], cell_embedding[:,1], s=1, alpha=0.3)
-            axes[0].scatter(cell_cluster0[:,0], cell_cluster0[:,1], s=5,
-                    alpha=0.3, color='orange')
-            axes[0].scatter(cell_cluster1[:,0], cell_cluster1[:,1], s=5,
-                    alpha=0.3, color='cyan')
-            axes[0].scatter(cell_cluster0[idx[:,0]][:,0],
-                    cell_cluster0[idx[:,0]][:,1], color='orange',
-                    edgecolors='k')
-            axes[0].scatter(cell_cluster1[idx[:,1]][:,0],
-                    cell_cluster1[idx[:,1]][:,1], color='cyan',
-                    edgecolors='k')
-            axes[1].title.set_text('histogram of overlapping time difference')
-            sns.histplot(ax=axes[1], data=deltaT_values, kde=True, color='skyblue')
-            try:
-                kdeline = axes[1].lines[0]
-                x = kdeline.get_xdata()
-                y = kdeline.get_ydata()
-                mode_idx = np.argmax(y)
-                axes[1].vlines(x[mode_idx], 0, y[mode_idx], color='tomato', ls='--', lw=5)
-                shiftT = x[mode_idx]
-            except IndexError: 
+#            axes[0].title.set_text('overlapping cells between 2 clusters')
+#            axes[0].scatter(cell_embedding[:,0], cell_embedding[:,1], s=1, alpha=0.3)
+#            axes[0].scatter(cell_cluster0[:,0], cell_cluster0[:,1], s=5,
+#                    alpha=0.3, color='orange')
+#            axes[0].scatter(cell_cluster1[:,0], cell_cluster1[:,1], s=5,
+#                    alpha=0.3, color='cyan')
+#            axes[0].scatter(cell_cluster0[idx[:,0]][:,0],
+#                    cell_cluster0[idx[:,0]][:,1], color='orange',
+#                    edgecolors='k')
+#            axes[0].scatter(cell_cluster1[idx[:,1]][:,0],
+#                    cell_cluster1[idx[:,1]][:,1], color='cyan',
+#                    edgecolors='k')
+#            axes[1].title.set_text('histogram of overlapping time difference')
+#            sns.histplot(ax=axes[1], data=deltaT_values, kde=True, color='skyblue')
+#            try:
+#                kdeline = axes[1].lines[0]
+#                x = kdeline.get_xdata()
+#                y = kdeline.get_ydata()
+#                mode_idx = np.argmax(y)
+#                axes[1].vlines(x[mode_idx], 0, y[mode_idx], color='tomato', ls='--', lw=5)
+#                shiftT = x[mode_idx]
+#            except IndexError: 
             # When there is only one bin, kdeline does not exist.
-                for p in axes[1].patches:
-                    shiftT = p.get_x()
-                axes[1].vlines(p.get_x(), 0, p.get_height(), color='tomato', ls='--', lw=5)
-            plt.show()
+#                for p in axes[1].patches:
+#                    shiftT = p.get_x()
+#                axes[1].vlines(p.get_x(), 0, p.get_height(), color='tomato', ls='--', lw=5)
+#            plt.show()
 
             # find the pair ~ shiftT
-            shiftT = deltaT_values[np.argmin(np.abs(deltaT_values-shiftT))]
+#            shiftT = deltaT_values[np.argmin(np.abs(deltaT_values-shiftT))]
+            dt_numpy = np.array(sorted(list(deltaT_values)))[:,None]
+            kde = KernelDensity(kernel="gaussian").fit(dt_numpy)
+            log_density = kde.score_samples(dt_numpy)
+            shiftT = dt_numpy[np.argmax(log_density)][0]
             closest_pair = list(deltaT.keys())[list(deltaT.values()).index(shiftT)]
         return shiftT, closest_pair
 
@@ -1207,6 +1212,10 @@ def pseudo_time(
 
     # v_eps is used to stop a trajectory if mag of velocity < v_eps
     v_eps = 1e-3
+    if psrng_seeds_diffusion is not None:
+        print("Pseudo random number generator seeds are set to: ", \
+                psrng_seeds_diffusion)
+
     paths=run_diffusion(cell_embedding, 
                         vel_mesh, 
                         grid_mass, 
@@ -1220,7 +1229,8 @@ def pseudo_time(
                         n_jobs = n_jobs)
     
     newPaths = truncate_end_state_stuttering(paths, cell_embedding) 
-    traj_displacement = np.array([compute_trajectory_displacement(ipath) for ipath in newPaths])
+    traj_displacement = np.array([compute_trajectory_displacement(ipath) for \
+            ipath in newPaths])
 
     # sorted from long to short
     order = np.argsort(traj_displacement)[::-1]
