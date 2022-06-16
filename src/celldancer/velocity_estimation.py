@@ -514,7 +514,7 @@ def _train_thread(datamodule,
     header_cellDancer_df=['cellIndex','gene_name','unsplice','splice','unsplice_predict','splice_predict','alpha','beta','gamma','loss']
     
     loss_df.to_csv(os.path.join(save_path,'TEMP', ('loss'+'_'+this_gene_name+'.csv')),header=header_loss_df,index=False)
-    cellDancer_df.to_csv(os.path.join(save_path,'TEMP', ('celldancer_estimation_'+this_gene_name+'.csv')),header=header_cellDancer_df,index=False)
+    cellDancer_df.to_csv(os.path.join(save_path,'TEMP', ('cellDancer_estimation_'+this_gene_name+'.csv')),header=header_cellDancer_df,index=False)
     return None
 
 
@@ -609,7 +609,7 @@ def velocity(
 
     # set output dir
     datestring = datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S");
-    folder_name='cell_dancer_velocity_'+datestring
+    folder_name='cellDancer_velocity_'+datestring
 
     if save_path is None:
         save_path=os.getcwd()
@@ -692,7 +692,7 @@ def velocity(
             norm_u_s=norm_u_s)
             for data_index in range(0,len(gene_list_batch)))
 
-    cellDancer_df = os.path.join(save_path,'TEMP', "celldancer_estimation*.csv")
+    cellDancer_df = os.path.join(save_path,'TEMP', "cellDancer_estimation*.csv")
     cellDancer_df_files = glob.glob(cellDancer_df)
     loss_df = os.path.join(save_path, 'TEMP',"loss*.csv")
     loss_df_files = glob.glob(loss_df)
@@ -709,8 +709,8 @@ def velocity(
                     fout.write(f.read())
         return(pd.read_csv(save_path))
 
-    cellDancer_df=combine_csv(os.path.join(save_path,"celldancer_estimation.csv"),cellDancer_df_files)
-    loss_df=combine_csv(os.path.join(save_path,"celldancer_estimation.csv"),loss_df_files)
+    cellDancer_df=combine_csv(os.path.join(save_path,"cellDancer_estimation.csv"),cellDancer_df_files)
+    loss_df=combine_csv(os.path.join(save_path,"cellDancer_estimation.csv"),loss_df_files)
 
     shutil.rmtree(os.path.join(save_path,'TEMP'))
 
@@ -721,7 +721,7 @@ def velocity(
     embedding_col=pd.concat([embedding_info]*gene_amt)
     embedding_col.index=cellDancer_df.index
     cellDancer_df=pd.concat([cellDancer_df,embedding_col],axis=1)
-    cellDancer_df.to_csv(os.path.join(save_path, ('celldancer_estimation.csv')),index=False)
+    cellDancer_df.to_csv(os.path.join(save_path, ('cellDancer_estimation.csv')),index=False)
 
     loss_df.to_csv(os.path.join(save_path, ('loss.csv')),index=False)
 

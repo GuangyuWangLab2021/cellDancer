@@ -31,7 +31,7 @@ setuptools.setup(
     #     'matplotlib>=3.1.3',
     #     'seaborn>=0.10.0',
     #     'joblib>=0.14.1'],
-    install_requires=read_requirements("requirements.txt"),
+    # install_requires=setuptools.read_requirements("requirements.txt"),
     python_requires=">=3.7",
 )
 

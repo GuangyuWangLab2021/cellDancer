@@ -7,3 +7,5 @@ from .cdplt import *
 from . import velocity_estimation
 from . import pseudo_time
 from . import compute_cell_velocity
+from . import embedding_kinetic_para
+from . import utilities
