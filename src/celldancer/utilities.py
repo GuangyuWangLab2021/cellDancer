@@ -144,7 +144,7 @@ def get_gene_s0_by_time(cell_time,load_cellDancer): # pseudotime
     cell_time_time_sort=cell_time.sort_values('pseudotime')
     cell_time_time_sort.columns=['index','time']
 
-    s0_heatmap_raw=load_cellDancer.pivot(index='cellIndex', columns='gene_name', values='s0')
+    s0_heatmap_raw=load_cellDancer.pivot(index='cellIndex', columns='gene_name', values='unsplice')
 
     s0_heatmap_raw
     s0_merged=pd.merge(cell_time_time_sort,s0_heatmap_raw,left_on='index', right_on='cellIndex') # TODO: NOT cellIndex in the future
