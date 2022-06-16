@@ -13,3 +13,8 @@ matplotlib==3.5.0
 seaborn==0.11.2
 bezier==2021.2.12
 networkx==2.6.3
+holoviews[all]
+pygraphviz
+scikit-image
+datashader
+anndata
