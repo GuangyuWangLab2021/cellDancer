@@ -571,8 +571,6 @@ def run_diffusion(
     if n_jobs < 0:
         n_jobs = mp.cpu_count() + 1 + n_jobs
 
-    print("Pseudo random numbers seeds are: ", psrng_seeds_diffusion)
-
     TASKS = list()
     # Setting up the TASKS
     n_cells = cell_embedding.shape[0]
@@ -600,7 +598,10 @@ def run_diffusion(
         n_total = len(init_cell)*n_repeats
         if n_total > 5000:
             paths = pool.starmap(diffusion_off_grid_wallbound, 
-                    tqdm.tqdm(TASKS, total=n_total))
+                    tqdm.tqdm(TASKS, total=n_total, 
+                        desc="Generating Trajectories", 
+                        colour="blue")
+                    )
         else:
             paths = pool.starmap(diffusion_off_grid_wallbound, TASKS) 
     return np.array(paths, dtype=object)
