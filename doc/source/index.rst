@@ -1,31 +1,23 @@
-.. toolkit documentation master file, created by
-   sphinx-quickstart on Wed Feb  9 17:10:01 2022.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-CellDancer
+cellDancer - High resolution of RNA velocity
 ===========================================================================================
-celldancer is a scalable toolkit for RNA velocity analysis in single cells, based on XXX.
+**cellDancer** is a tool for RNA velocity analysis in single cells.
 
-CellDancer key applications
+RNA velocity has provided a new way to construct directed dynamics of cellular states by modeling dynamics of pre-mRNAs (unspliced) and mature mRNAs (spliced) from transcriptional dynamic kinetics (`La Manno et al., Nature, 2018 <https://doi.org/10.1038/s41586-018-0414-6>`_).
+
+Here, we developed cellDancer, a deep learning framework, to decouple each cell’s transcription, splicing, and degradation rates rather than jointly estimating a set of shared rates for all cells.
+
+cellDancer key applications
 ============================
-
-This is the most important part of a documentation theme. If you like
-the general look of the theme, please make sure that it is possible to
-easily navigate through this sample documentation.
-
-Ideally, the pages listed below should also be reachable via links
-somewhere else on this page (like the sidebar, or a topbar). If they are
-not, then this theme might need additional configuration to provide the
-sort of site navigation that's necessary for "real" documentation.
+* Estimate RNA velocity for each gene.
+* Derive cell fates in embedding space.
+* Estimate pseudotime for each cell in embedding space.
 
 Latest news
-===========
-
-- April/2022: xxx
+^^^^^^^^^^^^^^^^^^^^
+- to be updated.
 
 .. toctree::
-    :caption: celldancer
+    :caption: cellDancer
     :titlesonly:
 
     about
@@ -33,11 +25,10 @@ Latest news
 
 .. toctree::
    :maxdepth: 2
-   :caption: Tutorials:
+   :caption: Tutorials
 
-   notebooks/Quick Start
-   notebooks/Gastrulation_main_function-Copy2
-   notebooks/Pancreas_main_function_pre_sl
-   notebooks/Neuro_main_function-pre_sl
-   notebooks/Preprocessing
-   notebooks/Tunning
+   notebooks/install
+   notebooks/Data Preparation
+   notebooks/CaseStudy_Gastrulation_transcriptional_boost
+   notebooks/Neuro_velocity_analysis
+   notebooks/Pancreas_decoding_kinetics

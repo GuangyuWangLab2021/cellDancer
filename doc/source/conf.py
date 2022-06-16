@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath('../../src'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'celldancer'
+project = 'cellDancer'
 copyright = '2022, 1'
 author = '1'
 
@@ -58,8 +58,12 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 #html_theme = 'alabaster'
 
 import sphinx_theme
-html_theme = 'stanford_theme'
-html_theme_path = [sphinx_theme.get_html_theme_path('stanford-theme')]
+# html_theme = 'stanford_theme'
+# html_theme_path = [sphinx_theme.get_html_theme_path('stanford-theme')]
+# html_theme = 'renku'
+html_theme = 'sphinx_rtd_theme'
+# html_permalinks_icon = '<span>#</span>'
+# html_theme = 'sphinxawesome_theme'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
