@@ -1,34 +1,31 @@
-.. toolkit documentation master file, created by
-   sphinx-quickstart on Wed Feb  9 17:10:01 2022.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 API - cellDancer key applications
 ===========================================================================================
-celldancer is a scalable toolkit for RNA velocity analysis in single cells, based on XXX.
 
-This is the most important part of a documentation theme. If you like
-the general look of the theme, please make sure that it is possible to
-easily navigate through this sample documentation.
+Import pandas, cellDancer, and plotting modules as::
+   
+   import pandas as pd
+   import celldancer as cd
+   import celldancer.plotting as cdplt
 
-Ideally, the pages listed below should also be reachable via links
-somewhere else on this page (like the sidebar, or a topbar). If they are
-not, then this theme might need additional configuration to provide the
-sort of site navigation that's necessary for "real" documentation.
-
+After loaded the data (``pd.read_csv``), the prediction could be done by ``cd.velocity_estimation.velocity``. The projection of velocity to embedding space could be calculated by ``cd.compute_cell_velocity.compute`` and visualized by ``cd.cell.scatter_cell``. The pseudotime could be calculated by ``cd.pseudo_time.pseudo_time`` and visualized by ``cell.scatter_cell`` or ``gene.scatter_gene``, the UMAP based one kinetic parameters could be calculated by ``cd.embedding_kinetic_para.embedding`` and visualized by ``cell.plot_kinetic_para``.
 
 
 Toolkit functions
 -------------------
+Preprocessing
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. currentmodule:: celldancer
+.. rubric:: Functions
+.. autosummary::
 
+   utilities.adata_to_raw_with_embed
 
-celldancer
+Velocity estimation and analysis
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. currentmodule:: celldancer
 .. rubric:: Functions
 
 .. autosummary::
-   :toctree: 
 
    velocity_estimation.velocity
    compute_cell_velocity.compute
@@ -36,15 +33,17 @@ celldancer
    embedding_kinetic_para.embedding
 
 
-plotting
+Plotting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. currentmodule:: celldancer.plotting
 .. rubric:: Functions
 
 .. autosummary::
-   :toctree: 
 
    gene.scatter_gene
    cell.scatter_cell
+   cell.plot_kinetic_para
+   graph.graph
+
 
 

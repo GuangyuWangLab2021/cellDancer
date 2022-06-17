@@ -144,7 +144,7 @@ def get_gene_s0_by_time(cell_time,load_cellDancer): # pseudotime
     cell_time_time_sort=cell_time.sort_values('pseudotime')
     cell_time_time_sort.columns=['index','time']
 
-    s0_heatmap_raw=load_cellDancer.pivot(index='cellIndex', columns='gene_name', values='s0')
+    s0_heatmap_raw=load_cellDancer.pivot(index='cellIndex', columns='gene_name', values='unsplice')
 
     s0_heatmap_raw
     s0_merged=pd.merge(cell_time_time_sort,s0_heatmap_raw,left_on='index', right_on='cellIndex') # TODO: NOT cellIndex in the future
@@ -170,35 +170,54 @@ def rank_rsquare(load_cellDancer,gene_list=None,cluster_choice=None):
     return(r_square_non_para_list_sort[['gene_name','r_square']].reset_index(drop=True))
 
 
-def adata_to_raw_with_embed(adata,save_path,gene_list=None):
-    '''convert adata to raw data format with embedding info
-    data:
-    save_path:
-    gene_list (optional):
-
-    return: panda dataframe with gene_list,u0,s0,cellID,clusters,embedding1,embedding2
+def adata_to_raw_with_embed(adata,
+                            us_para=['Mu', 'Ms'],
+                            cell_type_para='celltype',
+                            embed_para='X_umap',
+                            save_path='cell_type_u_s_sample_df.csv',
+                            gene_list=None):
     
-    run: test=adata_to_raw(adata,'/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/bin/cellDancer-development_20220128/src/output/test.csv',gene_list=genelist_all)
-    ref: mel - loom_to_celldancer_raw.py
-    '''
-    def adata_to_raw_one_gene(data, para, gene):
+    """Convert adata to raw data format with embedding info.
+        
+    Arguments
+    ---------
+    adata: `anndata._core.anndata.AnnData`
+        Data frame of raw data. Columns=['gene_name', 'unsplice', 'splice' ,'cellID' ,'clusters' ,'embedding1' ,'embedding2']
+    us_para: optional, `list` (default: ['Mu','Ms'])
+        The attributes of the two count matrices of pre-mature (unspliced) and mature (spliced) abundances from adata.layers. By default, splice and unsplice columns (the two count matrices of spliced and unspliced abundances) are obtained from the ['Ms', 'Mu'] attributes of adata.layers.
+    cell_type_para: optional, `str` (default: 'celltype')
+        The attribute to be obtained from adata.obs. By default, cell type information is obtained from ['celltype'] column of adata.obs.
+    embed_para: optional, `str` (default: 'X_umap')
+        The attribute to be obtained from adata.obsm. It represents 2-dimensional representation of all cells. The embedding1 and embedding2 columns are obtained from [‘X_umap’] attribute of adata.obsm.
+    save_path: optional, `str` (default: 'cell_type_u_s_sample_df.csv')
+        Path to save the result of transfered csv file.
+    gene_list: optional, `list` (default: None)
+        Specific gene(s) to be transfered.
+
+    Returns
+    -------
+    raw_data: `pandas.DataFrame` 
+        pandas DataFrame with columns gene_name, unsplice, splice, cellID, clusters, embedding1, embedding2.
+    """
+
+    def adata_to_raw_one_gene(data, us_para, gene):
         '''
         convert adata to raw data format (one gene)
         data: an anndata
-        para: the varable name of u0, s0, and gene name
-        para = ['Mu', 'Ms']
+        us_para: the varable name of u0, s0, and gene name
+        us_para = ['Mu', 'Ms']
         '''
         data2 = data[:, data.var.index.isin([gene])].copy()
-        u0 = data2.layers[para[0]][:,0].copy().astype(np.float32)
-        s0 = data2.layers[para[1]][:,0].copy().astype(np.float32)
-        raw_data = pd.DataFrame({'gene_list':gene, 'u0':u0, 's0':s0})
+        u0 = data2.layers[us_para[0]][:,0].copy().astype(np.float32)
+        s0 = data2.layers[us_para[1]][:,0].copy().astype(np.float32)
+        raw_data = pd.DataFrame({'gene_list':gene, 'unsplice':u0, 'splice':s0})
         return(raw_data)
 
     if gene_list is None: gene_list=adata.var.index
 
     for i,gene in enumerate(gene_list):
-        print("processing:"+str(i)+"/"+str(len(adata.var_names)))
-        data_onegene = adata_to_raw_one_gene(adata, para=['Mu', 'Ms'], gene=gene)
+        print("processing:"+str(i)+"/"+str(len(gene_list)))
+        data_onegene = adata_to_raw_one_gene(adata, us_para=us_para, gene=gene)
         if i==0:
             data_onegene.to_csv(save_path,header=True,index=False)
         else:
@@ -207,9 +226,9 @@ def adata_to_raw_with_embed(adata,save_path,gene_list=None):
     # cell info
     gene_num=len(gene_list)
     cellID=pd.DataFrame({'cellID':adata.obs.index})
-    celltype_meta=adata.obs['celltype'].reset_index(drop=True)
+    celltype_meta=adata.obs[cell_type_para].reset_index(drop=True)
     celltype=pd.DataFrame({'clusters':celltype_meta})#
-    embed_map=pd.DataFrame({'embedding1':adata.obsm['X_umap'][:,0],'embedding2':adata.obsm['X_umap'][:,1]})
+    embed_map=pd.DataFrame({'embedding1':adata.obsm[embed_para][:,0],'embedding2':adata.obsm[embed_para][:,1]})
     # embed_info_df = pd.concat([embed_info]*gene_num)
     embed_info=pd.concat([cellID,celltype,embed_map],axis=1)
     embed_raw=pd.concat([embed_info]*gene_num)
@@ -217,7 +236,6 @@ def adata_to_raw_with_embed(adata,save_path,gene_list=None):
     
     raw_data=pd.read_csv(save_path)
     raw_data=pd.concat([raw_data,embed_raw],axis=1)
-    
     raw_data.to_csv(save_path,header=True,index=False)
 
     return(raw_data)
