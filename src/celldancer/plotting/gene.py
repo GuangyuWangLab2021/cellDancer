@@ -66,8 +66,7 @@ def scatter_gene(
 
     Returns
     -------
-    Returns the ax of the plot.
-    `im` (ax.scatter())
+    ax: matplotlib.axes.Axes
     """ 
 
     def gen_Line2D(label, markerfacecolor):

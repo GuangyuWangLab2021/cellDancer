@@ -74,8 +74,7 @@ def scatter_cell(
 
     Returns
     -------
-    im: `ax.scatter()`
-        The ax of the plot.
+    ax: matplotlib.axes.Axes
 
     """  
 
@@ -154,7 +153,7 @@ def scatter_cell(
     if custom_ylim is not None:
         ax.set_ylim(custom_ylim[0], custom_ylim[1])
     
-    return im
+    return ax
 
 def grid_curve(
     ax, 
@@ -359,4 +358,4 @@ def plot_kinetic_para(
         
     umap_df=pd.concat([pd.DataFrame({'umap1':umap_para[:,0],'umap2':umap_para[:,1]})],axis=1)
     
-    return im
+    return ax

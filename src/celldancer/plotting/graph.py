@@ -22,6 +22,8 @@ def graph(
         ax,
         cellDancer_df,
         node_layout='forceatlas2',
+        PRNG_SEED=None,
+        force_iters=2000,
         use_edge_bundling=True,
         node_colors=None,
         node_sizes=5,
@@ -38,7 +40,9 @@ def graph(
     values, the weaker the connection).
 
     Example usage:
+
     .. code-block:: python
+
         from celldancer.plotting import graph
         from matplotlib import pyplot as plt
         fig, ax = plt.subplots(figsize=(10,10))
@@ -53,7 +57,7 @@ def graph(
             legend='on')
         
     In this example, we use a force-directed node layout algorithm (`ForceAtlas2 
-    <https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0098679>`)
+    <https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0098679>`_)
     A connection is made between any two cells within 3 (unit in the embedding).
     The resulted edge lengths indicate the time difference between nodes (the
     closer in pseudotime, the shorter the edge length). Edge bundling is applied
@@ -78,7 +82,14 @@ def graph(
 
          - `'forceatlas2'` or `'forcedirected'`: treat connections as forces
          between connected nodes.
+
          - `'embedding'`: use the embedding as positions of the nodes.
+
+    PRNG_SEED: optional, `int` or `None` (default: `None`)
+        Seed to initialize the pseudo-random number generator.
+
+    force_iters: optional, `int` (default: 2000)
+        Number of passes for the force directed layout calculation.
 
     use_edge_bundling: optional, `bool` (default: `True`)
         `True` if bundle the edges (computational demanding). 
@@ -86,15 +97,18 @@ def graph(
         for better visualization of the graph structure. 
 
     node_colors: optional, `str` (default: `None`)
-        The node colors. 
+        The node fill colors. 
         Possible values:
-            - 'clusters': color according to the clusters information of the
+
+            - *clusters*: color according to the clusters information of the
               respective cells.
-            - 'pseudotime': colors according to the pseudotime of the 
+
+            - *pseudotime*: colors according to the pseudotime of the 
               repspective cells.
+
             - A single color format string.
 
-    edge_length: optional, `float` (default: None)
+    edge_length: optional, `float` (default: `None`)
         The distance cutoff in the embedding between two nodes to determine 
         whether an edge should be formed (edge is formed when r < *edge_length*).
         By default, the mean of all the cell
@@ -113,10 +127,9 @@ def graph(
 
     Returns
     -------
-    None
+    ax: matplotlib.axes.Axes
 
     """  
-
 
     nodes, edges = create_nodes_edges(cellDancer_df, edge_length)
 
@@ -124,7 +137,7 @@ def graph(
         # Current version of datashader.layout does not support reading a layout (x,y) and perform layout function
         # It does not support other attributes except index.
         forcedirected = forceatlas2_layout(nodes[['index']], edges,
-                weight='weight', iterations=1000, k=0.1, seed=10)
+                weight='weight', iterations=force_iters, k=0.1, seed=PRNG_SEED)
         nodes['x'] = forcedirected['x']
         nodes['y'] = forcedirected['y']
 
@@ -187,6 +200,8 @@ def graph(
         cbar = plt.colorbar(im, cax=cax, orientation="horizontal", shrink=0.1)
         cbar.set_ticks([])
     ax.axis('off')
+
+    return ax
 
 
 
