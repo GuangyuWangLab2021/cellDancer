@@ -9,8 +9,6 @@ from matplotlib.colors import ListedColormap
 from matplotlib.lines import Line2D
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 
-
-
 from .colormap import *
 if __name__ == "__main__":# developer test
     sys.path.append('..')
@@ -18,7 +16,7 @@ if __name__ == "__main__":# developer test
 else:
     from celldancer.utilities import extract_from_df
 
-def graph(
+def PTO_Graph(
         ax,
         cellDancer_df,
         node_layout='forceatlas2',
@@ -46,7 +44,7 @@ def graph(
         from celldancer.plotting import graph
         from matplotlib import pyplot as plt
         fig, ax = plt.subplots(figsize=(10,10))
-        graph.graph(ax, 
+        graph.PTO_Graph(ax, 
             load_cellDancer, 
             node_layout='forcedirected', 
             use_edge_bundling=True, 
