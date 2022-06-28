@@ -1,1 +1,0 @@
-gastrulation;sample;local;200;10;20;0.001;0.3;neighbors;0;200;200;0.125;30;Adam;0;0;/Users/wanglab/Documents/ShengyuLi/Velocity/data/raw_data/mouse_endo_blood20to25_2000_genes_moment100.csv;/Users/wanglab/Documents/ShengyuLi/Velocity/data/Gastrulation/velocity_result/result_detailcsv/polish/;30;1;1;smooth;10;3;0.1;1
