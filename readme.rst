@@ -9,7 +9,7 @@ cellDancer - Estimating Cell-dependent RNA Velocity
 
 cellDancer's key applications
 ========================================================
-* Estimate RNA velocity for each gene.
+* Estimate cell-specific RNA velocity for each gene.
 * Derive cell fates in embedding space.
 * Estimate pseudotime for each cell in embedding space.
 
@@ -17,7 +17,7 @@ Installation
 ========================================================
 cellDancer requires Python version >= 3.7.6 to run.
 
-To run cellDancer locally, create an `conda <https://docs.conda.io/en/latest>`_ or `Anaconda <https://www.anaconda.com/>`_ environment as ``conda create -n cellDancer python==3.7.6``, and activate the new environment with ``conda activate cellDancer``. Then install the dependencies by ``pip install -r requirements.txt`` using `requirememts.txt <requirememts.txt>`.
+To run cellDancer locally, create a `conda <https://docs.conda.io/en/latest>`_ environment by ``conda create -n cellDancer python==3.7.6``, and activate the new environment with ``conda activate cellDancer``. Then install the dependencies by ``pip install -r requirements.txt`` using `requirememts.txt <requirememts.txt>`.
 
-To install cellDancer from source code, run:
+To install cellDancer from the source code, run:
 ``pip install your_path/cellDancer``
