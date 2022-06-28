@@ -39,15 +39,15 @@ def scatter_gene(
     cellDancer_df: `pandas.DataFrame`
         Data frame of velocity estimation, cell velocity, and pseudotime results. Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
     colors: `list`, `dict`, or `str`
-        When input is a list: build a colormap dictionary for a list of cell type; 
-        When input is a dictionary: the customized color map dictionary of each cell type; 
-        When input is a str: one of {'alpha', 'beta', 'gamma', 'splice', 'unsplice', 'pseudotime'} is used as value of color.
+        When the input is a list: build a colormap dictionary for a list of cell type; 
+        When the input is a dictionary: the customized color map dictionary of each cell type; 
+        When the input is a str: one of {'alpha', 'beta', 'gamma', 'splice', 'unsplice', 'pseudotime'} is used as value of color.
     custom_xlim: optional, `float` (default: None)
         Set the x limit of the current axes.
     custom_ylim: optional, `float` (default: None)
         Set the y limit of the current axes.
     vmin: optional, `float` (default: None)
-        Set the minimun color limit of the current image.
+        Set the minimum color limit of the current image.
     vmax: optional, `float` (default: None)
         Set the maximum color limit of the current image.
     alpha: optional, `float` (default: 0.5)
@@ -57,7 +57,7 @@ def scatter_gene(
     velocity: optional, `bool` (default: False)
         `True` if velocity in gene level is to be plotted.
     gene: optional, `str` (default: None)
-        Gene name for the plot of alpha, beta, gamma, splice, unsplice or pseudotime in embedding space.
+        Gene selected to be plotted.
     legend: optional, `str` (default: 'off')
         `‘off’` if the color map of cell type legend is not to be plotted;
         `‘only’` if only plot the cell type legend.

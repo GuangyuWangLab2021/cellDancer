@@ -34,7 +34,7 @@ def scatter_cell(
     arrow_grid=(30,30)
 ): 
 
-    """Plot the the cell velocity; or plot the parameters ('alpha', 'beta', 'gamma', 'splice', 'unsplice', or 'pseudotime') of one gene in embedding space.
+    """Plot the projection of RNA velocity to vector fields in the embedding space; or plot the kinetic parameters ('alpha', 'beta', 'gamma', 'splice', 'unsplice', or 'pseudotime') of one gene in embedding space.
         
     Arguments
     ---------
@@ -51,7 +51,7 @@ def scatter_cell(
     custom_ylim: optional, `float` (default: None)
         Set the y limit of the current axes.
     vmin: optional, `float` (default: None)
-        Set the minimun color limit of the current image.
+        Set the minimum color limit of the current image.
     vmax: optional, `float` (default: None)
         Set the maximum color limit of the current image.
     alpha: optional, `float` (default: 0.5)
@@ -66,11 +66,11 @@ def scatter_cell(
         `'off'` if the color map of cell legend is not plotted. 
         `'only'` if only plot the cell type legend.
     colorbar: optional, `str` (default: 'on')
-        `‘on’` if the colorbar of the plot of alpha, beta, gamma, splice, or unsplice is to be shown. `'off'` if the colorbar is not shown.
+        `‘on’` if the colorbar of the plot of `alpha`, `beta`, `gamma`, `splice`, or `unsplice` is to be shown. `'off'` if the colorbar is to be not shown.
     min_mass: optional, `float` (default: 2)
         Filter by using the isotropic gaussian kernel to display the arrow on grids. The less, the more arrows.
     arrow_grid: optional, `tuple` (default: (30,30))
-        The sparsity of the grids of velocity arrows. The larger, the more compact and more arrows will be shown.
+        The sparsity of the grids of velocity arrows. The larger, the more compact, and more arrows will be shown.
 
     Returns
     -------
@@ -307,15 +307,15 @@ def plot_kinetic_para(
     legend=False
 ):
 
-    """Plot the UMAP calculated by kinetic parameter(s).
+    """Plot the UMAP calculated by the kinetic parameter(s).
         
     Arguments
     ---------
     ax: `ax`
         ax of plt.subplots()
     kinetic_para: `str`
-        Which parameter is used to generate the embedding space, could be selected from {'alpha', 'beta', 'gamma', 'alpha_beta_gamma'}.
-    cellDancer_df: `pandas.Dataframe`
+        The parameter used to generate the embedding space based on UMAP, could be selected from {'alpha', 'beta', 'gamma', 'alpha_beta_gamma'}.
+    cellDancer_df: `pandas.DataFrame`
         Data frame of velocity estimation results. Columns=['cellIndex', 'gene_name', 'splice', 'unsplice', 'splice_predict', 'unsplice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2']
     color_map: `dict` (optional, default: None)
         The color map dictionary of each cell type.

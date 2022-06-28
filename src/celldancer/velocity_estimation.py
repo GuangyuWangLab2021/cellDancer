@@ -461,8 +461,6 @@ def _train_thread(datamodule,
         model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'circle.pt')).name
     if ini_model=='branch':
         model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'branch.pt')).name
-    # if ini_model=='normal':
-    #     model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'normal.pt')).name
     else:
         model_path=select_initial_net(this_gene_name, gene_downsampling, data_df)
     model.load(model_path)
@@ -577,11 +575,11 @@ def velocity(
     Arguments
     ---------
     cell_type_u_s: `pandas.DataFrame`
-        Data frame of raw data. Columns=['gene_name', 'unsplice', 'splice' ,'cellID' ,'clusters' ,'embedding1' ,'embedding2']
+        Data frame that contains the unspliced abundance, spliced abundance, embedding space, and cell type information. Columns=['gene_name', 'unsplice', 'splice' ,'cellID' ,'clusters' ,'embedding1' ,'embedding2']
     gene_list: optional, `list` (default: None)
         Gene list for velocity estimation. `None` if to estimate the velocity of all genes.
     max_epoches: optional, `int` (default: 200)
-        Stop to update network once this number of epochs is reached.
+        Stop to update the network once this number of epochs is reached.
     check_val_every_n_epoch: optional, `int` (default: 10)
         Check loss every n train epochs.
     patience: optional, `int` (default: 3)
@@ -591,9 +589,9 @@ def velocity(
     speed_up: optional, `bool` (default: True)
         `True` if speed up by downsampling cells. `False` if to use all cells to train the model.
     norm_u_s: optional, `bool` (default: True)
-        `True` if normalize unsplice (and splice) reads by dividing max value of unsplice (and splice) reads.
+        `True` if normalize unsplice (and splice) reads by dividing max value of unspliced (and spliced) reads.
     norm_cell_distribution: optional, `bool` (default: True)
-        `True` if the bias of cell distribution is to be romoved on embedding space (many cells share same position of unsplice (and splice) reads).
+        `True` if the bias of cell distribution is to be removed on embedding space (many cells share the same position of unspliced (and spliced) reads).
     n_jobs: optional, `int` (default: -1)
         The maximum number of concurrently running jobs.
     save_path: optional, `str` (default: 200)

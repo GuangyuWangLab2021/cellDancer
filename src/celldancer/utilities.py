@@ -53,9 +53,7 @@ def _non_para_kernel_t4(X,Y,down_sample_idx):
     X_sampled=X[X['index'].isin(down_sample_idx)].time
     kde=KernelReg(endog=Y_sampled,
                            exog=X_sampled,
-                           var_type='c',#变量的类型
-                           #ckertype='gaussian',#用于连续变量的内核
-                           #bw='cv_ls'#带宽，数值：指定带宽； ‘cv_ls’：最小二乘交叉验证； ‘aic’：AIC Hurvich带宽估计
+                           var_type='c',
                            )
     #X=merged.time
     #Y=merged.s0
@@ -137,10 +135,7 @@ def get_rsquare(load_cellDancer,gene_list,s0_merged_part_time,s0_merged_part_gen
     return (r_square_non_para_list_sort,non_para_fit_heat,non_para_fit_list,sampled_idx)
 
 
-######### pseudotime rsquare
-
-
-def get_gene_s0_by_time(cell_time,load_cellDancer): # pseudotime
+def get_gene_s0_by_time(cell_time,load_cellDancer):
     cell_time_time_sort=cell_time.sort_values('pseudotime')
     cell_time_time_sort.columns=['index','time']
 
@@ -170,27 +165,27 @@ def rank_rsquare(load_cellDancer,gene_list=None,cluster_choice=None):
     return(r_square_non_para_list_sort[['gene_name','r_square']].reset_index(drop=True))
 
 
-def adata_to_raw_with_embed(adata,
+def adata_to_df_with_embed(adata,
                             us_para=['Mu', 'Ms'],
                             cell_type_para='celltype',
                             embed_para='X_umap',
                             save_path='cell_type_u_s_sample_df.csv',
                             gene_list=None):
     
-    """Convert adata to raw data format with embedding info.
+    """Convert adata to pandas.DataFrame format and save it as csv file with embedding info.
         
     Arguments
     ---------
     adata: `anndata._core.anndata.AnnData`
-        Data frame of raw data. Columns=['gene_name', 'unsplice', 'splice' ,'cellID' ,'clusters' ,'embedding1' ,'embedding2']
+        The adata to transferred. Columns=['gene_name', 'unsplice', 'splice' ,'cellID' ,'clusters' ,'embedding1' ,'embedding2']
     us_para: optional, `list` (default: ['Mu','Ms'])
         The attributes of the two count matrices of pre-mature (unspliced) and mature (spliced) abundances from adata.layers. By default, splice and unsplice columns (the two count matrices of spliced and unspliced abundances) are obtained from the ['Ms', 'Mu'] attributes of adata.layers.
     cell_type_para: optional, `str` (default: 'celltype')
-        The attribute to be obtained from adata.obs. By default, cell type information is obtained from ['celltype'] column of adata.obs.
+        The attribute of cell type to be obtained from adata.obs. By default, cell type information is obtained from ['celltype'] column of adata.obs.
     embed_para: optional, `str` (default: 'X_umap')
-        The attribute to be obtained from adata.obsm. It represents 2-dimensional representation of all cells. The embedding1 and embedding2 columns are obtained from [‘X_umap’] attribute of adata.obsm.
+        The attribute of embedding space to be obtained from adata.obsm. It represents the 2-dimensional representation of all cells. The embedding1 and embedding2 columns are obtained from [‘X_umap’] attribute of adata.obsm.
     save_path: optional, `str` (default: 'cell_type_u_s_sample_df.csv')
-        Path to save the result of transfered csv file.
+        Path to save the result of transferred csv file.
     gene_list: optional, `list` (default: None)
         Specific gene(s) to be transfered.
 
@@ -340,17 +335,6 @@ def filter_by_neighbor_sample_parallel(load_raw_data,step_i=15,step_j=15,cutoff_
     gene_list_keep_fin_pd=pd.DataFrame({'gene_list':gene_list_keep_fin})
 
     return(gene_list_keep_fin_pd)
-
-
-def panda_to_adata():
-    '''panda_to_adata'''
-    print('test')
-
-
-def filter_by_cost():
-    '''filter_by_cost'''
-    print('test')
-
 
 def calculate_occupy_ratio_and_cor(gene_choice,data, u_fragment=30, s_fragment=30):
     '''calculate occupy ratio and the correlation between u0 and s0

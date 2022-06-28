@@ -20,11 +20,11 @@ from matplotlib.colors import ListedColormap
 
 if __name__ == "__main__":
     from diffusion import *
-    from compute_cell_velocity import compute
+    from compute_cell_velocity import compute_cell_velocity
     import cdplt
 else:
      from celldancer.diffusion import *
-     from celldancer.compute_cell_velocity import compute
+     from celldancer.compute_cell_velocity import compute_cell_velocity
      import celldancer.cdplt as cdplt
     
 def compute_trajectory_displacement(traj):
@@ -1082,7 +1082,7 @@ def pseudo_time(
         save=False, 
         output_path=None):
 
-    """Compute the gene-shared pseudotime based on the RNA cell velocities.
+    """Compute the gene-shared pseudotime based on the projection of the RNA velocity to vector fields in the embedding space.
 
     Arguments
     ---------
@@ -1125,7 +1125,7 @@ def pseudo_time(
 
     psrng_seeds_diffusion: optional, `list-like: list, tuple, or 1-d numpy
     array` (default: `None`)
-        Pseudo random number generator seeds for all the replicas in generation
+        Pseudo random number generator seeds for all the replicas in the generation
         of cell diffusion trajectories. Its length = `n_repeats`. Set this for
         reproducibility.
 

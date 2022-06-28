@@ -17,7 +17,7 @@ else:
         from sampling import *
 
 
-def compute(
+def compute_cell_velocity(
     cellDancer_df,
     gene_list=None,
     speed_up=(60,60),
@@ -25,14 +25,14 @@ def compute(
     projection_neighbor_size=200,
     projection_neighbor_choice='embedding'):
 
-    """Compute the cell velocity.
+    """Project the RNA velocity to vector fields in the embedding space.
         
     Arguments
     ---------
     cellDancer_df: `pandas.DataFrame`
         Data frame of velocity estimation results. Columns=['cellIndex', 'gene_name', unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID, 'clusters', 'embedding1', 'embedding2']
     gene_list: optional, `list` (default: None)
-        Genes selected to calculate the cell velocity. None if all genes in the cellDancer_df is to be used.
+        Genes selected to calculate the cell velocity. `None` if all genes in the cellDancer_df are to be used.
     speed_up: optional, `tuple` (default: (60,60))
         Speed up by giving the sampling grid to downsample cells. 
         `None` if all cells are used to compute cell velocity. 
@@ -40,9 +40,9 @@ def compute(
         `None` if no expression scale is to be used. 
         `'power10'` if the 10th power is been used to scale spliced and unspliced reads.
     projection_neighbor_size: optional, `int` (default: '200')
-        The number of neighboring cells used for transition probability matrix for one cell.
+        The number of neighboring cells used for the transition probability matrix for one cell.
     projection_neighbor_choice: optional, `str` (default: 'embedding')
-        `'embedding'` if use the embedding to obtain the neighbors. 
+        `'embedding'` if use the embedding space to obtain the neighbors. 
         `'gene'` if use the spliced reads of all genes to obtain the neighbors.
 
     Returns
