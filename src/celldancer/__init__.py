@@ -16,8 +16,7 @@ __all__ = [
     "simulation",
     "embedding_kinetic_para",
     "sampling",
-    "utilities",
-    "simulation"
+    "utilities"
 ]
 
 
