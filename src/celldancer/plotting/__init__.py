@@ -1,10 +1,3 @@
-# will not be used in usual, but if we want to make it a package, this .py file is needed to exist.
-# need to write readme to teach user how to use the functions in the package.
-
-
-# from . import plotting
-
-
 from .cell import scatter_cell
 from .cell import plot_kinetic_para
 from .graph import PTO_Graph
