@@ -36,6 +36,7 @@ class DNN_layer(nn.Module):
         self.l3 = nn.Linear(h2, 3)
 
     def forward(self, unsplice, splice, alpha0, beta0, gamma0, dt):
+        #print(f"dt is {dt}")
         input = torch.tensor(np.array([np.array(unsplice), np.array(splice)]).T)
         x = self.l1(input)
         x = F.leaky_relu(x)
@@ -74,7 +75,7 @@ class DNN_module(nn.Module):
     load network "DNN_layer"
     predict splice_predict and unsplice_predict
     '''
-    def __init__(self, module, n_neighbors=30):
+    def __init__(self, module, n_neighbors = 30):
         super().__init__()
         self.module = module
         self.n_neighbors = n_neighbors
@@ -85,11 +86,10 @@ class DNN_module(nn.Module):
                            alpha0, 
                            beta0, 
                            gamma0,
+                           dt,
                            embedding1,
                            embedding2, 
-                           epoch_num, 
                            barcode = None, 
-                           dt = 0.5,
                            cost2_cutoff=None,
                            trace_cost_ratio=None,
                            corrcoef_cost_ratio=None):
@@ -203,7 +203,8 @@ class ltModule(pl.LightningModule):
                 backbone, 
                 initial_zoom=2, 
                 initial_strech=1,
-                learning_rate=0.001,
+                learning_rate=None,
+                dt=None,
                 cost2_cutoff=0,
                 optimizer='Adam',
                 trace_cost_ratio=0,
@@ -219,6 +220,7 @@ class ltModule(pl.LightningModule):
         self.initial_zoom = initial_zoom
         self.initial_strech = initial_strech
         self.learning_rate=learning_rate
+        self.dt=dt
         self.cost2_cutoff=cost2_cutoff
         self.optimizer=optimizer
         self.trace_cost_ratio=trace_cost_ratio
@@ -259,7 +261,8 @@ class ltModule(pl.LightningModule):
         beta0 = np.float32(1.0)
         gamma0 = np.float32(umax/smax*self.initial_strech)
 
-        cost, unsplice_predict, splice_predict, alphas, beta, gamma = self.backbone.velocity_calculate(unsplice, splice, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio)
+        cost, unsplice_predict, splice_predict, alphas, beta, gamma = self.backbone.velocity_calculate(unsplice, splice, alpha0, beta0, gamma0, self.dt, \
+            embedding1,embedding2,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio)
         if self.cost_type=='average': # keep the window len <= check_val_every_n_epoch
             if len(self.cost_window)<self.average_cost_window_size:
                 self.cost_window.append(cost)
@@ -327,7 +330,8 @@ class ltModule(pl.LightningModule):
         alpha0 = np.float32(umax*2)
         beta0 = np.float32(1.0)
         gamma0 = np.float32(umax/smax)
-        cost, unsplice_predict, splice_predict, alphas, beta, gamma = self.backbone.velocity_calculate(unsplice, splice, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio)
+        cost, unsplice_predict, splice_predict, alphas, beta, gamma = self.backbone.velocity_calculate(unsplice, splice, alpha0, beta0, gamma0, self.dt, \
+            embedding1,embedding2,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio)
         self.test_cellDancer_df= self.backbone.summary_para(
             unsplice, splice, unsplice_predict.data.numpy(), splice_predict.data.numpy(), 
             alphas.data.numpy(), beta.data.numpy(), gamma.data.numpy(), 
@@ -430,6 +434,9 @@ def _train_thread(datamodule,
                   check_val_every_n_epoch=None,
                   norm_u_s=None,
                   patience=None,
+                  learning_rate=None,
+                  dt=None,
+                  n_neighbors=None,
                   ini_model=None,
                   model_save_path=None):
 
@@ -437,8 +444,8 @@ def _train_thread(datamodule,
     torch.manual_seed(seed)
     random.seed(seed)
     np.random.seed(seed)
-    backbone = DNN_module(DNN_layer(100, 100))    # iniate network (DNN_layer) and loss function (DynamicModule)
-    model = ltModule(backbone=backbone)
+    backbone = DNN_module(DNN_layer(100, 100), n_neighbors=n_neighbors)    # iniate network (DNN_layer) and loss function (DynamicModule)
+    model = ltModule(backbone=backbone, dt=dt, learning_rate=learning_rate)
 
     selected_data = datamodule.subset(data_indices)
 
@@ -447,6 +454,10 @@ def _train_thread(datamodule,
     data_df=pd.DataFrame({'unsplice':unsplice,'splice':splice,'embedding1':embedding1,'embedding2':embedding2})
     data_df['gene_name']=this_gene_name
     try:
+
+        # Note
+        # here n_neighbors in the downsampling_embedding function is for selecting initial model.
+        # which is different from the n_neighbors in _train_tread for velocity calculation.
         _, sampling_ixs_select_model, _ = downsampling_embedding(data_df, # for select model
                             para='neighbors',
                             step=(20,20),
@@ -562,6 +573,9 @@ def velocity(
     max_epoches=200, 
     check_val_every_n_epoch=10,
     patience=3,
+    learning_rate=0.001,
+    dt=0.5,
+    n_neighbors=30,
     permutation_ratio=0.125,
     speed_up=True,
     norm_u_s=True,
@@ -584,6 +598,8 @@ def velocity(
         Check loss every n train epochs.
     patience: optional, `int` (default: 3)
         Number of checks with no improvement after which training will be stopped.
+    dt: optional, `float` (default: 0.5)
+        Step size
     permutation_ratio: optional, `float` (default: 0.125)
         Sampling ratio of cells in each epoch when training each gene.
     speed_up: optional, `bool` (default: True)
@@ -642,6 +658,9 @@ def velocity(
             max_epoches=max_epoches,
             check_val_every_n_epoch=check_val_every_n_epoch,
             patience=patience,
+            learning_rate=learning_rate,
+            n_neighbors=n_neighbors,
+            dt=dt,
             save_path=save_path,
             norm_u_s=norm_u_s)
         for data_index in range(0,len(gene_list_buring)))
@@ -685,6 +704,9 @@ def velocity(
             data_indices=[data_index], 
             max_epoches=max_epoches,
             check_val_every_n_epoch=check_val_every_n_epoch,
+            n_neighbors=n_neighbors,
+            dt=dt,
+            learning_rate=learning_rate,
             patience=patience,
             save_path=save_path,
             norm_u_s=norm_u_s)
