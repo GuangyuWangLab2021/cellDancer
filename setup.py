@@ -5,7 +5,7 @@ with open("readme.rst", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="celldancer",
-    version="1.1.2",
+    version="1.1.3",
     author="Wang Lab",
     author_email="gwang2@houstonmethodist.org",
     description="Study RNA velocity through neural network.",

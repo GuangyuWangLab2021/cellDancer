@@ -22,7 +22,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", UserWarning)
 import logging
 logging.getLogger("pytorch_lightning").setLevel(logging.WARNING)
-from .sampling import *
+from celldancer.sampling import *
 
 class DNN_layer(nn.Module):
 
@@ -75,7 +75,7 @@ class DNN_module(nn.Module):
     load network "DNN_layer"
     predict splice_predict and unsplice_predict
     '''
-    def __init__(self, module, n_neighbors = 30):
+    def __init__(self, module, n_neighbors = None):
         super().__init__()
         self.module = module
         self.n_neighbors = n_neighbors
@@ -90,6 +90,7 @@ class DNN_module(nn.Module):
                            embedding1,
                            embedding2, 
                            barcode = None, 
+                           loss_func = None,
                            cost2_cutoff=None,
                            trace_cost_ratio=None,
                            corrcoef_cost_ratio=None):
@@ -105,7 +106,13 @@ class DNN_module(nn.Module):
         self.n_neighbors=min((points.shape[0]-1), self.n_neighbors)
         nbrs = NearestNeighbors(n_neighbors=self.n_neighbors, algorithm='ball_tree').fit(points)
         
-        distances, indices = nbrs.kneighbors(points) # indices: row -> individe cell, col -> nearby cells, value -> index of cells, the fist col is the index of row
+        distances, indices = nbrs.kneighbors(points) 
+        # indices: 
+        #   row -> cell, 
+        #   col -> neighboring cells, 
+        #   value -> index of cells, 
+        #   the fist col is the index of row
+
         expr = pd.merge(pd.DataFrame(splice, columns=['splice']), pd.DataFrame(unsplice, columns=['unsplice']), left_index=True, right_index=True)
         if barcode is not None:
             expr.index = barcode
@@ -122,15 +129,76 @@ class DNN_module(nn.Module):
             
             uv, sv = unsplice_predict-unsplice, splice_predict-splice # Velocity from (unsplice, splice) to (unsplice_predict, splice_predict)
             unv, snv = unsplice[indices.T[1:]] - unsplice, splice[indices.T[1:]] - splice # Velocity from (unsplice, splice) to its neighbors
+
             den = torch.sqrt(unv**2 + snv**2) * torch.sqrt(uv**2+sv**2)
             den[den==0] = -1
             cosine = torch.where(den!=-1, (unv*uv + snv*sv) / den, torch.tensor(1.)) # cosine: column -> individuel cell (cellI); row -> nearby cells of cell id ; value -> cosine between col and row cells
-            cosine_max = torch.max(cosine, 0)[0]
-            cosine_max_idx = torch.argmax(cosine, 0)
+            cosine_max, cosine_max_idx = torch.max(cosine, dim=0)
             cell_idx = torch.diag(indices[:, cosine_max_idx+1])
             return 1 - cosine_max, cell_idx
+
+
+
+        def rmsd(unsplice, splice, unsplice_predict, splice_predict, indices):
+            """
+            loss is defined as the RMSD of the predicted velocity vector (uv, sv) from the neighboring velocity vectors (unv, snv)
+            """
+            uv, sv = unsplice_predict-unsplice, splice_predict-splice 
+            unv, snv = unsplice[indices.T[1:]] - unsplice, splice[indices.T[1:]] - splice 
+
+            rmsd = (uv-unv)**2 + (sv-snv)**2
+            rmsd = torch.sqrt(0.5*rmsd)
+
+            # normalize across all neighboring cells using a softmax function.
+            # m = torch.nn.Softmax(dim=0)
+            # rmsd = m(rmsd)
+
+            rmsd_min, rmsd_min_idx = torch.min(rmsd, dim=0)
+            cell_idx = torch.diag(indices[:, rmsd_min_idx+1])
+            return rmsd_min, cell_idx
+
+
+        def mix_loss(unsplice, splice, unsplice_predict, splice_predict, indices, mix_ratio = 0.5):
+            """
+            RMSD between the predicted vector and the closest vector 
+
+            Parameters:
+            
+            unsplice: 1d tensor [n_cells] 
+            splice: 1d tensor [n_cells] 
+            indices: 2d array [n_cells, n_neighbors]
+
+            Return:
+                list of cosine distance and a list of the index of the next cell
+
+            """
+
+            #print("mix ratio, ", mix_ratio)
+            uv, sv = unsplice_predict-unsplice, splice_predict-splice 
+            unv, snv = unsplice[indices.T[1:]] - unsplice, splice[indices.T[1:]] - splice 
+            mag_v = torch.sqrt(uv**2 + sv**2)
+            mag_nv = torch.sqrt(unv**2 + snv**2)
+            mag = (mag_nv - mag_v)**2
+
+            # minimize mag or maximize -mag
+            # normalize across all neighboring cells using a softmax function
+            m = torch.nn.Softmax(dim=0)
+            mag = m(mag)
+
+            den = mag_v * mag_nv
+            den[den==0] = -1
+
+            # cosine: [n_neighbors x n_cells]
+            cosine = torch.where(den!=-1, (unv*uv + snv*sv) / den, torch.tensor(1.))
+
+            total = mix_ratio*(1-cosine) + (1 - mix_ratio)* mag
+            total_min, total_min_idx = torch.min(total, dim=0)
+
+            cell_idx = torch.diag(indices[:, total_min_idx+1])
+            return total_min, cell_idx
+
         
-        def trace_cost(unsplice, splice, unsplice_predict, splice_predict, idx,version):
+        def trace_cost(unsplice, splice, unsplice_predict, splice_predict, idx, version):
             uv, sv = unsplice_predict-unsplice, splice_predict-splice
             tan = torch.where(sv!=1000000, uv/sv, torch.tensor(0.00001))
             atan_theta = torch.atan(tan) + torch.pi/2
@@ -149,14 +217,24 @@ class DNN_module(nn.Module):
             corrcoef = corrcoef1 + corrcoef2
             cost=torch.where(corrcoef>=torch.tensor(0.0), torch.tensor(0.0), torch.tensor(-corrcoef))
             return(cost)
-            
         
-        if trace_cost_ratio==0 and corrcoef_cost_ratio==0:
-            cost1 = cosine_similarity(unsplice, splice, unsplice_predict, splice_predict, indices)[0]
-            cost_fin=torch.mean(cost1)
+        if trace_cost_ratio == 0 and corrcoef_cost_ratio == 0:
+
+            if loss_func == 'cosine':
+                cost1 = cosine_similarity(unsplice, splice, unsplice_predict, splice_predict, indices)[0]
+                cost_fin = torch.mean(cost1)
+
+            if loss_func == 'rmsd':
+                cost1 = rmsd(unsplice, splice, unsplice_predict, splice_predict, indices)[0]
+                cost_fin = torch.mean(cost1)
+
+            elif 'mix' in loss_func:
+                mix_ratio = loss_func[1]
+                cost1 = mix_loss(unsplice, splice, unsplice_predict, splice_predict, indices, mix_ratio=mix_ratio)[0]
+                cost_fin = torch.mean(cost1)
 
         else:
-            # cosin cost
+            # cosine cost
             cost1,idx = cosine_similarity(unsplice, splice, unsplice_predict, splice_predict, indices)
             cost1_normalize=(cost1-torch.min(cost1))/torch.max(cost1)
             cost1_mean = torch.mean(cost1_normalize)
@@ -200,11 +278,12 @@ class ltModule(pl.LightningModule):
     train network using "DNN_module"
     '''
     def __init__(self, 
-                backbone, 
+                backbone=None, 
                 initial_zoom=2, 
                 initial_strech=1,
                 learning_rate=None,
                 dt=None,
+                loss_func = None,
                 cost2_cutoff=0,
                 optimizer='Adam',
                 trace_cost_ratio=0,
@@ -221,6 +300,7 @@ class ltModule(pl.LightningModule):
         self.initial_strech = initial_strech
         self.learning_rate=learning_rate
         self.dt=dt
+        self.loss_func=loss_func
         self.cost2_cutoff=cost2_cutoff
         self.optimizer=optimizer
         self.trace_cost_ratio=trace_cost_ratio
@@ -261,8 +341,13 @@ class ltModule(pl.LightningModule):
         beta0 = np.float32(1.0)
         gamma0 = np.float32(umax/smax*self.initial_strech)
 
-        cost, unsplice_predict, splice_predict, alphas, beta, gamma = self.backbone.velocity_calculate(unsplice, splice, alpha0, beta0, gamma0, self.dt, \
-            embedding1,embedding2,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio)
+        cost, unsplice_predict, splice_predict, alphas, beta, gamma = self.backbone.velocity_calculate( \
+                unsplice, splice, alpha0, beta0, gamma0, self.dt, embedding1, embedding2, \
+                loss_func = self.loss_func, \
+                cost2_cutoff = self.cost2_cutoff, \
+                trace_cost_ratio = self.trace_cost_ratio, \
+                corrcoef_cost_ratio=self.corrcoef_cost_ratio)
+
         if self.cost_type=='average': # keep the window len <= check_val_every_n_epoch
             if len(self.cost_window)<self.average_cost_window_size:
                 self.cost_window.append(cost)
@@ -330,8 +415,14 @@ class ltModule(pl.LightningModule):
         alpha0 = np.float32(umax*2)
         beta0 = np.float32(1.0)
         gamma0 = np.float32(umax/smax)
-        cost, unsplice_predict, splice_predict, alphas, beta, gamma = self.backbone.velocity_calculate(unsplice, splice, alpha0, beta0, gamma0, self.dt, \
-            embedding1,embedding2,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio)
+
+        cost, unsplice_predict, splice_predict, alphas, beta, gamma = self.backbone.velocity_calculate( \
+                unsplice, splice, alpha0, beta0, gamma0, self.dt, embedding1, embedding2, \
+                loss_func = self.loss_func, \
+                cost2_cutoff = self.cost2_cutoff, \
+                trace_cost_ratio = self.trace_cost_ratio, \
+                corrcoef_cost_ratio=self.corrcoef_cost_ratio)
+
         self.test_cellDancer_df= self.backbone.summary_para(
             unsplice, splice, unsplice_predict.data.numpy(), splice_predict.data.numpy(), 
             alphas.data.numpy(), beta.data.numpy(), gamma.data.numpy(), 
@@ -436,6 +527,7 @@ def _train_thread(datamodule,
                   patience=None,
                   learning_rate=None,
                   dt=None,
+                  loss_func=None,
                   n_neighbors=None,
                   ini_model=None,
                   model_save_path=None):
@@ -444,8 +536,10 @@ def _train_thread(datamodule,
     torch.manual_seed(seed)
     random.seed(seed)
     np.random.seed(seed)
-    backbone = DNN_module(DNN_layer(100, 100), n_neighbors=n_neighbors)    # iniate network (DNN_layer) and loss function (DynamicModule)
-    model = ltModule(backbone=backbone, dt=dt, learning_rate=learning_rate)
+
+    # iniate network (DNN_layer) and loss function (DynamicModule)
+    backbone = DNN_module(DNN_layer(100, 100), n_neighbors=n_neighbors)
+    model = ltModule(backbone=backbone, dt=dt, learning_rate=learning_rate, loss_func=loss_func)
 
     selected_data = datamodule.subset(data_indices)
 
@@ -481,7 +575,9 @@ def _train_thread(datamodule,
     if check_val_every_n_epoch is None:
         # not use early stop
         trainer = pl.Trainer(
-            max_epochs=max_epoches, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1, 
+            max_epochs=max_epoches, 
+            progress_bar_refresh_rate=0, 
+            reload_dataloaders_every_n_epochs=1, 
             logger = False,
             enable_checkpointing = False,
             enable_model_summary=False,
@@ -489,7 +585,9 @@ def _train_thread(datamodule,
     else:
         # use early stop
         trainer = pl.Trainer(
-            max_epochs=max_epoches, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1, 
+            max_epochs=max_epoches, 
+            progress_bar_refresh_rate=0, 
+            reload_dataloaders_every_n_epochs=1, 
             logger = False,
             enable_checkpointing = False,
             check_val_every_n_epoch = check_val_every_n_epoch,
@@ -580,6 +678,7 @@ def velocity(
     speed_up=True,
     norm_u_s=True,
     norm_cell_distribution=True,
+    loss_func='cosine',
     n_jobs=-1,
     save_path=None,
 ):
@@ -608,6 +707,8 @@ def velocity(
         `True` if normalize unsplice (and splice) reads by dividing max value of unspliced (and spliced) reads.
     norm_cell_distribution: optional, `bool` (default: True)
         `True` if the bias of cell distribution is to be removed on embedding space (many cells share the same position of unspliced (and spliced) reads).
+    loss_func: optional, `str` (default: `cosine`)
+        Currently support `cosine` and `cosine_rmsd`. Other loss functions available in velocity_calculate() are meant for internal use.
     n_jobs: optional, `int` (default: -1)
         The maximum number of concurrently running jobs.
     save_path: optional, `str` (default: 200)
@@ -661,6 +762,7 @@ def velocity(
             learning_rate=learning_rate,
             n_neighbors=n_neighbors,
             dt=dt,
+            loss_func=loss_func,
             save_path=save_path,
             norm_u_s=norm_u_s)
         for data_index in range(0,len(gene_list_buring)))
@@ -706,6 +808,7 @@ def velocity(
             check_val_every_n_epoch=check_val_every_n_epoch,
             n_neighbors=n_neighbors,
             dt=dt,
+            loss_func=loss_func,
             learning_rate=learning_rate,
             patience=patience,
             save_path=save_path,

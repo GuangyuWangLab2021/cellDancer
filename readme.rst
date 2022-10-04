@@ -13,6 +13,12 @@ cellDancer's key applications
 * Derive cell fates in embedding space.
 * Estimate pseudotime for each cell in embedding space.
 
+What's new
+========================================================
+cellDancer is updated to v1.1.3
+* Added control on deep learning model in function celldancer.velocity(): n_neighbors, dt, learning_rate.
+* Added new loss function: mix, rmsd.
+
 Installation
 ========================================================
 cellDancer requires Python version >= 3.7.6 to run.
