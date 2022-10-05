@@ -1057,15 +1057,15 @@ def compute_cell_time(
         all_cell_time=ordered_cell_time
 
     all_cell_fate = assign_all_cell_fate(embedding, sampling_ixs, cell_fate)
-    #print("There are %d cells." % (len(all_cell_fate)))
-    #plot_cell_clusters(all_cell_fate, embedding)
+    print("There are %d cells." % (len(all_cell_fate)))
+    plot_cell_clusters(all_cell_fate, embedding)
     
     # write cell time to cellDancer_df
     gene_names = cellDancer_df['gene_name'].drop_duplicates().to_list()
     if len(cellDancer_df) == len(gene_names) * len(all_cell_time):
         cellDancer_df['pseudotime'] = np.tile(all_cell_time, len(gene_names))
         cellDancer_df = cellDancer_df.astype({"pseudotime": float})
-    return cellDancer_df
+    return cellDancer_df, all_cell_fate
 
 
 def pseudo_time(
