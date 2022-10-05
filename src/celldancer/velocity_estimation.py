@@ -139,28 +139,28 @@ class DNN_module(nn.Module):
 
 
 
-        def rmsd(unsplice, splice, unsplice_predict, splice_predict, indices):
+        def rmse(unsplice, splice, unsplice_predict, splice_predict, indices):
             """
-            loss is defined as the RMSD of the predicted velocity vector (uv, sv) from the neighboring velocity vectors (unv, snv)
+            loss is defined as the rmse of the predicted velocity vector (uv, sv) from the neighboring velocity vectors (unv, snv)
             """
             uv, sv = unsplice_predict-unsplice, splice_predict-splice 
             unv, snv = unsplice[indices.T[1:]] - unsplice, splice[indices.T[1:]] - splice 
 
-            rmsd = (uv-unv)**2 + (sv-snv)**2
-            rmsd = torch.sqrt(0.5*rmsd)
+            rmse = (uv-unv)**2 + (sv-snv)**2
+            rmse = torch.sqrt(0.5*rmse)
 
             # normalize across all neighboring cells using a softmax function.
             # m = torch.nn.Softmax(dim=0)
-            # rmsd = m(rmsd)
+            # rmse = m(rmse)
 
-            rmsd_min, rmsd_min_idx = torch.min(rmsd, dim=0)
-            cell_idx = torch.diag(indices[:, rmsd_min_idx+1])
-            return rmsd_min, cell_idx
+            rmse_min, rmse_min_idx = torch.min(rmse, dim=0)
+            cell_idx = torch.diag(indices[:, rmse_min_idx+1])
+            return rmse_min, cell_idx
 
 
         def mix_loss(unsplice, splice, unsplice_predict, splice_predict, indices, mix_ratio = 0.5):
             """
-            RMSD between the predicted vector and the closest vector 
+            rmse between the predicted vector and the closest vector 
 
             Parameters:
             
@@ -224,8 +224,8 @@ class DNN_module(nn.Module):
                 cost1 = cosine_similarity(unsplice, splice, unsplice_predict, splice_predict, indices)[0]
                 cost_fin = torch.mean(cost1)
 
-            if loss_func == 'rmsd':
-                cost1 = rmsd(unsplice, splice, unsplice_predict, splice_predict, indices)[0]
+            if loss_func == 'rmse':
+                cost1 = rmse(unsplice, splice, unsplice_predict, splice_predict, indices)[0]
                 cost_fin = torch.mean(cost1)
 
             elif 'mix' in loss_func:
@@ -708,7 +708,7 @@ def velocity(
     norm_cell_distribution: optional, `bool` (default: True)
         `True` if the bias of cell distribution is to be removed on embedding space (many cells share the same position of unspliced (and spliced) reads).
     loss_func: optional, `str` (default: `cosine`)
-        Currently support `cosine` and `cosine_rmsd`. Other loss functions available in velocity_calculate() are meant for internal use.
+        Currently support `'cosine'`, `'rmse'`, and (`'mix'`, mix_ratio). Other loss functions available in velocity_calculate() are meant for internal use.
     n_jobs: optional, `int` (default: -1)
         The maximum number of concurrently running jobs.
     save_path: optional, `str` (default: 200)
