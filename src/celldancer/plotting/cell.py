@@ -25,8 +25,8 @@ def scatter_cell(
     vmin=None,
     vmax=None,
     alpha=0.5, 
-    legend_marker_size=5,
     s = 5,
+    legend_marker_size=5,
     gene=None,
     velocity=False,
     legend='off',
@@ -57,10 +57,10 @@ def scatter_cell(
         Set the maximum color limit of the current image.
     alpha: optional, `float` (default: 0.5)
         The alpha blending value, between 0 (transparent) and 1 (opaque).
-    legend_marker_size: optional, `float` (default: 5)
-        The lengend marker size.
     s: optional, `float` (default: 5)
         The marker size.
+    legend_marker_size: optional, `float` (default: 5)
+        The lengend marker size.
     gene: optional, `str` (default: None)
         Gene name for plotting.
     velocity: optional, `bool` (default: False)
