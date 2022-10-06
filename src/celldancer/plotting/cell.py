@@ -25,6 +25,7 @@ def scatter_cell(
     vmin=None,
     vmax=None,
     alpha=0.5, 
+    legend_marker_size=5,
     s = 5,
     gene=None,
     velocity=False,
@@ -56,6 +57,8 @@ def scatter_cell(
         Set the maximum color limit of the current image.
     alpha: optional, `float` (default: 0.5)
         The alpha blending value, between 0 (transparent) and 1 (opaque).
+    legend_marker_size: optional, `float` (default: 5)
+        The lengend marker size.
     s: optional, `float` (default: 5)
         The marker size.
     gene: optional, `str` (default: None)
@@ -82,7 +85,7 @@ def scatter_cell(
         return Line2D([0], [0], color='w', marker='o', label=label,
             markerfacecolor=markerfacecolor, 
             markeredgewidth=0,
-            markersize=s)
+            markersize=legend_marker_size)
 
     if isinstance(colors, list):
         #print("\nbuild a colormap for a list of clusters as input\n")
