@@ -1079,6 +1079,7 @@ def pseudo_time(
         n_jobs=-1,
         speed_up=(60, 60), 
         n_paths=5,
+        plot_rep_trajs=True,
         save=False, 
         output_path=None):
 
@@ -1103,14 +1104,14 @@ def pseudo_time(
         the square root of the number of selected cells (rounded to the nearest
         tenth.)
 
-    dt: `float` (default: 0.01)
+    dt: `float` 
         Time step used to advance a cell on the embedding for generation of
         cell diffusion trajectories. Parameter `dt` should be set together
         with `t_total`. Excessively small values of `dt` demand large `t_total`,
         and drastically increase computing time; Excessively large values of
         `dt` lead to low-resolution and unrealistic pseudotime estimation.
 
-    t_total: `float` (default: 1000)
+    t_total: optional, `float` (default: 1000)
         Total number of time steps used for generation of cell diffusion
         trajectories.
         The diffusion is stopped by any of the criteria:
@@ -1119,12 +1120,11 @@ def pseudo_time(
         - the cell goes to where no cell resides;
         - the cell is out of the diffusion box (the `grid`)
 
-    n_repeats: `int` (default: 10)
+    n_repeats: optional, `int` (default: 10)
         Number of repeated diffusion of each cell used for generation of cell
         diffusion trajectories.
 
-    psrng_seeds_diffusion: optional, `list-like: list, tuple, or 1-d numpy
-    array` (default: `None`)
+    psrng_seeds_diffusion: optional, `list-like` (default: `None`)
         Pseudo random number generator seeds for all the replicas in the generation
         of cell diffusion trajectories. Its length = `n_repeats`. Set this for
         reproducibility.
@@ -1137,18 +1137,22 @@ def pseudo_time(
         Number of threads or processes used for cell diffusion. It follows the
         scikit-learn convention. -1 means all possible threads.
 
-    n_paths: `int` (default: 5)
+    n_paths: optional, `int` (default: 5)
         Number of representative paths to extract for cell pseudotime estimation.
         Note this parameter is very sensitive. For best outcome, please set the
         number based on biological knowledge about the cell embedding.
 
+    plot_rep_trajs: optional, `bool`(default: True)
+        Whether to show the representative trajectories whose traverse lengths are
+        local maximums.
+
     save: `bool` (default: `False`)
         Whether to save the pseudotime-included `cellDancer_df` as .csv file.
 
-    output_path: `str` (default: `None`)
+    output_path: optional, `str` (default: `None`)
         Save file path. By default, the .csv file is saved in current directory.
 
-    activate_umap_paths_divider: `bool` (default: `False`)
+    activate_umap_paths_divider: optional, `bool` (default: `False`)
         Whether to use UMAP embeddding (calculated from alpha, beta, and gamma)
         in generation of cell diffusion trajectories. Not recommended because
         switching it on drastically increases computational time.
@@ -1283,7 +1287,8 @@ def pseudo_time(
     #cell_fate = [cluster_map[i] for i in cell_fate]
 
     # NNN show path clusters
-    #plot_path_clusters(path_clusters, cell_clusters, cell_embedding)    
+    if plot_rep_trajs:
+        plot_path_clusters(path_clusters, cell_clusters, cell_embedding)    
     cellDancer_df = compute_cell_time(
         cellDancer_df,
         normalized_embedding, 
@@ -1324,28 +1329,42 @@ def pseudo_time(
     
 
 
-# TOREMOVE
-# deprecated since I'm going to get cellDancer_df as input.
-def load_velocity(detail_result_path, n_neighbors, n_grids):
-    detail_files = glob.iglob(os.path.join(detail_result_path, '*detail*.csv'))
-    lcd = list()
-    for f in detail_files:
-        cellDancer_df_temp = pd.read_csv(f)
-        cellDancer_df_temp.rename(columns = {'Unnamed: 0':'cellIndex'}, inplace = True)
-        cellDancer_df_temp = cellDancer_df_temp.sort_values(by = ['gene_name', 'cellIndex'], ascending = [True, True])
-        lcd.append(cellDancer_df_temp)
-    cellDancer_df = pd.concat(lcd)
-    
-    gene_choice=list(set(cellDancer_df.gene_name))
-    compute_cell_velocity(
-        cellDancer_df=cellDancer_df,
-        gene_list=gene_choice,
-        mode="gene",
-        n_neighbors=n_neighbors,
-        n_grids=n_grids)
-    
-
 # all plot functions
+# Those functions are for debugging purpose
+def plot_path_clusters(path_clusters, clusters, cell_embedding):    
+    fig, ax = plt.subplots(figsize=(6, 6))
+    #plt.scatter(cell_embedding[:,0], cell_embedding[:,1], c='silver', s=10, alpha = 0.3)
+    n_clusters = len(clusters)
+    
+    cmap = ListedColormap(sns.color_palette("colorblind", n_colors = n_clusters))
+    colormaps = [ListedColormap(sns.light_palette(cmap.colors[i],
+        n_colors=100)) for i in range(n_clusters)]
+
+    # find the nearest cell (terminal cell) to the end point
+    neigh = NearestNeighbors(n_neighbors=1, n_jobs=-1)
+    neigh.fit(cell_embedding)
+
+    cluster_cnt = 0
+    for cluster in clusters:
+        cl = colormaps[cluster_cnt]
+        leading_path=path_clusters[cluster][0]
+        terminal_cell=leading_path[-1]
+        A = neigh.kneighbors_graph(np.array([terminal_cell]))
+        B = A.toarray()
+        terminal_cell = np.matmul(B, cell_embedding)
+
+        plt.text(leading_path[-1,0], leading_path[-1,1], "cluster"+str(cluster), fontsize=12)
+        plt.scatter(leading_path[:,0], leading_path[:,1], s=5,
+                c=range(len(leading_path)), cmap=colormaps[cluster_cnt])
+        plt.scatter(terminal_cell[:,0], terminal_cell[:,1], s=30, color=cmap.colors[cluster_cnt])
+
+        for _path in path_clusters[cluster]:
+            plt.scatter(_path[0,0], _path[0,1], s=10, alpha = 0.5,
+                    color=cmap.colors[cluster_cnt])
+        cluster_cnt += 1
+    plt.axis('off')
+    plt.show()
+
 def pseudotime_cell_plot():
     print("\n\n\nPlotting estimated pseudotime for all cells ...")
     fig, ax = plt.subplots(figsize=(6,6))
@@ -1422,36 +1441,3 @@ def plot_celltime_clusters(cell_time_per_cluster, path_clusters, embedding):
     plt.show()
 
 
-def plot_path_clusters(path_clusters, clusters, cell_embedding):    
-    fig, ax = plt.subplots(figsize=(6, 6))
-    #plt.scatter(cell_embedding[:,0], cell_embedding[:,1], c='silver', s=10, alpha = 0.3)
-    n_clusters = len(clusters)
-    
-    cmap = ListedColormap(sns.color_palette("colorblind", n_colors = n_clusters))
-    colormaps = [ListedColormap(sns.light_palette(cmap.colors[i],
-        n_colors=100)) for i in range(n_clusters)]
-
-    # find the nearest cell (terminal cell) to the end point
-    neigh = NearestNeighbors(n_neighbors=1, n_jobs=-1)
-    neigh.fit(cell_embedding)
-
-    cluster_cnt = 0
-    for cluster in clusters:
-        cl = colormaps[cluster_cnt]
-        leading_path=path_clusters[cluster][0]
-        terminal_cell=leading_path[-1]
-        A = neigh.kneighbors_graph(np.array([terminal_cell]))
-        B = A.toarray()
-        terminal_cell = np.matmul(B, cell_embedding)
-
-        plt.text(leading_path[-1,0], leading_path[-1,1], "cluster"+str(cluster), fontsize=12)
-        plt.scatter(leading_path[:,0], leading_path[:,1], s=5,
-                c=range(len(leading_path)), cmap=colormaps[cluster_cnt])
-        plt.scatter(terminal_cell[:,0], terminal_cell[:,1], s=30, color=cmap.colors[cluster_cnt])
-
-        for _path in path_clusters[cluster]:
-            plt.scatter(_path[0,0], _path[0,1], s=10, alpha = 0.5,
-                    color=cmap.colors[cluster_cnt])
-        cluster_cnt += 1
-    plt.axis('off')
-    plt.show()
