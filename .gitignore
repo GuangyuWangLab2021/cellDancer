@@ -13,6 +13,7 @@ __pycache__/
 # PyInstaller
 *.manifest
 *.spec
+build/
 
 # Installer logs
 pip-log.txt
