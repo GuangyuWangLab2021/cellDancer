@@ -1057,15 +1057,15 @@ def compute_cell_time(
         all_cell_time=ordered_cell_time
 
     all_cell_fate = assign_all_cell_fate(embedding, sampling_ixs, cell_fate)
-    print("There are %d cells." % (len(all_cell_fate)))
-    plot_cell_clusters(all_cell_fate, embedding)
+    #print("There are %d cells." % (len(all_cell_fate)))
+    #plot_cell_clusters(all_cell_fate, embedding)
     
     # write cell time to cellDancer_df
     gene_names = cellDancer_df['gene_name'].drop_duplicates().to_list()
     if len(cellDancer_df) == len(gene_names) * len(all_cell_time):
         cellDancer_df['pseudotime'] = np.tile(all_cell_time, len(gene_names))
         cellDancer_df = cellDancer_df.astype({"pseudotime": float})
-    return cellDancer_df, all_cell_fate
+    return cellDancer_df
 
 
 def pseudo_time(
@@ -1079,7 +1079,7 @@ def pseudo_time(
         n_jobs=-1,
         speed_up=(60, 60), 
         n_paths=5,
-        plot_rep_trajs=True,
+        plot_rep_trajs=False,
         save=False, 
         output_path=None):
 
@@ -1142,7 +1142,7 @@ def pseudo_time(
         Note this parameter is very sensitive. For best outcome, please set the
         number based on biological knowledge about the cell embedding.
 
-    plot_rep_trajs: optional, `bool`(default: True)
+    plot_rep_trajs: optional, `bool`(default: False)
         Whether to show the representative trajectories whose traverse lengths are
         local maximums.
 
@@ -1253,7 +1253,7 @@ def pseudo_time(
             nkeep=-1)
         path_clusters, cell_clusters = __
 
-        # This step could cause dropping of number of path clusters.
+        # This step could cause a drop in the number of path clusters.
         cell_fate = cell_fate_tuning(cell_embedding, cell_clusters)
         clusters = np.unique(cell_fate)
         n_clusters = len(clusters)
@@ -1270,7 +1270,7 @@ def pseudo_time(
         if n_path_mid == n_paths:
             return s_mid
         elif n_path_mid < n_paths:
-            return binary_search(s_mid, s_low, n_path_mid, n_path_max)
+           return binary_search(s_mid, s_low, n_path_mid, n_path_max)
         else:
             return binary_search(s_high, s_mid, n_path_min, n_path_mid)
 
@@ -1279,6 +1279,7 @@ def pseudo_time(
     n_path_min = decide_cell_fate(s_high)[0] 
     n_path_max = decide_cell_fate(s_low)[0] 
     path_similarity = binary_search(s_high, s_low, n_path_min, n_path_max)
+
     #print("use path_similarity: ", path_similarity)
     n_clusters, cell_fate, path_clusters = decide_cell_fate(path_similarity)
 
@@ -1286,9 +1287,9 @@ def pseudo_time(
     #cluster_map = dict(zip(np.unique(cell_fate), np.array(range(n_clusters))))
     #cell_fate = [cluster_map[i] for i in cell_fate]
 
-    # NNN show path clusters
+    # show path clusters
     if plot_rep_trajs:
-        plot_path_clusters(path_clusters, cell_clusters, cell_embedding)    
+        plot_path_clusters(path_clusters, cell_embedding)    
     cellDancer_df = compute_cell_time(
         cellDancer_df,
         normalized_embedding, 
@@ -1331,39 +1332,62 @@ def pseudo_time(
 
 # all plot functions
 # Those functions are for debugging purpose
-def plot_path_clusters(path_clusters, clusters, cell_embedding):    
+def plot_path_clusters(path_clusters, cell_embedding):    
+    '''
+    path_clusters: a dictionary of paths (each path is ntimestep x 2 dim)
+    '''
     fig, ax = plt.subplots(figsize=(6, 6))
     #plt.scatter(cell_embedding[:,0], cell_embedding[:,1], c='silver', s=10, alpha = 0.3)
-    n_clusters = len(clusters)
+    n_clusters = len(path_clusters)
     
     cmap = ListedColormap(sns.color_palette("colorblind", n_colors = n_clusters))
     colormaps = [ListedColormap(sns.light_palette(cmap.colors[i],
         n_colors=100)) for i in range(n_clusters)]
 
-    # find the nearest cell (terminal cell) to the end point
+    # find the nearest cell (terminal cell) to the end of each leading path.
     neigh = NearestNeighbors(n_neighbors=1, n_jobs=-1)
     neigh.fit(cell_embedding)
 
     cluster_cnt = 0
-    for cluster in clusters:
+    for cluster in path_clusters:
         cl = colormaps[cluster_cnt]
-        leading_path=path_clusters[cluster][0]
-        terminal_cell=leading_path[-1]
+        lead_path=path_clusters[cluster][0]
+        terminal_cell=lead_path[-1]
         A = neigh.kneighbors_graph(np.array([terminal_cell]))
         B = A.toarray()
         terminal_cell = np.matmul(B, cell_embedding)
 
-        plt.text(leading_path[-1,0], leading_path[-1,1], "cluster"+str(cluster), fontsize=12)
-        plt.scatter(leading_path[:,0], leading_path[:,1], s=5,
-                c=range(len(leading_path)), cmap=colormaps[cluster_cnt])
-        plt.scatter(terminal_cell[:,0], terminal_cell[:,1], s=30, color=cmap.colors[cluster_cnt])
+        # Annotation
+        plt.text(lead_path[-1,0], lead_path[-1,1], 
+                 "cluster"+str(cluster), fontsize=12,
+                 bbox=dict(facecolor='white', 
+                           alpha=0.5, 
+                           edgecolor='white', 
+                           boxstyle='round,pad=1')
+                 )
 
+        # path
+        plt.scatter(lead_path[:,0], lead_path[:,1], 
+                    s = 5,
+                    c = range(len(lead_path)), 
+                    cmap = colormaps[cluster_cnt]
+                    )
+
+        # zoom in the terminal cell
+        plt.scatter(terminal_cell[:,0], terminal_cell[:,1], 
+                    s = 30, alpha = 0.5,
+                    color = cmap.colors[cluster_cnt])
+
+        # cells in the cluster
         for _path in path_clusters[cluster]:
-            plt.scatter(_path[0,0], _path[0,1], s=10, alpha = 0.5,
+            plt.scatter(_path[0,0], _path[0,1], 
+                        s=10, alpha = 0.5,
                     color=cmap.colors[cluster_cnt])
         cluster_cnt += 1
+
     plt.axis('off')
     plt.show()
+
 
 def pseudotime_cell_plot():
     print("\n\n\nPlotting estimated pseudotime for all cells ...")
@@ -1416,8 +1440,6 @@ def plot_cell_clusters(cell_fate, cell_embedding):
 
 
 def plot_celltime_clusters(cell_time_per_cluster, path_clusters, embedding):
-    #print(len(cell_time_per_cluster), len(path_clusters))
-    #assert len(cell_time_per_cluster) == len(path_clusters)
 
     fig, ax = plt.subplots(figsize=(6, 6))
     plt.scatter(embedding[:,0],embedding[:,1], c='silver', alpha = 0.3)
