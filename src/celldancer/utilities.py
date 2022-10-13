@@ -4,6 +4,7 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 import pandas as pd
+import anndata as ad
 from sklearn.neighbors import NearestNeighbors
 
 # progress bar
