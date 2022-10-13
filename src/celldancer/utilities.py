@@ -236,6 +236,91 @@ def adata_to_df_with_embed(adata,
     return(raw_data)
 
 
+def to_dynamo(dancer_df):
+    '''
+    Input: celldancer output dataframe.
+    Return: adata for dynamo
+    '''
+    spliced = dancer_df.pivot(index='cellID', columns='gene_name', values='splice')
+    unspliced = dancer_df.pivot(index='cellID', columns='gene_name', values='splice')
+
+    spliced_predict = dancer_df.pivot(index='cellID', columns='gene_name', values='splice_predict')
+    unspliced_predict = dancer_df.pivot(index='cellID', columns='gene_name', values='unsplice_predict')
+
+    alpha = dancer_df.pivot(index='cellID', columns='gene_name', values='alpha')
+    beta = dancer_df.pivot(index='cellID', columns='gene_name', values='beta')
+    gamma = dancer_df.pivot(index='cellID', columns='gene_name', values='gamma')
+
+    one_gene = dancer_df['gene_name'].iloc[0]
+    one_cell = dancer_df['cellID'].iloc[0]
+
+    adata1 = ad.AnnData(spliced)
+
+    # var
+    adata1.var['highly_variable_genes'] = True
+    adata1.var['loss'] = (dancer_df[dancer_df['cellID'] == one_cell]['loss']).tolist()
+    #adata1.var['loss'] = dancer_df.pivot(index='gene_name', columns='cellID', values='loss').iloc[:, 0]
+    # celldancer uses all genes (high variable) for dynamics and transition.
+    adata1.var['use_for_dynamics'] = True
+    adata1.var['use_for_transition'] = True
+
+    # obs
+    if 'clusters' in dancer_df:
+        adata1.obs['clusters'] = dancer_df.pivot(index='cellID', columns='gene_name', values='clusters').iloc[:, 0]
+
+    #  layers
+    adata1.layers['X_spliced'] = spliced
+    adata1.layers['X_unspliced'] = unspliced
+
+    adata1.layers['M_s'] = spliced
+    adata1.layers['M_u'] = unspliced
+    adata1.layers['velocity_S'] = spliced_predict - spliced
+
+    adata1.layers['velocity_U'] = unspliced_predict - unspliced
+    adata1.layers['alpha'] = alpha
+    adata1.layers['beta'] = beta
+    adata1.layers['gamma'] = gamma
+
+    # obsm
+    adata1.obsm['X_cdr'] = dancer_df[dancer_df['gene_name'] == one_gene][['embedding1', 'embedding2']].values
+    # assuming no downsampling is used for the cell velocities in the dancer_df
+    if 'velocity1' in dancer_df:
+        adata1.obsm['velocity_cdr'] = dancer_df[dancer_df['gene_name'] == one_gene][['velocity1', 'velocity2']].values
+
+    # obsp
+    n_neighbors = 20
+    nn = NearestNeighbors(n_neighbors=n_neighbors)
+    nn.fit(adata1.obsm['X_cdr'])
+    connect_knn = nn.kneighbors_graph(mode='connectivity')
+    distance_knn = nn.kneighbors_graph(mode='distance')
+    adata1.obsp['connectivities'] = connect_knn
+    adata1.obsp['distances'] = distance_knn
+
+
+    # uns
+    dynamics_info = {'filter_gene_mode': 'final',
+                't': None,
+                'group': None,
+                'X_data': None,
+                'X_fit_data': None,
+                'asspt_mRNA': 'ss',
+                'experiment_type': 'conventional',
+                'normalized': True,
+                'model': 'static',
+                'est_method': 'ols',
+                'has_splicing': True,
+                'has_labeling': False,
+                'splicing_labeling': False,
+                'has_protein': False,
+                'use_smoothed': True,
+                'NTR_vel': False,
+                'log_unnormalized': False,
+                'fraction_for_deg': False}
+
+    adata1.uns['dynamics']= dynamics_info
+
+    return adata1
+
 
 def adata_to_raw(adata,save_path,gene_list=None):
     '''convert adata to raw data format
