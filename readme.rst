@@ -17,7 +17,8 @@ What's new
 ========================================================
 cellDancer is updated to v1.1.3
 
-* Added control on deep learning model in function celldancer.velocity(): n_neighbors, dt, learning_rate.
+* Added API to import cellDancer results to Dynamo.
+* Added control on deep learning model in function cellDancer.velocity(): n_neighbors, dt, learning_rate.
 * Added new loss function: mix, rmsd.
 
 Installation
