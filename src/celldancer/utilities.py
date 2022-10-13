@@ -236,14 +236,18 @@ def adata_to_df_with_embed(adata,
 
     return(raw_data)
 
-
 def to_dynamo(dancer_df):
     '''
-    Input: celldancer output dataframe.
     Return: adata for dynamo
     '''
+
+    # Sort the dancer_df by cellID, so if it's not done already, your dancer_df could be changed.
+    # This is because pd.DataFrame.pivot does this automatically and we don't want to mess up with
+    # the obsm etc
+    dancer_df = dancer_df.sort_values('cellID')
+
     spliced = dancer_df.pivot(index='cellID', columns='gene_name', values='splice')
-    unspliced = dancer_df.pivot(index='cellID', columns='gene_name', values='splice')
+    unspliced = dancer_df.pivot(index='cellID', columns='gene_name', values='unsplice')
 
     spliced_predict = dancer_df.pivot(index='cellID', columns='gene_name', values='splice_predict')
     unspliced_predict = dancer_df.pivot(index='cellID', columns='gene_name', values='unsplice_predict')
@@ -259,8 +263,8 @@ def to_dynamo(dancer_df):
 
     # var
     adata1.var['highly_variable_genes'] = True
-    adata1.var['loss'] = (dancer_df[dancer_df['cellID'] == one_cell]['loss']).tolist()
-    #adata1.var['loss'] = dancer_df.pivot(index='gene_name', columns='cellID', values='loss').iloc[:, 0]
+    #adata1.var['loss'] = (dancer_df[dancer_df['cellID'] == one_cell]['loss']).tolist()
+    adata1.var['loss'] = dancer_df.pivot(index='gene_name', columns='cellID', values='loss').iloc[:, 0]
     # celldancer uses all genes (high variable) for dynamics and transition.
     adata1.var['use_for_dynamics'] = True
     adata1.var['use_for_transition'] = True
@@ -297,7 +301,6 @@ def to_dynamo(dancer_df):
     adata1.obsp['connectivities'] = connect_knn
     adata1.obsp['distances'] = distance_knn
 
-
     # uns
     dynamics_info = {'filter_gene_mode': 'final',
                 't': None,
@@ -321,6 +324,7 @@ def to_dynamo(dancer_df):
     adata1.uns['dynamics']= dynamics_info
 
     return adata1
+
 
 
 def adata_to_raw(adata,save_path,gene_list=None):
