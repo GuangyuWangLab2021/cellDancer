@@ -39,7 +39,7 @@ colormap_pancreas={
 'Epsilon':'#03B3B0'
 }
 
-colormap_hgForebrainGlut={
+colormap_hgforebrainglut={
 0:'#9408F7',
 1:'#C729D6',
 2:'#FA4AB5',
