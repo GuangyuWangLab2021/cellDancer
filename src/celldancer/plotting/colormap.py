@@ -39,7 +39,7 @@ colormap_pancreas={
 'Epsilon':'#03B3B0'
 }
 
-colormap_hgforebrainglut={
+colormap_hgForebrainGlut={
 0:'#9408F7',
 1:'#C729D6',
 2:'#FA4AB5',
@@ -49,7 +49,7 @@ colormap_hgforebrainglut={
 6:'#FFCD32'
 }
 
-colormap_hgForebrainGlut={
+colormap_hgforebrainglut={
 'Radial Glia':'#9408F7',
 'Radial Glia':'#C729D6',
 'Neuroblast':'#FA4AB5',
