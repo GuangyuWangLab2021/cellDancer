@@ -6,6 +6,7 @@ from scipy.sparse import csr_matrix
 import pandas as pd
 import anndata as ad
 from sklearn.neighbors import NearestNeighbors
+from statsmodels.nonparametric.kernel_regression import KernelReg
 
 # progress bar
 import contextlib
@@ -27,9 +28,6 @@ def tqdm_joblib(tqdm_object):
     finally:
         joblib.parallel.BatchCompletionCallBack = old_batch_callback
         tqdm_object.close()
-
-######### pseudotime rsquare
-from statsmodels.nonparametric.kernel_regression import KernelReg
 
 def _non_para_kernel(X,Y,down_sample_idx):
     # (no first cls),pseudotime r square calculation
@@ -122,7 +120,7 @@ def get_rsquare(load_cellDancer,gene_list,s0_merged_part_time,s0_merged_part_gen
     # downsample
     sampled_idx=getidx_downSampling_embedding(load_cellDancer,cell_choice=cell_choice)
     
-    # PARALLEL thread
+    # parallel thread
     from joblib import Parallel, delayed
     # run parallel
     with tqdm_joblib(tqdm(desc="Calculate rsquare", total=len(gene_list))) as progress_bar:
@@ -431,7 +429,6 @@ def calculate_occupy_ratio_and_cor(gene_choice,data, u_fragment=30, s_fragment=3
     ref: analysis_calculate_occupy_ratio.py
     parameters
     data -> rawdata[['gene_list', 'u0','s0']]
-
     return(ratio2, cor2)
     ratio2 [['gene_choice','ratio']]
     ratio2 [['gene_choice','correlation']]
@@ -477,10 +474,6 @@ def calculate_occupy_ratio_and_cor(gene_choice,data, u_fragment=30, s_fragment=3
     cor2 = pd.DataFrame({'gene_choice': gene_choice, 'correlation': cor[:,0]})
     return(ratio2, cor2)
 
-def para_cluster_heatmap():
-    '''para_cluster_heatmap'''
-    print('para_cluster_heatmap')
-
 def find_neighbors(adata, n_pcs=30, n_neighbors=30):
     '''Find neighbors by using pca on UMAP'''
     from scanpy import Neighbors
@@ -515,18 +508,6 @@ def find_neighbors(adata, n_pcs=30, n_neighbors=30):
             "n_pcs": n_pcs,
             "use_rep": "X_pca",
         }
-
-def moments(adata):
-    '''Calculate moments'''
-    connect = adata.obsp['connectivities'] > 0
-    connect.setdiag(1)
-    connect = connect.multiply(1.0 / connect.sum(1))
-    #pd.DataFrame(connect.todense(), adata.obs.index.tolist(), adata.obs.index.tolist())
-    #pd.DataFrame(connect.multiply(1.0 / connect.sum(1)).dot(adata.layers['unspliced'].todense()), 
-    #adata.obs.index.tolist(), adata.var.index.tolist())
-    adata.layers["Mu"] = csr_matrix.dot(connect, csr_matrix(adata.layers["unspliced"])).astype(np.float32).A
-    adata.layers["Ms"] = csr_matrix.dot(connect, csr_matrix(adata.layers["spliced"])).astype(np.float32).A
-
 
 def find_nn_neighbors(
         data=None, 
