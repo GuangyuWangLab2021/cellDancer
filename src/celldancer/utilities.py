@@ -1,6 +1,3 @@
-# functions borrowed from scv; 
-# TO DO: Change code style for every functions!!!!!!
-
 import numpy as np
 from scipy.sparse import csr_matrix
 import pandas as pd
