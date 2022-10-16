@@ -1163,6 +1163,9 @@ def pseudo_time(
         The updated cellDancer_df with additional columns ['velocity1', 'velocity2'].
     """
 
+    if output_path is None:
+        output_path = os.getcwd()
+
     start_time = time.time()
 
     gene_choice = cellDancer_df[~cellDancer_df['velocity1'].isna()]['gene_name']
@@ -1289,7 +1292,7 @@ def pseudo_time(
 
     # show path clusters
     if plot_rep_trajs:
-        plot_path_clusters(path_clusters, cell_embedding)    
+        plot_path_clusters(path_clusters, cell_embedding, output_path=output_path)    
     cellDancer_df = compute_cell_time(
         cellDancer_df,
         normalized_embedding, 
@@ -1318,10 +1321,7 @@ def pseudo_time(
                 '__ttotal' + str(t_total)+ \
                 '__nrepeats' + str(n_repeats) + \
                 '.csv'
-        if output_path is not None:
-            outfile = os.path.join(output_path, outname)
-        else:
-            outfile = outname
+        outfile = os.path.join(output_path, outname)
 
         print("\nExporting data to:\n ", outfile)
         cellDancer_df.to_csv(outfile, index=False)
@@ -1331,8 +1331,7 @@ def pseudo_time(
 
 
 # all plot functions
-# Those functions are for debugging purpose
-def plot_path_clusters(path_clusters, cell_embedding):    
+def plot_path_clusters(path_clusters, cell_embedding, save=True, output_path=None):    
     '''
     path_clusters: a dictionary of paths (each path is ntimestep x 2 dim)
     '''
@@ -1340,7 +1339,7 @@ def plot_path_clusters(path_clusters, cell_embedding):
     #plt.scatter(cell_embedding[:,0], cell_embedding[:,1], c='silver', s=10, alpha = 0.3)
     n_clusters = len(path_clusters)
     
-    cmap = ListedColormap(sns.color_palette("colorblind", n_colors = n_clusters))
+    cmap = ListedColormap(sns.color_palette("bright", n_colors = n_clusters))
     colormaps = [ListedColormap(sns.light_palette(cmap.colors[i],
         n_colors=100)) for i in range(n_clusters)]
 
@@ -1357,38 +1356,45 @@ def plot_path_clusters(path_clusters, cell_embedding):
         B = A.toarray()
         terminal_cell = np.matmul(B, cell_embedding)
 
+        # cells in the cluster
+        for _path in path_clusters[cluster]:
+            plt.scatter(_path[0,0], _path[0,1], 
+                        s=1, alpha=0.5,
+                    color=cmap.colors[cluster_cnt])
+
         # Annotation
-        plt.text(lead_path[-1,0], lead_path[-1,1], 
-                 "cluster"+str(cluster), fontsize=12,
-                 bbox=dict(facecolor='white', 
-                           alpha=0.5, 
-                           edgecolor='white', 
-                           boxstyle='round,pad=1')
-                 )
+#        plt.text(lead_path[-1,0], lead_path[-1,1], 
+#                 "Path: "+str(cluster+1), fontsize=12,
+#                 bbox=dict(facecolor='white', 
+#                           alpha=0.5, 
+#                           edgecolor='white', 
+#                           boxstyle='round,pad=1')
+#                 )
 
         # path
         plt.scatter(lead_path[:,0], lead_path[:,1], 
-                    s = 5,
+                    s = 50,
                     c = range(len(lead_path)), 
                     cmap = colormaps[cluster_cnt]
                     )
 
         # zoom in the terminal cell
-        plt.scatter(terminal_cell[:,0], terminal_cell[:,1], 
-                    s = 30, alpha = 0.5,
-                    color = cmap.colors[cluster_cnt])
+#        plt.scatter(terminal_cell[:,0], terminal_cell[:,1], 
+#                    s = 30, alpha = 1,
+#                    color = cmap.colors[cluster_cnt])
 
-        # cells in the cluster
-        for _path in path_clusters[cluster]:
-            plt.scatter(_path[0,0], _path[0,1], 
-                        s=10, alpha = 0.5,
-                    color=cmap.colors[cluster_cnt])
         cluster_cnt += 1
 
     plt.axis('off')
+    if save:
+        save_path = os.path.join(output_path, "pseudotime_rep_trajs.pdf")
+        plt.savefig(save_path, dpi=300)
     plt.show()
 
 
+
+
+# Those functions are for debugging purpose
 def pseudotime_cell_plot():
     print("\n\n\nPlotting estimated pseudotime for all cells ...")
     fig, ax = plt.subplots(figsize=(6,6))
