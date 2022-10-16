@@ -233,7 +233,48 @@ def adata_to_df_with_embed(adata,
 
 def to_dynamo(dancer_df):
     '''
-    Return: adata for dynamo
+    Convert the output dataframe from cellDancer to Dynamo. 
+
+    The idea is that the converted dataset (anndata format) can be directed run in Dynamo for all needed calculations including 
+    recalculating RNA velocity with dynamo (it will only be treated as a conventional RNA seq experiment) and downstream calculations,
+    such as velocity vector fields mapping as well as gene regulation analysis. 
+
+    To note, since cellDancer uses preprocessed data as input and only keeps high variable genes, so Dynamo adata will then only have 
+    those genes. Reruning preprocessing from this exported anndata is not recommended. Morever, some of the features exported are not be 
+    used by Dynamo in its current version.
+
+    Arguments
+    ---------
+    dancer_df: `pandas.DataFrame`
+        DataFrame from cellDancer velocity estimation, cell velocity, and pseudotime. 
+        Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 
+        'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
+
+    Here are the detailed conversion from cellDancer to Dyanmo.
+    cellDancer                  -->     Dynamo
+    dancer_df.splice            -->     adata.X
+
+    dancer_df.loss              -->     adata.var.loss
+
+    dancer_df.cellID            -->     adata.obs
+    dancer_df.clusters          -->     adata.obs.clusters
+
+    dancer_df.splice            -->     adata.layers['X_spliced']
+    dancer_df.splice            -->     adata.layers['M_s']
+    dancer_df.unsplice          -->     adata.layers['X_unspliced']
+    dancer_df.unsplice          -->     adata.layers['M_u']
+    dancer_df.alpha             -->     adata.layers['alpha']
+    dancer_df.beta              -->     adata.layers['beta']
+    dancer_df.gamma             -->     adata.layers['gamma']
+    dancer_df.unsplice_predict - dancer_df.unsplice     -->    adata.layers['velocity_U']
+    dancer_df.splice_predict - dancer_df.splice         -->    adata.layers['velocity_S']
+
+    dancer[['embeddding1', 'embedding2']]   -->     adata.obsm['X_cdr']
+    dancer[['velocity1', 'velocity2']]      -->     adata.obsm['velocity_cdr']
+
+    Returns 
+    -------
+    adata
     '''
 
     # Sort the dancer_df by cellID, so if it's not done already, your dancer_df could be changed.
