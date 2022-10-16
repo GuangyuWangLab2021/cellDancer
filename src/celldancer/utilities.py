@@ -382,9 +382,9 @@ def map_cdr_velocity_to_dynamo(dancer_df,adata):
     Here are the detailed conversion from cellDancer to Dyanmo.
     cellDancer                  -->     Dynamo
 
-    bool of dancer_df['gene_name'].                     -->     adata.var['use_for_dynamics']
-    bool of dancer_df['gene_name']                      -->     adata.var['use_for_transition']
-    dancer_df.splice_predict - dancer_df.splice         -->    adata.layers['velocity_S']
+    bools of the existance of dancer_df['gene_name'] in adata.var      -->     adata.var['use_for_dynamics']
+    bools of the existance of dancer_df['gene_name'] in adata.var      -->     adata.var['use_for_transition']
+    dancer_df.splice_predict - dancer_df.splice                        -->    adata.layers['velocity_S']
 
     Returns 
     -------
