@@ -282,7 +282,7 @@ def to_dynamo(dancer_df):
         Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 
         'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
         
-        Here are the detailed conversion from cellDancer to Dyanmo.
+        Here are the detailed conversion from cellDancer to Dynamo.
 
         cellDancer                  -->     Dynamo
 
@@ -430,7 +430,7 @@ def map_cdr_velocity_to_dynamo(dancer_df,adata):
         Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 
         'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
 
-        Here are the detailed conversion from cellDancer to Dyanmo.
+        Here are the detailed conversion from cellDancer to Dynamo.
 
         cellDancer                  -->     Dynamo
 
