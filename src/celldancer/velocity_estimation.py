@@ -161,16 +161,13 @@ class DNN_module(nn.Module):
         def mix_loss(unsplice, splice, unsplice_predict, splice_predict, indices, mix_ratio = 0.5):
             """
             rmse between the predicted vector and the closest vector 
-
             Parameters:
             
             unsplice: 1d tensor [n_cells] 
             splice: 1d tensor [n_cells] 
             indices: 2d array [n_cells, n_neighbors]
-
             Return:
                 list of cosine distance and a list of the index of the next cell
-
             """
 
             #print("mix ratio, ", mix_ratio)
@@ -235,7 +232,7 @@ class DNN_module(nn.Module):
                 cost1 = mix_loss(unsplice, splice, unsplice_predict, splice_predict, indices, mix_ratio=mix_ratio)[0]
                 cost_fin = torch.mean(cost1)
 
-        else:
+        else: # trace cost and corrcoef cost have been deprecated
             # cosine cost
             cost1,idx = cosine_similarity(unsplice, splice, unsplice_predict, splice_predict, indices)
             cost1_normalize=(cost1-torch.min(cost1))/torch.max(cost1)
@@ -715,7 +712,6 @@ def velocity(
         The maximum number of concurrently running jobs.
     save_path: optional, `str` (default: 200)
         Path to save the result of velocity estimation.
-
     Returns
     -------
     loss_df: `pandas.DataFrame`
