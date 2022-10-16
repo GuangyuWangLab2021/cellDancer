@@ -22,7 +22,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", UserWarning)
 import logging
 logging.getLogger("pytorch_lightning").setLevel(logging.WARNING)
-from celldancer.sampling import *
+from .sampling import *
 
 class DNN_layer(nn.Module):
 
@@ -199,6 +199,7 @@ class DNN_module(nn.Module):
 
         
         def trace_cost(unsplice, splice, unsplice_predict, splice_predict, idx, version):
+            # This cost has been deprecated
             uv, sv = unsplice_predict-unsplice, splice_predict-splice
             tan = torch.where(sv!=1000000, uv/sv, torch.tensor(0.00001))
             atan_theta = torch.atan(tan) + torch.pi/2
@@ -212,6 +213,7 @@ class DNN_module(nn.Module):
             return(cost)
 
         def corrcoef_cost(alphas, unsplice, beta, splice):
+            # This cost has been deprecated
             corrcoef1 = torch.corrcoef(torch.tensor([alphas.detach().numpy(),unsplice.detach().numpy()]))[1,0]
             corrcoef2 = torch.corrcoef(torch.tensor([beta.detach().numpy(), splice.detach().numpy()]))[1,0]
             corrcoef = corrcoef1 + corrcoef2
