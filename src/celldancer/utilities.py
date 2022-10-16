@@ -184,7 +184,6 @@ def adata_to_df_with_embed(adata,
         Path to save the result of transferred csv file.
     gene_list: `list` (default: None)
         Specific gene(s) to be transfered.
-
     Returns
     -------
     raw_data: `pandas.DataFrame` 
@@ -234,43 +233,51 @@ def adata_to_df_with_embed(adata,
 def to_dynamo(dancer_df):
     '''
     Convert the output dataframe from cellDancer to Dynamo. 
-
     The idea is that the converted dataset (anndata format) can be directed run in Dynamo for all needed calculations including 
     recalculating RNA velocity with dynamo (it will only be treated as a conventional RNA seq experiment) and downstream calculations,
     such as velocity vector fields mapping as well as gene regulation analysis. 
-
     To note, since cellDancer uses preprocessed data as input and only keeps high variable genes, so Dynamo adata will then only have 
     those genes. Reruning preprocessing from this exported anndata is not recommended. Morever, some of the features exported are not be 
     used by Dynamo in its current version.
-
     Arguments
     ---------
     dancer_df: `pandas.DataFrame`
         DataFrame from cellDancer velocity estimation, cell velocity, and pseudotime. 
         Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 
         'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
+        Here are the detailed conversion from cellDancer to Dyanmo.
 
-    Here are the detailed conversion from cellDancer to Dyanmo.
-    cellDancer                  -->     Dynamo
-    dancer_df.splice            -->     adata.X
+        cellDancer                  -->     Dynamo
 
-    dancer_df.loss              -->     adata.var.loss
+        dancer_df.splice            -->     adata.X
 
-    dancer_df.cellID            -->     adata.obs
-    dancer_df.clusters          -->     adata.obs.clusters
+        dancer_df.loss              -->     adata.var.loss
 
-    dancer_df.splice            -->     adata.layers['X_spliced']
-    dancer_df.splice            -->     adata.layers['M_s']
-    dancer_df.unsplice          -->     adata.layers['X_unspliced']
-    dancer_df.unsplice          -->     adata.layers['M_u']
-    dancer_df.alpha             -->     adata.layers['alpha']
-    dancer_df.beta              -->     adata.layers['beta']
-    dancer_df.gamma             -->     adata.layers['gamma']
-    dancer_df.unsplice_predict - dancer_df.unsplice     -->    adata.layers['velocity_U']
-    dancer_df.splice_predict - dancer_df.splice         -->    adata.layers['velocity_S']
+        dancer_df.cellID            -->     adata.obs
 
-    dancer[['embeddding1', 'embedding2']]   -->     adata.obsm['X_cdr']
-    dancer[['velocity1', 'velocity2']]      -->     adata.obsm['velocity_cdr']
+        dancer_df.clusters          -->     adata.obs.clusters
+
+        dancer_df.splice            -->     adata.layers['X_spliced']
+
+        dancer_df.splice            -->     adata.layers['M_s']
+
+        dancer_df.unsplice          -->     adata.layers['X_unspliced']
+
+        dancer_df.unsplice          -->     adata.layers['M_u']
+
+        dancer_df.alpha             -->     adata.layers['alpha']
+
+        dancer_df.beta              -->     adata.layers['beta']
+
+        dancer_df.gamma             -->     adata.layers['gamma']
+
+        dancer_df.unsplice_predict - dancer_df.unsplice     -->    adata.layers['velocity_U']
+
+        dancer_df.splice_predict - dancer_df.splice         -->    adata.layers['velocity_S']
+
+        dancer[['embeddding1', 'embedding2']]   -->     adata.obsm['X_cdr']
+
+        dancer[['velocity1', 'velocity2']]      -->     adata.obsm['velocity_cdr']
 
     Returns 
     -------
@@ -364,14 +371,11 @@ def to_dynamo(dancer_df):
 def map_cdr_velocity_to_dynamo(dancer_df,adata):
     '''
     Map the velocity results of cellDancer to adata which is compatible with Dynamo. This allows to keep all the attributes in the origional adata except for adata.var['use_for_dynamics'], adata.var['use_for_transition'], and  adata.layers['velocity_S'].
-
     
     The idea is that the converted dataset (anndata format) can be directed run in Dynamo for all needed calculations including 
     recalculating RNA velocity with dynamo (it will only be treated as a conventional RNA seq experiment) and downstream calculations,
     such as velocity vector fields mapping as well as gene regulation analysis. 
-
     To note, since the most attributes in adata would be kept, dynamo adata will then keep the genes in adata even the genes are not in pandas.DataFrame. NA will be placed in adata.layers['velocity_S'] for the genes that are not in pandas.DataFrame.
-
     Arguments
     ---------
     dancer_df: `pandas.DataFrame`
@@ -379,13 +383,16 @@ def map_cdr_velocity_to_dynamo(dancer_df,adata):
         Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 
         'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
 
-    Here are the detailed conversion from cellDancer to Dyanmo.
-    cellDancer                  -->     Dynamo
+        Here are the detailed conversion from cellDancer to Dyanmo.
 
-    bools of the existance of dancer_df['gene_name'] in adata.var      -->     adata.var['use_for_dynamics']
-    bools of the existance of dancer_df['gene_name'] in adata.var      -->     adata.var['use_for_transition']
-    dancer_df.splice_predict - dancer_df.splice                        -->    adata.layers['velocity_S']
+        cellDancer                  -->     Dynamo
 
+        bools of the existance of dancer_df['gene_name'] in adata.var      -->     adata.var['use_for_dynamics']
+
+        bools of the existance of dancer_df['gene_name'] in adata.var      -->     adata.var['use_for_transition']
+
+        dancer_df.splice_predict - dancer_df.splice                        -->    adata.layers['velocity_S']
+        
     Returns 
     -------
     adata
@@ -408,7 +415,6 @@ def adata_to_raw(adata,save_path,gene_list=None):
     data:
     save_path:
     gene_list (optional):
-
     return: panda dataframe with gene_list,u0,s0,cellID
     
     run: test=adata_to_raw(adata,'/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/bin/cellDancer-development_20220128/src/output/test.csv',gene_list=genelist_all)
@@ -624,4 +630,3 @@ def extract_from_df(load_cellDancer, attr_list, gene_name=None):
     one_gene_idx = load_cellDancer.gene_name == gene_name
     data = load_cellDancer[one_gene_idx][attr_list].dropna()
     return data.to_numpy()
-
