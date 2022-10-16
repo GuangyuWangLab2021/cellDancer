@@ -239,12 +239,49 @@ def to_dynamo(dancer_df):
     To note, since cellDancer uses preprocessed data as input and only keeps high variable genes, so Dynamo adata will then only have 
     those genes. Reruning preprocessing from this exported anndata is not recommended. Morever, some of the features exported are not be 
     used by Dynamo in its current version.
+
+    Example usage:
+
+    .. code-block:: python
+
+        # import packages
+        import dynamo as dyn
+        import numpy as np
+        import pandas as pd
+        import anndata as ann
+        import matplotlib.pyplot as plt
+        import celldancer as cd
+        import celldancer.utilities as cdutil
+
+        # load the prediction result of all genes
+        cellDancer_df_u_s_file = 'data/HgForebrainGlut_cellDancer_estimation_unspliced_spliced.csv'
+        cellDancer_df_u_s=pd.read_csv(cellDancer_df_u_s_file)
+
+        # transform celldancer dataframe to anndata
+        adata_from_dancer_u_s = cdutil.to_dynamo(cellDancer_df_u_s)
+
+        # plot the velocity vector of each cell
+        dyn.pl.streamline_plot(adata_from_dancer_u_s, 
+                               color=["clusters"], 
+                               basis = "cdr", 
+                               show_legend="on data", 
+                               show_arrowed_spines=True)
+
+    -------
+    The streamline_plot built by dynamo below could be visualized.
+    
+    .. image:: _static/dynamo_plt.png
+      :width: 100%
+      :alt: dynamo_plt
+
     Arguments
     ---------
     dancer_df: `pandas.DataFrame`
         DataFrame from cellDancer velocity estimation, cell velocity, and pseudotime. 
+        
         Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 
         'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
+        
         Here are the detailed conversion from cellDancer to Dyanmo.
 
         cellDancer                  -->     Dynamo
@@ -376,10 +413,20 @@ def map_cdr_velocity_to_dynamo(dancer_df,adata):
     recalculating RNA velocity with dynamo (it will only be treated as a conventional RNA seq experiment) and downstream calculations,
     such as velocity vector fields mapping as well as gene regulation analysis. 
     To note, since the most attributes in adata would be kept, dynamo adata will then keep the genes in adata even the genes are not in pandas.DataFrame. NA will be placed in adata.layers['velocity_S'] for the genes that are not in pandas.DataFrame.
+
+
+    -------
+    The vector field could be built by dynamo after the mapping. Details are shown in section 'Application of dynamo'
+    
+    .. image:: _static/dynamo_vector_field_pancreas.png
+      :width: 100%
+      :alt: dynamo_vector_field_pancreas
+
     Arguments
     ---------
     dancer_df: `pandas.DataFrame`
         DataFrame from cellDancer velocity estimation, cell velocity, and pseudotime. 
+        
         Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 
         'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
 
@@ -392,7 +439,7 @@ def map_cdr_velocity_to_dynamo(dancer_df,adata):
         bools of the existance of dancer_df['gene_name'] in adata.var      -->     adata.var['use_for_transition']
 
         dancer_df.splice_predict - dancer_df.splice                        -->    adata.layers['velocity_S']
-        
+
     Returns 
     -------
     adata
