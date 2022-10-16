@@ -361,7 +361,47 @@ def to_dynamo(dancer_df):
 
     return adata1
 
+def map_cdr_velocity_to_dynamo(dancer_df,adata):
+    '''
+    Map the velocity results of cellDancer to adata which is compatible with Dynamo. This allows to keep all the attributes in the origional adata except for adata.var['use_for_dynamics'], adata.var['use_for_transition'], and  adata.layers['velocity_S'].
 
+    
+    The idea is that the converted dataset (anndata format) can be directed run in Dynamo for all needed calculations including 
+    recalculating RNA velocity with dynamo (it will only be treated as a conventional RNA seq experiment) and downstream calculations,
+    such as velocity vector fields mapping as well as gene regulation analysis. 
+
+    To note, since the most attributes in adata would be kept, dynamo adata will then keep the genes in adata even the genes are not in pandas.DataFrame. NA will be placed in adata.layers['velocity_S'] for the genes that are not in pandas.DataFrame.
+
+    Arguments
+    ---------
+    dancer_df: `pandas.DataFrame`
+        DataFrame from cellDancer velocity estimation, cell velocity, and pseudotime. 
+        Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 
+        'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
+
+    Here are the detailed conversion from cellDancer to Dyanmo.
+    cellDancer                  -->     Dynamo
+
+    bool of dancer_df['gene_name'].                     -->     adata.var['use_for_dynamics']
+    bool of dancer_df['gene_name']                      -->     adata.var['use_for_transition']
+    dancer_df.splice_predict - dancer_df.splice         -->    adata.layers['velocity_S']
+
+    Returns 
+    -------
+    adata
+    '''
+    dancer_genes = dancer_df['gene_name'].drop_duplicates()
+    dancer_df["velocity_S"] = dancer_df["splice_predict"]-dancer_df["splice"]
+    dancer_velocity_s = dancer_df[['cellID', 'gene_name', 'velocity_S']]
+    pivoted = dancer_velocity_s.pivot(index="cellID", columns="gene_name", values="velocity_S")
+    velocity_matrix = np.zeros(adata.shape)
+    adata_ds_zeros = pd.DataFrame(velocity_matrix, columns=adata.var.index, index=adata.obs.index)
+    celldancer_velocity_s_df = (adata_ds_zeros + pivoted).fillna(0)[adata.var.index]
+
+    adata.layers['velocity_S'] = scipy.sparse.csr_matrix(celldancer_velocity_s_df.values)
+    adata.var['use_for_dynamics'] = adata.var.index.isin(dancer_genes)
+    adata.var['use_for_transition'] = adata.var.index.isin(dancer_genes)
+    return(adata.copy())
 
 def adata_to_raw(adata,save_path,gene_list=None):
     '''convert adata to raw data format
