@@ -1075,7 +1075,6 @@ def pseudo_time(
         t_total=1000, 
         n_repeats=10,
         psrng_seeds_diffusion=None,
-        activate_umap_paths_divider=False,
         n_jobs=-1,
         speed_up=(60, 60), 
         n_paths=5,
@@ -1140,10 +1139,7 @@ def pseudo_time(
         Whether to save the pseudotime-included `cellDancer_df` as .csv file.
     output_path: optional, `str` (default: `None`)
         Save file path. By default, the .csv file is saved in the current directory.
-    activate_umap_paths_divider: optional, `bool` (default: `False`)
-        Whether to use UMAP embedding (calculated from alpha, beta, and gamma)
-        in generation of cell diffusion trajectories. Not recommended because
-        switching it on drastically increases computational time.
+        
     Returns
     -------
     cellDancer_df: `pandas.DataFrame`
@@ -1172,7 +1168,7 @@ def pseudo_time(
 
     velocity = velocity_normalization(velocity_embedding, mode='max')
 
-    
+    activate_umap_paths_divider=False # for development - Whether to use UMAP embedding (calculated from alpha, beta, and gamma) in generation of cell diffusion trajectories.
     if activate_umap_paths_divider:
         cellDancer_df = cdplt.cell.calculate_para_umap(
                 cellDancer_df, 'alpha_beta_gamma')
