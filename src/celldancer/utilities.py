@@ -174,7 +174,7 @@ def adata_to_df_with_embed(adata,
     Arguments
     ---------
     adata: `anndata._core.anndata.AnnData`
-        The adata to be transferred. Columns=['gene_name', 'unsplice', 'splice' ,'cellID' ,'clusters' ,'embedding1' ,'embedding2']
+        The adata to be transferred.
     us_para: `list` (default: ['Mu','Ms'])
         The attributes of the two count matrices of pre-mature (unspliced) and mature (spliced) abundances from adata.layers. By default, splice and unsplice columns (the two count matrices of spliced and unspliced abundances) are obtained from the ['Ms', 'Mu'] attributes of adata.layers.
     cell_type_para: `str` (default: 'celltype')
@@ -207,7 +207,7 @@ def adata_to_df_with_embed(adata,
     if gene_list is None: gene_list=adata.var.index
 
     for i,gene in enumerate(gene_list):
-        print("processing:"+str(i)+"/"+str(len(gene_list)))
+        print("processing:"+str(i+1)+"/"+str(len(gene_list)))
         data_onegene = adata_to_raw_one_gene(adata, us_para=us_para, gene=gene)
         if i==0:
             data_onegene.to_csv(save_path,header=True,index=False)
@@ -263,14 +263,9 @@ def to_dynamo(dancer_df):
     Arguments
     ---------
     dancer_df: `pandas.DataFrame`
-        DataFrame from cellDancer velocity estimation, cell velocity, and pseudotime. 
-        
-        Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 
-        'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
-        
-        The details:
+        Convert the output dataframe of cellDancer to the input of dynamo. The output of this function can be directly used in the downstream analyses of dynamo.
 
-        cellDancer                  -->     Dynamo
+        cellDancer                  -->     dynamo
 
         dancer_df.splice            -->     adata.X
 
@@ -391,21 +386,18 @@ def to_dynamo(dancer_df):
 
     return adata1
 
-def map_cd_velocity_to_dynamo(dancer_df,adata):
+def export_velocity_to_dynamo(dancer_df,adata):
     '''
-    Transfer only the velocity results of cellDancer to adata which is compatible with Dynamo. 
+    Transfer only the velocity results of cellDancer to adata which is compatible with dynamo. 
     This allows keeping all the attributes in the origional adata except for adata.var[‘use_for_dynamics’], 
     adata.var[‘use_for_transition’], and adata.layers[‘velocity_S’].
     
-    The converted dataset (anndata format) can be directly run in Dynamo for all needed calculations 
-    including recalculating RNA velocity with Dynamo (it will only be treated as a conventional RNA seq 
-    experiment) and downstream calculations, such as velocity vector fields mapping as well as gene regulation 
-    analysis. To note, since most attributes in adata would be kept, Dynamo adata will then keep the genes in 
-    adata even if the genes are not in pandas.DataFrame. NA will be placed in adata.layers[‘velocity_S’] for 
-    the genes that are not in the dataframe.
+    The converted dataset (anndata format) can be directly run in dynamo for downstream analysis, such as velocity vector fields mapping as well as gene regulation 
+    analysis. NA will be placed in adata.layers[‘velocity_S’] for 
+    the genes that are not in the dataframe of cellDancer.
 
     -------
-    The vector field could be learned by Dynamo based on the RNA velocity of cellDancer. Details are shown in the section ‘Application of Dynamo.’
+    The vector field could be learned by Dynamo based on the RNA velocity of cellDancer. Details are shown in the section ‘APPLICATION OF DYNAMO.’
     
     .. image:: _static/dynamo_vector_field_pancreas.png
       :width: 60%
@@ -428,6 +420,10 @@ def map_cd_velocity_to_dynamo(dancer_df,adata):
         bools of the existance of dancer_df['gene_name'] in adata.var      -->     adata.var['use_for_transition']
 
         dancer_df.splice_predict - dancer_df.splice                        -->    adata.layers['velocity_S']
+
+    adata: `anndata._core.anndata.AnnData`
+        The adata to be integrated with cellDancer velocity result.
+
 
     Returns 
     -------
