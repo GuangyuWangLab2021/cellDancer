@@ -1083,7 +1083,7 @@ def pseudo_time(
         save=False, 
         output_path=None):
 
-    """Compute the gene-shared pseudotime based on the projection of the RNA velocity to vector fields in the embedding space.
+    """Compute the gene-shared pseudotime based on the projection of the RNA velocity to velocity vector flow in the embedding space.
 
     Arguments
     ---------
@@ -1099,18 +1099,15 @@ def pseudo_time(
         The embedding space (2d, [xmin, xmax] x [ymin, ymax]) is divided into
         n_x * n_y grids. The cells in the same grid share the same velocity
         (mean), however, they may not share the pseudotime.
-
         If it's set to `None`, then a recommended value for n_x and n_y is
         the square root of the number of selected cells (rounded to the nearest
         tenth.)
-
     dt: `float` 
         Time step used to advance a cell on the embedding for generation of
         cell diffusion trajectories. Parameter `dt` should be set together
         with `t_total`. Excessively small values of `dt` demand large `t_total`,
         and drastically increase computing time; Excessively large values of
         `dt` lead to low-resolution and unrealistic pseudotime estimation.
-
     t_total: optional, `float` (default: 1000)
         Total number of time steps used for generation of cell diffusion
         trajectories.
@@ -1119,44 +1116,34 @@ def pseudo_time(
         - the magnitude of the velocity is less than a cutoff `eps`;
         - the cell goes to where no cell resides;
         - the cell is out of the diffusion box (the `grid`)
-
     n_repeats: optional, `int` (default: 10)
         Number of repeated diffusion of each cell used for generation of cell
         diffusion trajectories.
-
     psrng_seeds_diffusion: optional, `list-like` (default: `None`)
         Pseudo random number generator seeds for all the replicas in the generation
         of cell diffusion trajectories. Its length = `n_repeats`. Set this for
         reproducibility.
-
     speed_up: optional, `tuple` (default: (60,60))
         The sampling grid used in *compute_cell_velocity.compute*.
         This grid is used for interpolating pseudotime for all cells.
-
     n_jobs: optional, `int` (default: -1)
         Number of threads or processes used for cell diffusion. It follows the
         scikit-learn convention. -1 means all possible threads.
-
     n_paths: optional, `int` (default: 5)
         Number of representative paths to extract for cell pseudotime estimation.
-        Note this parameter is very sensitive. For best outcome, please set the
+        Note this parameter is very sensitive. For the best outcome, please set the
         number based on biological knowledge about the cell embedding.
-
     plot_rep_trajs: optional, `bool`(default: False)
         Whether to show the representative trajectories whose traverse lengths are
         local maximums.
-
     save: `bool` (default: `False`)
         Whether to save the pseudotime-included `cellDancer_df` as .csv file.
-
     output_path: optional, `str` (default: `None`)
-        Save file path. By default, the .csv file is saved in current directory.
-
+        Save file path. By default, the .csv file is saved in the current directory.
     activate_umap_paths_divider: optional, `bool` (default: `False`)
-        Whether to use UMAP embeddding (calculated from alpha, beta, and gamma)
+        Whether to use UMAP embedding (calculated from alpha, beta, and gamma)
         in generation of cell diffusion trajectories. Not recommended because
         switching it on drastically increases computational time.
-
     Returns
     -------
     cellDancer_df: `pandas.DataFrame`
@@ -1467,5 +1454,3 @@ def plot_celltime_clusters(cell_time_per_cluster, path_clusters, embedding):
         ax.set_aspect('equal', adjustable='box')
     plt.axis('off')
     plt.show()
-
-

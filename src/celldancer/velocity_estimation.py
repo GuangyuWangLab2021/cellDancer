@@ -141,7 +141,10 @@ class DNN_module(nn.Module):
 
         def rmse(unsplice, splice, unsplice_predict, splice_predict, indices):
             """
-            loss is defined as the rmse of the predicted velocity vector (uv, sv) from the neighboring velocity vectors (unv, snv)
+            This loss is defined as the rmse of the predicted velocity vector (uv, sv) from the neighboring velocity vectors (unv, snv).
+
+            This loss is used during revision.
+
             """
             uv, sv = unsplice_predict-unsplice, splice_predict-splice 
             unv, snv = unsplice[indices.T[1:]] - unsplice, splice[indices.T[1:]] - splice 
@@ -160,7 +163,10 @@ class DNN_module(nn.Module):
 
         def mix_loss(unsplice, splice, unsplice_predict, splice_predict, indices, mix_ratio = 0.5):
             """
-            rmse between the predicted vector and the closest vector 
+            This loss is defined as the mix of rmse loss and cosine loss.
+
+            This loss is used during revision.
+
             Parameters:
             
             unsplice: 1d tensor [n_cells] 
@@ -196,7 +202,9 @@ class DNN_module(nn.Module):
 
         
         def trace_cost(unsplice, splice, unsplice_predict, splice_predict, idx, version):
-            # This cost has been deprecated
+
+            # This cost has been deprecated.
+
             uv, sv = unsplice_predict-unsplice, splice_predict-splice
             tan = torch.where(sv!=1000000, uv/sv, torch.tensor(0.00001))
             atan_theta = torch.atan(tan) + torch.pi/2
@@ -210,7 +218,9 @@ class DNN_module(nn.Module):
             return(cost)
 
         def corrcoef_cost(alphas, unsplice, beta, splice):
-            # This cost has been deprecated
+
+            # This cost has been deprecated.
+            
             corrcoef1 = torch.corrcoef(torch.tensor([alphas.detach().numpy(),unsplice.detach().numpy()]))[1,0]
             corrcoef2 = torch.corrcoef(torch.tensor([beta.detach().numpy(), splice.detach().numpy()]))[1,0]
             corrcoef = corrcoef1 + corrcoef2
@@ -232,7 +242,7 @@ class DNN_module(nn.Module):
                 cost1 = mix_loss(unsplice, splice, unsplice_predict, splice_predict, indices, mix_ratio=mix_ratio)[0]
                 cost_fin = torch.mean(cost1)
 
-        else: # trace cost and corrcoef cost have been deprecated
+        else: # trace cost and corrcoef cost have been deprecated.
             # cosine cost
             cost1,idx = cosine_similarity(unsplice, splice, unsplice_predict, splice_predict, indices)
             cost1_normalize=(cost1-torch.min(cost1))/torch.max(cost1)
@@ -707,7 +717,7 @@ def velocity(
     norm_cell_distribution: optional, `bool` (default: True)
         `True` if the bias of cell distribution is to be removed on embedding space (many cells share the same position of unspliced (and spliced) reads).
     loss_func: optional, `str` (default: `cosine`)
-        Currently support `'cosine'`, `'rmse'`, and (`'mix'`, mix_ratio). Other loss functions available in velocity_calculate() are meant for internal use.
+        Currently support `'cosine'`, `'rmse'`, and (`'mix'`, mix_ratio).
     n_jobs: optional, `int` (default: -1)
         The maximum number of concurrently running jobs.
     save_path: optional, `str` (default: 200)

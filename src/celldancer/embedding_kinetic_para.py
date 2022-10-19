@@ -13,7 +13,7 @@ def embedding_kinetic_para(
         
     Arguments
     ---------
-    cellDancer_df: `pandas.Dataframe`
+    cellDancer_df: `pandas.DataFrame`
         Data frame of velocity estimation results. Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2']
     kinetic_para: `str`
         Choose Which parameter is used to calculate embedding space, which could be selected from {'alpha', 'beta', 'gamma', 'alpha_beta_gamma'}.

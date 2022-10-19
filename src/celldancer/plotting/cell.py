@@ -35,7 +35,7 @@ def scatter_cell(
     arrow_grid=(30,30)
 ): 
 
-    """Plot the projection of RNA velocity to vector fields in the embedding space; or plot the kinetic parameters ('alpha', 'beta', 'gamma', 'splice', 'unsplice', or 'pseudotime') of one gene in embedding space.
+    """Plot the projection of RNA velocity to velocity vector flow in the embedding space; or plot the kinetic parameters ('alpha', 'beta', 'gamma', 'splice', 'unsplice', or 'pseudotime') of one gene in embedding space.
         
     Arguments
     ---------
@@ -44,7 +44,7 @@ def scatter_cell(
     cellDancer_df: `pandas.DataFrame`
         Data frame of velocity estimation, cell velocity, and pseudotime results. Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
     colors: `list`, `dict`, or `str`
-        When the input is a list: build a colormap dictionary for a list of cell type ;  
+        When the input is a list: build a colormap dictionary for a list of cell type;  
         When the input is a dictionary: it is the customized color map dictionary of each cell type; 
         When the input is a str: one of {'alpha', 'beta', 'gamma', 'splice', 'unsplice', 'pseudotime'} is used as input.
     custom_xlim: optional, `float` (default: None)
@@ -71,14 +71,12 @@ def scatter_cell(
     colorbar: optional, `str` (default: 'on')
         `‘on’` if the colorbar of the plot of `alpha`, `beta`, `gamma`, `splice`, or `unsplice` is to be shown. `'off'` if the colorbar is to be not shown.
     min_mass: optional, `float` (default: 2)
-        Filter by using the isotropic gaussian kernel to display the arrow on grids. The less, the more arrows.
+        Filter by using the isotropic gaussian kernel to display the arrow on grids. The lower the min_mass, the more arrows.
     arrow_grid: optional, `tuple` (default: (30,30))
         The sparsity of the grids of velocity arrows. The larger, the more compact, and more arrows will be shown.
-
     Returns
     -------
     ax: matplotlib.axes.Axes
-
     """  
 
     def gen_Line2D(label, markerfacecolor):
@@ -324,7 +322,6 @@ def plot_kinetic_para(
         The color map dictionary of each cell type.
     legend: `bool` (optional, default: False)
         `True` if the color map of cell legend is to be plotted. 
-
     """    
     onegene=cellDancer_df[cellDancer_df.gene_name==cellDancer_df.gene_name[0]]
     umap_para=onegene[[(kinetic_para+'_umap1'),(kinetic_para+'_umap2')]].to_numpy()

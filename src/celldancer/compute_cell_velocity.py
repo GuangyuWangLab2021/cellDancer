@@ -25,7 +25,7 @@ def compute_cell_velocity(
     projection_neighbor_size=200,
     projection_neighbor_choice='embedding'):
 
-    """Project the RNA velocity to vector fields in the embedding space.
+    """Project the RNA velocity to velocity vector flow in the embedding space.
         
     Arguments
     ---------
@@ -42,8 +42,8 @@ def compute_cell_velocity(
     projection_neighbor_size: optional, `int` (default: '200')
         The number of neighboring cells used for the transition probability matrix for one cell.
     projection_neighbor_choice: optional, `str` (default: 'embedding')
-        `'embedding'` if use the embedding space to obtain the neighbors. 
-        `'gene'` if use the spliced reads of all genes to obtain the neighbors.
+        `'embedding'` if using the embedding space to obtain the neighbors. 
+        `'gene'` if using the spliced reads of all genes to obtain the neighbors.
 
     Returns
     -------

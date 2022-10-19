@@ -215,44 +215,20 @@ def generate(type, gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1
     data_onegene.loc[:,'clusters']=None
     return data_onegene
 
-def generate_forward(gene_num, alpha, beta, gamma, sample, noise_level):
-    return generate("forwad", gene_num, alpha, 0, beta, 0, gamma, 0, 0, 0, sample, 0, noise_level)
-
-# def generate_backward(gene_num, alpha, beta, gamma, sample, noise_level):
-#     return generate("backward", gene_num, alpha, 0, beta, 0, gamma, 0, 0, 0, sample, 0, noise_level)
+def generate_mono(alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level, gene_num=1):
+    return generate("two_alpha", gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level)
 
 def generate_tran_boost(alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level, gene_num=1):
     return generate("two_alpha", gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level)
 
-def generate_boost_path(gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level):
-    return generate("boost", gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level)
-
-
-
 def generate_forward(alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level, gene_num=1):
     return generate("two_alpha2", gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level)
 
-def generate_float_circle(gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level):
-    return generate("two_alpha3", gene_num, alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_pct, path2_pct, path1_sample, path2_sample, noise_level)
-
-def generate_2circle():
-    gene_info = pd.DataFrame(columns = ['gene_name', 'start_u', 'start_s', 'alpha', 'beta', 'gamma', 'start_pct', 'end_pct', 'samples'])
-    gene_info = gene_info.append({'gene_name':'g1', 'start_u':0, 'start_s':0, 'alpha':15, 'beta':10, 'gamma':12, 'start_pct':0, 'end_pct':99, 'samples':1000}, ignore_index=True)
-    gene_info = gene_info.append({'gene_name':'g1', 'start_u':None, 'start_s':None, 'alpha':0, 'beta':10, 'gamma':12, 'start_pct':0, 'end_pct':99, 'samples':1000}, ignore_index=True)
-    gene_info = gene_info.append({'gene_name':'g1', 'start_u':0, 'start_s':0, 'alpha':25, 'beta':10, 'gamma':10, 'start_pct':0, 'end_pct':70, 'samples':1000}, ignore_index=True)
-    gene_info = gene_info.append({'gene_name':'g1', 'start_u':None, 'start_s':None, 'alpha':0, 'beta':10, 'gamma':10, 'start_pct':0, 'end_pct':99, 'samples':1000}, ignore_index=True)
- 
-    gene_info, expr = generate_with_df(gene_info)
-    plt.scatter(expr['s0'], expr['u0'], c=expr['alpha'], s=1)
-    plt.show()
-
 def generate_backward(start_s1, start_s2, start_u1, start_u2,alpha1, alpha2, beta1, beta2, gamma1, gamma2, path1_sample, path2_sample,noise_level=None):
-
     gene_info = pd.DataFrame(columns = ['gene_name', 'start_u', 'start_s', 'alpha', 'beta', 'gamma', 'start_pct', 'end_pct', 'samples'])
     gene_info = gene_info.append({'gene_name':'g1', 'start_u':start_u1, 'start_s':start_s1, 'alpha':alpha1, 'beta':beta1, 'gamma':gamma1, 'start_pct':0, 'end_pct':99, 'samples':path1_sample}, ignore_index=True)
     gene_info = gene_info.append({'gene_name':'g1', 'start_u':start_u2, 'start_s':start_s2, 'alpha':alpha2, 'beta':beta2, 'gamma':gamma2, 'start_pct':0, 'end_pct':99, 'samples':path2_sample}, ignore_index=True)
 
-    
     gene_info, expr = generate_with_df(gene_info,noise_level)
     expr['embedding1']=expr['u0']
     expr['embedding2']=expr['s0']
@@ -260,25 +236,6 @@ def generate_backward(start_s1, start_s2, start_u1, start_u2,alpha1, alpha2, bet
     expr.loc[:,'cellID']=list(range(len(expr)))
     expr.loc[:,'clusters']=None
     return expr
-
-
-def generate_2backward():
-    gene_info = pd.DataFrame(columns = ['gene_name', 'start_u', 'start_s', 'alpha', 'beta', 'gamma', 'start_pct', 'end_pct', 'samples'])
-    gene_info = gene_info.append({'gene_name':'g1', 'start_u':1, 'start_s':2, 'alpha':0, 'beta':10, 'gamma':10, 'start_pct':0, 'end_pct':99, 'samples':1000}, ignore_index=True)
-    gene_info = gene_info.append({'gene_name':'g1', 'start_u':2, 'start_s':1.5, 'alpha':0, 'beta':10, 'gamma':10, 'start_pct':0, 'end_pct':99, 'samples':1000}, ignore_index=True)
-
-    gene_info, expr = generate_with_df(gene_info)
-    plt.scatter(expr['s0'], expr['u0'], c=expr['alpha'], s=1)
-    plt.show()
-
-def generate_2backward2():
-    gene_info = pd.DataFrame(columns = ['gene_name', 'start_u', 'start_s', 'alpha', 'beta', 'gamma', 'start_pct', 'end_pct', 'samples'])
-    gene_info = gene_info.append({'gene_name':'g1', 'start_u':1.5, 'start_s':1.2, 'alpha':0, 'beta':10, 'gamma':12, 'start_pct':0, 'end_pct':99, 'samples':1000}, ignore_index=True)
-    gene_info = gene_info.append({'gene_name':'g1', 'start_u':1.5, 'start_s':1.2, 'alpha':0, 'beta':15, 'gamma':12, 'start_pct':0, 'end_pct':99, 'samples':1000}, ignore_index=True)
-
-    gene_info, expr = generate_with_df(gene_info)
-    plt.scatter(expr['s0'], expr['u0'], c=expr['beta'], s=1)
-    plt.show()
 
 def generate_by_each_cell(df, t, dt=0.001, noise_level=1):
     expr = pd.DataFrame()
@@ -326,13 +283,13 @@ def simulate(kinetic_type,
     Arguments
     ---------
     kinetic_type: `pandas.DataFrame`
-        kinetic_type could be selected from ['multi_forward','multi_backward','tran_boost']
+        kinetic_type could be selected from ['mono', 'multi_forward', 'multi_backward', 'tran_boost']
 
     alpha1: `float` (default: `None`)
-        The simulated alpha (transcriptional rate) for the first lineage.
+        The simulated alpha (transcriptional rate) for the first lineage. This parameter is valid when kinetic_type is set to 'mono', 'multi_forward', or 'tran_boost'.
 
     alpha2: `float` (default: `None`)
-        The simulated alpha (transcriptional rate) for the second lineage.
+        The simulated alpha (transcriptional rate) for the second lineage. This parameter is valid when kinetic_type is set to 'multi_forward' or 'tran_boost'.
 
     beta1: `float` (default: `None`)
         The simulated beta (splicing rate) for the first lineage.
@@ -359,16 +316,16 @@ def simulate(kinetic_type,
         The simulated unspliced abundance for the second lineage. Cells start from a region at a point of (start_splice2, start_unsplice2) to decrease. This parameter is valid when kinetic_type is set to 'multi_backward'.
 
     path1_pct: optional, `float` (default: `None`)
-        To decrease the bias of cell distribution at the steady point in the first lineage. This parameter is valid when kinetic_type is set to 'multi_forward' or 'tran_boost'.
+        To decrease the bias of cell distribution at the steady point in the first lineage. This parameter is valid when kinetic_type is set to 'mono', 'multi_forward' or 'tran_boost'.
     
     path2_pct: optional, `float` (default: `None`)
-        To decrease the bias of cell distribution at the steady point in the second lineage. This parameter is valid when kinetic_type is set to 'multi_forward' or 'tran_boost'.
+        To decrease the bias of cell distribution at the steady point in the second lineage. This parameter is valid when kinetic_type is set to 'mono', 'multi_forward' or 'tran_boost'.
         
     path1_cell_number: `float` (default: `None`)
-        The amount of cells to be generated in the first lineage.
+        The number of cells to be generated in the first lineage.
     
     path2_cell_number: `float` (default: `None`)
-        The amount of cells to be generated in the second lineage.
+        The number of cells to be generated in the second lineage.
         
     noise_level: `float` (default: `0.2`)
         The noise level to be set.
@@ -377,37 +334,116 @@ def simulate(kinetic_type,
     -------
     df: pandas.DataFrame
         The dataframe of one simulated gene.
-        
-         
+
+ 
     -------
-    The kinetics below could be simulated.
-    
+
+    Example usage:
+
+    .. code-block:: python
+
+        import celldancer.simulation as cdsim
+        import matplotlib.pyplot as plt
+
+        # Mono-kinetic
+        plt.figure(figsize=(5,5))
+        gene=cdsim.simulate(kinetic_type='mono',
+                            alpha1=1,
+                            beta1=1,
+                            beta2=7,
+                            gamma1=1,
+                            gamma2=9,
+                            path1_pct=99,
+                            path2_pct=99,
+                            path1_cell_number=1000,
+                            path2_cell_number=1000)
+        plt.scatter(gene.splice,gene.unsplice,c='#95D9EF',alpha=0.5)
+
+        # Multi-lineage forward branching
+        plt.figure(figsize=(5,5))
+        gene=cdsim.simulate(kinetic_type='multi_forward',
+                            alpha1=5,
+                            alpha2=1,
+                            beta1=1,
+                            beta2=0.5,
+                            gamma1=5,
+                            gamma2=0.25,
+                            path1_pct=99,
+                            path2_pct=99,
+                            path1_cell_number=1000,
+                            path2_cell_number=1000)
+        plt.scatter(gene.splice,gene.unsplice,c='#95D9EF',alpha=0.5)
+
+        # Multi-lineage backward branching
+        plt.figure(figsize=(5,5))
+        gene=cdsim.simulate(kinetic_type='multi_backward',
+                            beta1=1,
+                            beta2=1,
+                            gamma1=1,
+                            gamma2=1,
+                            start_splice1=1,
+                            start_splice2=1.5,
+                            start_unsplice1=1,
+                            start_unsplice2=0.2,
+                            path1_cell_number=1000,
+                            path2_cell_number=1000)
+        plt.scatter(gene.splice,gene.unsplice,c='#95D9EF',alpha=0.5)
+
+        # Transcriptional boost
+        plt.figure(figsize=(5,5))
+        gene=cdsim.simulate(kinetic_type='tran_boost',
+                            alpha1=2,
+                            alpha2=5,
+                            beta1=2,
+                            beta2=2,
+                            gamma1=1,
+                            gamma2=1,
+                            path1_pct=99,
+                            path2_pct=80,
+                            path1_cell_number=1000,
+                            path2_cell_number=1000)
+        plt.scatter(gene.splice,gene.unsplice,c='#95D9EF',alpha=0.5)
+
     .. image:: _static/sim.png
       :width: 100%
       :alt: sim
 
     """  
     
-    if kinetic_type=='multi_forward':
-        df=generate_multipath(alpha1=alpha1, 
-                              alpha2=alpha2, 
-                              beta1=beta1, 
-                              beta2=beta2, 
-                              gamma1=gamma1, 
-                              gamma2=gamma2, 
-                              path1_pct=path1_pct, 
-                              path2_pct=path2_pct, 
-                              path1_sample=path2_cell_number, 
-                              path2_sample=path2_cell_number, 
-                              noise_level=noise_level)
-        
+
+    if kinetic_type=='mono':
+        df=generate_mono(alpha1=alpha1, 
+                         alpha2=0, 
+                         beta1=beta1, 
+                         beta2=beta2, 
+                         gamma1=gamma1, 
+                         gamma2=gamma2, 
+                         path1_pct=path1_pct, 
+                         path2_pct=path2_pct, 
+                         path1_sample=path1_cell_number, 
+                         path2_sample=path2_cell_number, 
+                         noise_level=noise_level)
+
+    elif kinetic_type=='multi_forward':
+        df=generate_forward(alpha1=alpha1, 
+                            alpha2=alpha2, 
+                            beta1=beta1, 
+                            beta2=beta2, 
+                            gamma1=gamma1, 
+                            gamma2=gamma2, 
+                            path1_pct=path1_pct, 
+                            path2_pct=path2_pct, 
+                            path1_sample=path2_cell_number, 
+                            path2_sample=path2_cell_number, 
+                            noise_level=noise_level)
+
     elif kinetic_type=='multi_backward':
         df=generate_backward(start_s1=start_splice1, 
                              start_s2=start_splice2, 
                              start_u1=start_unsplice1, 
                              start_u2=start_unsplice2,
-                             alpha1=alpha1, 
-                             alpha2=alpha2, 
+                             alpha1=0, 
+                             alpha2=0, 
                              beta1=beta1, 
                              beta2=beta2, 
                              gamma1=gamma1, 
@@ -418,18 +454,20 @@ def simulate(kinetic_type,
         
     elif kinetic_type=='tran_boost':
         df=generate_tran_boost(alpha1=alpha1, 
-                            alpha2=alpha2, 
-                            beta1=beta1, 
-                            beta2=beta2, 
-                            gamma1=gamma1, 
-                            gamma2=gamma2, 
-                            path1_pct=path1_pct, 
-                            path2_pct=path2_pct, 
-                            path1_sample=path1_cell_number, 
-                            path2_sample=path2_cell_number, 
-                            noise_level=noise_level)
+                               alpha2=alpha2, 
+                               beta1=beta1, 
+                               beta2=beta2, 
+                               gamma1=gamma1, 
+                               gamma2=gamma2, 
+                               path1_pct=path1_pct, 
+                               path2_pct=path2_pct, 
+                               path1_sample=path1_cell_number, 
+                               path2_sample=path2_cell_number, 
+                               noise_level=noise_level)
+
+
     else:
-        kinetic_type_list=['multi_forward','multi_backward','tran_boost']
+        kinetic_type_list=['mono', 'multi_forward', 'multi_backward', 'tran_boost']
         print('Kinetic type in ',kinetic_type_list,' could be choose from.')
 
     return(df)

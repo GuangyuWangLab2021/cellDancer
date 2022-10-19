@@ -21,7 +21,6 @@ def scatter_gene(
     vmax=None,
     alpha=0.5, 
     s = 5,
-    legend_marker_size=5,
     velocity=False,
     gene=None,
     legend='off',
@@ -55,8 +54,6 @@ def scatter_gene(
         The alpha blending value, between 0 (transparent) and 1 (opaque).
     s: optional, `float` (default: 5)
         The marker size.
-    legend_marker_size: optional, `float` (default: 5)
-        The lengend marker size.
     velocity: optional, `bool` (default: False)
         `True` if velocity in gene level is to be plotted.
     gene: optional, `str` (default: None)
@@ -76,7 +73,7 @@ def scatter_gene(
         return Line2D([0], [0], color='w', marker='o', label=label,
             markerfacecolor=markerfacecolor,
             markeredgewidth=0,
-            markersize=legend_marker_size)
+            markersize=s)
     
     if isinstance(colors, list):
         colors = build_colormap(colors)
