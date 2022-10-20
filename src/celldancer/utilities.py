@@ -231,7 +231,7 @@ def adata_to_df_with_embed(adata,
 
     return(raw_data)
 
-def to_dynamo(dancer_df):
+def to_dynamo(cellDancer_df):
     '''
     Convert the output dataframe of cellDancer to the input of dynamo. The output of this function can be directly used in the downstream analyses of dynamo.
 
@@ -265,76 +265,77 @@ def to_dynamo(dancer_df):
 
     Arguments
     ---------
-    dancer_df: `pandas.DataFrame`
+    cellDancer_df: `pandas.DataFrame` 
+        The output dataframe of cellDancer. 
 
         cellDancer                  -->     dynamo
 
-        dancer_df.splice            -->     adata.X
+        cellDancer_df.splice            -->     adata.X
 
-        dancer_df.loss              -->     adata.var.loss
+        cellDancer_df.loss              -->     adata.var.loss
 
-        dancer_df.cellID            -->     adata.obs
+        cellDancer_df.cellID            -->     adata.obs
 
-        dancer_df.clusters          -->     adata.obs.clusters
+        cellDancer_df.clusters          -->     adata.obs.clusters
 
-        dancer_df.splice            -->     adata.layers['X_spliced']
+        cellDancer_df.splice            -->     adata.layers['X_spliced']
 
-        dancer_df.splice            -->     adata.layers['M_s']
+        cellDancer_df.splice            -->     adata.layers['M_s']
 
-        dancer_df.unsplice          -->     adata.layers['X_unspliced']
+        cellDancer_df.unsplice          -->     adata.layers['X_unspliced']
 
-        dancer_df.unsplice          -->     adata.layers['M_u']
+        cellDancer_df.unsplice          -->     adata.layers['M_u']
 
-        dancer_df.alpha             -->     adata.layers['alpha']
+        cellDancer_df.alpha             -->     adata.layers['alpha']
 
-        dancer_df.beta              -->     adata.layers['beta']
+        cellDancer_df.beta              -->     adata.layers['beta']
 
-        dancer_df.gamma             -->     adata.layers['gamma']
+        cellDancer_df.gamma             -->     adata.layers['gamma']
 
-        dancer_df.unsplice_predict - dancer_df.unsplice     -->    adata.layers['velocity_U']
+        cellDancer_df.unsplice_predict - cellDancer_df.unsplice     -->    adata.layers['velocity_U']
 
-        dancer_df.splice_predict - dancer_df.splice         -->    adata.layers['velocity_S']
+        cellDancer_df.splice_predict - cellDancer_df.splice         -->    adata.layers['velocity_S']
 
-        dancer[['embeddding1', 'embedding2']]   -->     adata.obsm['X_cdr']
+        cellDancer_df[['embeddding1', 'embedding2']]   -->     adata.obsm['X_cdr']
 
-        dancer[['velocity1', 'velocity2']]      -->     adata.obsm['velocity_cdr']
+        cellDancer_df[['velocity1', 'velocity2']]      -->     adata.obsm['velocity_cdr']
 
     Returns 
     -------
     adata
     '''
 
-    # Sort the dancer_df by cellID, so if it's not done already, your dancer_df could be changed.
+    # Sort the cellDancer_df by cellID, so if it's not done already, your cellDancer_df could be changed.
     # This is because pd.DataFrame.pivot does this automatically and we don't want to mess up with
     # the obsm etc
-    dancer_df = dancer_df.sort_values('cellID')
+    cellDancer_df = cellDancer_df.sort_values('cellID')
 
-    spliced = dancer_df.pivot(index='cellID', columns='gene_name', values='splice')
-    unspliced = dancer_df.pivot(index='cellID', columns='gene_name', values='unsplice')
+    spliced = cellDancer_df.pivot(index='cellID', columns='gene_name', values='splice')
+    unspliced = cellDancer_df.pivot(index='cellID', columns='gene_name', values='unsplice')
 
-    spliced_predict = dancer_df.pivot(index='cellID', columns='gene_name', values='splice_predict')
-    unspliced_predict = dancer_df.pivot(index='cellID', columns='gene_name', values='unsplice_predict')
+    spliced_predict = cellDancer_df.pivot(index='cellID', columns='gene_name', values='splice_predict')
+    unspliced_predict = cellDancer_df.pivot(index='cellID', columns='gene_name', values='unsplice_predict')
 
-    alpha = dancer_df.pivot(index='cellID', columns='gene_name', values='alpha')
-    beta = dancer_df.pivot(index='cellID', columns='gene_name', values='beta')
-    gamma = dancer_df.pivot(index='cellID', columns='gene_name', values='gamma')
+    alpha = cellDancer_df.pivot(index='cellID', columns='gene_name', values='alpha')
+    beta = cellDancer_df.pivot(index='cellID', columns='gene_name', values='beta')
+    gamma = cellDancer_df.pivot(index='cellID', columns='gene_name', values='gamma')
 
-    one_gene = dancer_df['gene_name'].iloc[0]
-    one_cell = dancer_df['cellID'].iloc[0]
+    one_gene = cellDancer_df['gene_name'].iloc[0]
+    one_cell = cellDancer_df['cellID'].iloc[0]
 
     adata1 = ad.AnnData(spliced)
 
     # var
     adata1.var['highly_variable_genes'] = True
-    #adata1.var['loss'] = (dancer_df[dancer_df['cellID'] == one_cell]['loss']).tolist()
-    adata1.var['loss'] = dancer_df.pivot(index='gene_name', columns='cellID', values='loss').iloc[:, 0]
+    #adata1.var['loss'] = (cellDancer_df[cellDancer_df['cellID'] == one_cell]['loss']).tolist()
+    adata1.var['loss'] = cellDancer_df.pivot(index='gene_name', columns='cellID', values='loss').iloc[:, 0]
     # celldancer uses all genes (high variable) for dynamics and transition.
     adata1.var['use_for_dynamics'] = True
     adata1.var['use_for_transition'] = True
 
     # obs
-    if 'clusters' in dancer_df:
-        adata1.obs['clusters'] = dancer_df.pivot(index='cellID', columns='gene_name', values='clusters').iloc[:, 0]
+    if 'clusters' in cellDancer_df:
+        adata1.obs['clusters'] = cellDancer_df.pivot(index='cellID', columns='gene_name', values='clusters').iloc[:, 0]
 
     #  layers
     adata1.layers['X_spliced'] = spliced
@@ -350,10 +351,10 @@ def to_dynamo(dancer_df):
     adata1.layers['gamma'] = gamma
 
     # obsm
-    adata1.obsm['X_cdr'] = dancer_df[dancer_df['gene_name'] == one_gene][['embedding1', 'embedding2']].values
-    # assuming no downsampling is used for the cell velocities in the dancer_df
-    if 'velocity1' in dancer_df:
-        adata1.obsm['velocity_cdr'] = dancer_df[dancer_df['gene_name'] == one_gene][['velocity1', 'velocity2']].values
+    adata1.obsm['X_cdr'] = cellDancer_df[cellDancer_df['gene_name'] == one_gene][['embedding1', 'embedding2']].values
+    # assuming no downsampling is used for the cell velocities in the cellDancer_df
+    if 'velocity1' in cellDancer_df:
+        adata1.obsm['velocity_cdr'] = cellDancer_df[cellDancer_df['gene_name'] == one_gene][['velocity1', 'velocity2']].values
 
     # obsp
     n_neighbors = 20
@@ -388,9 +389,9 @@ def to_dynamo(dancer_df):
 
     return adata1
 
-def export_velocity_to_dynamo(dancer_df,adata):
+def export_velocity_to_dynamo(cellDancer_df,adata):
     '''
-    Replace the velocities in adata of dynamo (“adata” in parameters) with the cellDancer predicted velocities (“dancer_df” in parameters). The output can be directly used in the downstream analyses of dynamo.
+    Replace the velocities in adata of dynamo (“adata” in parameters) with the cellDancer predicted velocities (“cellDancer_df” in parameters). The output can be directly used in the downstream analyses of dynamo.
 
     -------
     The vector field could be learned by dynamo based on the RNA velocity of cellDancer. Details are shown in the section ‘Application of dynamo.’
@@ -401,15 +402,16 @@ def export_velocity_to_dynamo(dancer_df,adata):
 
     Arguments
     ---------
-    dancer_df: `pandas.DataFrame`
+    cellDancer_df: `pandas.DataFrame`
+        The output dataframe of cellDancer. 
 
         cellDancer                  -->     dynamo
 
-        bools of the existance of dancer_df['gene_name'] in adata.var      -->     adata.var['use_for_dynamics']
+        bools of the existance of cellDancer_df['gene_name'] in adata.var      -->     adata.var['use_for_dynamics']
 
-        bools of the existance of dancer_df['gene_name'] in adata.var      -->     adata.var['use_for_transition']
+        bools of the existance of cellDancer_df['gene_name'] in adata.var      -->     adata.var['use_for_transition']
 
-        dancer_df.splice_predict - dancer_df.splice                        -->    adata.layers['velocity_S']
+        cellDancer_df.splice_predict - cellDancer_df.splice                    -->    adata.layers['velocity_S']
 
     adata: `anndata._core.anndata.AnnData`
         The adata to be integrated with cellDancer velocity result.
@@ -420,9 +422,9 @@ def export_velocity_to_dynamo(dancer_df,adata):
     adata
     '''
 
-    dancer_genes = dancer_df['gene_name'].drop_duplicates()
-    dancer_df["velocity_S"] = dancer_df["splice_predict"]-dancer_df["splice"]
-    dancer_velocity_s = dancer_df[['cellID', 'gene_name', 'velocity_S']]
+    dancer_genes = cellDancer_df['gene_name'].drop_duplicates()
+    cellDancer_df["velocity_S"] = cellDancer_df["splice_predict"]-cellDancer_df["splice"]
+    dancer_velocity_s = cellDancer_df[['cellID', 'gene_name', 'velocity_S']]
     pivoted = dancer_velocity_s.pivot(index="cellID", columns="gene_name", values="velocity_S")
     velocity_matrix = np.zeros(adata.shape)
     adata_ds_zeros = pd.DataFrame(velocity_matrix, columns=adata.var.index, index=adata.obs.index)

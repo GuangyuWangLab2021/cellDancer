@@ -278,7 +278,7 @@ def simulate(kinetic_type,
              noise_level=0.2):
     
     """ 
-    Simulate a gene with the kinetic types from multi-forward, multi-backward, or transcriptional boost.
+    Simulate a gene with the kinetic type of mono-kinetic, multi-forward, multi-backward, or transcriptional boost.
 
     Arguments
     ---------

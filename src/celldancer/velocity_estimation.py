@@ -697,7 +697,7 @@ def velocity(
     Arguments
     ---------
     cell_type_u_s: `pandas.DataFrame`
-        Data frame that contains the unspliced abundance, spliced abundance, embedding space, and cell type information. Columns=['gene_name', 'unsplice', 'splice' ,'cellID' ,'clusters' ,'embedding1' ,'embedding2']
+        Dataframe that contains the unspliced abundance, spliced abundance, embedding space, and cell type information. Columns=['gene_name', 'unsplice', 'splice' ,'cellID' ,'clusters' ,'embedding1' ,'embedding2']
     gene_list: optional, `list` (default: None)
         Gene list for velocity estimation. `None` if to estimate the velocity of all genes.
     max_epoches: optional, `int` (default: 200)

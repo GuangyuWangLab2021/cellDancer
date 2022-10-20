@@ -25,12 +25,12 @@ def compute_cell_velocity(
     projection_neighbor_size=200,
     projection_neighbor_choice='embedding'):
 
-    """Project the RNA velocity to velocity vector flow in the embedding space.
+    """Project the RNA velocity onto the embedding space.
         
     Arguments
     ---------
     cellDancer_df: `pandas.DataFrame`
-        Data frame of velocity estimation results. Columns=['cellIndex', 'gene_name', unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID, 'clusters', 'embedding1', 'embedding2']
+        Dataframe of velocity estimation results. Columns=['cellIndex', 'gene_name', unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID, 'clusters', 'embedding1', 'embedding2']
     gene_list: optional, `list` (default: None)
         Genes selected to calculate the cell velocity. `None` if all genes in the cellDancer_df are to be used.
     speed_up: optional, `tuple` (default: (60,60))

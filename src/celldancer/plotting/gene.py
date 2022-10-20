@@ -37,7 +37,7 @@ def scatter_gene(
     y: `str`
         Set y axis as one of {'splice', 'unsplice', 'alpha', 'beta', 'gamma', 'pseudotime'}.
     cellDancer_df: `pandas.DataFrame`
-        Data frame of velocity estimation, cell velocity, and pseudotime results. Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
+        Dataframe of velocity estimation, cell velocity, and pseudotime results. Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
     colors: `list`, `dict`, or `str`
         When the input is a list: build a colormap dictionary for a list of cell type; 
         When the input is a dictionary: the customized color map dictionary of each cell type; 

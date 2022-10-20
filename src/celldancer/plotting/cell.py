@@ -35,14 +35,14 @@ def scatter_cell(
     arrow_grid=(30,30)
 ): 
 
-    """Plot the projection of RNA velocity to velocity vector flow in the embedding space; or plot the kinetic parameters ('alpha', 'beta', 'gamma', 'splice', 'unsplice', or 'pseudotime') of one gene in embedding space.
+    """Plot the RNA velocity on the embedding space; or plot the kinetic parameters ('alpha', 'beta', 'gamma', 'splice', 'unsplice', or 'pseudotime') of one gene on the embedding space.
         
     Arguments
     ---------
     ax: `ax`
         ax of plt.subplots()
     cellDancer_df: `pandas.DataFrame`
-        Data frame of velocity estimation, cell velocity, and pseudotime results. Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
+        Dataframe of velocity estimation, cell velocity, and pseudotime results. Columns=['cellIndex', 'gene_name', 'unsplice', 'splice', 'unsplice_predict', 'splice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2', 'velocity1', 'velocity2', 'pseudotime']
     colors: `list`, `dict`, or `str`
         When the input is a list: build a colormap dictionary for a list of cell type;  
         When the input is a dictionary: it is the customized color map dictionary of each cell type; 
@@ -317,7 +317,7 @@ def plot_kinetic_para(
     kinetic_para: `str`
         The parameter used to generate the embedding space based on UMAP, could be selected from {'alpha', 'beta', 'gamma', 'alpha_beta_gamma'}.
     cellDancer_df: `pandas.DataFrame`
-        Data frame of velocity estimation results. Columns=['cellIndex', 'gene_name', 'splice', 'unsplice', 'splice_predict', 'unsplice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2']
+        Dataframe of velocity estimation results. Columns=['cellIndex', 'gene_name', 'splice', 'unsplice', 'splice_predict', 'unsplice_predict', 'alpha', 'beta', 'gamma', 'loss', 'cellID', 'clusters', 'embedding1', 'embedding2']
     color_map: `dict` (optional, default: None)
         The color map dictionary of each cell type.
     legend: `bool` (optional, default: False)
