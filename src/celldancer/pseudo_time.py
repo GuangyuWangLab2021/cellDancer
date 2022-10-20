@@ -43,7 +43,7 @@ def compute_trajectory_similarity(traj1, traj2, numPicks=10):
     a selection of closest pairs
     Input: 
     - numpy arrays (nsteps1, 2), (nsteps2, 2); nsteps1 >= nsteps2 
-    - numPicks: number of representative points on the shorter curve traj2
+    - numPicks: number of selected points on the shorter curve traj2
     Return: a float number
     '''
     # traj1 is longer than traj2
@@ -90,7 +90,7 @@ def truncate_end_state_stuttering(paths, cell_embedding):
     return np.array(newPaths, dtype=object)
 
 
-def extract_representative_long_trajectories(
+def extract_long_trajectories(
         path_clusters, 
         cell_clusters, 
         paths, 
@@ -98,7 +98,7 @@ def extract_representative_long_trajectories(
         similarity_threshold, 
         nkeep=10):
     '''
-    a recursive method to find representative paths and group similar paths.
+    a recursive method to find long paths and group similar paths.
     
     Parameters
     ----------
@@ -141,7 +141,7 @@ def extract_representative_long_trajectories(
     cell_clusters[clusterID] = [ipath[0] for ipath in paths[sel]]
     
     paths = paths[~sel]
-    return extract_representative_long_trajectories(
+    return extract_long_trajectories(
             path_clusters, 
             cell_clusters, 
             paths, 
@@ -1129,11 +1129,11 @@ def pseudo_time(
         Number of threads or processes used for cell diffusion. It follows the
         scikit-learn convention. -1 means all possible threads.
     n_paths: optional, `int` (default: 5)
-        Number of representative paths to extract for cell pseudotime estimation.
+        Number of long paths to extract for cell pseudotime estimation.
         Note this parameter is very sensitive. For the best outcome, please set the
         number based on biological knowledge about the cell embedding.
     plot_rep_trajs: optional, `bool`(default: False)
-        Whether to show the representative trajectories whose traverse lengths are
+        Whether to show the long trajectories whose traverse lengths are
         local maximums.
     save: `bool` (default: `False`)
         Whether to save the pseudotime-included `cellDancer_df` as .csv file.
@@ -1230,7 +1230,7 @@ def pseudo_time(
     def decide_cell_fate(path_similarity):
         path_clusters = dict()
         cell_clusters = dict()
-        __ = extract_representative_long_trajectories(
+        __ = extract_long_trajectories(
             path_clusters, 
             cell_clusters, 
             sorted_traj, 
