@@ -8,7 +8,7 @@ scipy==1.7.2
 joblib==1.1.0
 scikit-image==0.19.2
 statsmodels==0.13.1
-matplotlib==3.5.0
+matplotlib==3.5.3
 seaborn==0.11.2
 datashader==0.14.0
 bezier==2021.2.12
