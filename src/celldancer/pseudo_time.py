@@ -1078,7 +1078,7 @@ def pseudo_time(
         n_jobs=-1,
         speed_up=(60, 60), 
         n_paths=5,
-        plot_rep_trajs=False,
+        plot_long_trajs=False,
         save=False, 
         output_path=None):
 
@@ -1132,7 +1132,7 @@ def pseudo_time(
         Number of long paths to extract for cell pseudotime estimation.
         Note this parameter is very sensitive. For the best outcome, please set the
         number based on biological knowledge about the cell embedding.
-    plot_rep_trajs: optional, `bool`(default: False)
+    plot_long_trajs: optional, `bool`(default: False)
         Whether to show the long trajectories whose traverse lengths are
         local maximums.
     save: `bool` (default: `False`)
@@ -1274,7 +1274,7 @@ def pseudo_time(
     #cell_fate = [cluster_map[i] for i in cell_fate]
 
     # show path clusters
-    if plot_rep_trajs:
+    if plot_long_trajs:
         plot_path_clusters(path_clusters, cell_embedding, output_path=output_path)    
     cellDancer_df = compute_cell_time(
         cellDancer_df,
