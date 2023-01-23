@@ -9,7 +9,7 @@ cellDancer - Estimating Cell-dependent RNA Velocity
 
 cellDancer's key applications
 ========================================================
-* Estimate RNA velocity for each gene.
+* Estimate cell-specific RNA velocity for each gene.
 * Derive cell fates in embedding space.
 * Estimate pseudotime for each cell in embedding space.
 
