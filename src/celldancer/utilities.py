@@ -1,10 +1,10 @@
-# functions borrowed from scv; 
-# TO DO: Change code style for every functions!!!!!!
-
 import numpy as np
 from scipy.sparse import csr_matrix
+import scipy
 import pandas as pd
+import anndata as ad
 from sklearn.neighbors import NearestNeighbors
+from statsmodels.nonparametric.kernel_regression import KernelReg
 
 # progress bar
 import contextlib
@@ -27,10 +27,7 @@ def tqdm_joblib(tqdm_object):
         joblib.parallel.BatchCompletionCallBack = old_batch_callback
         tqdm_object.close()
 
-######### pseudotime rsquare
-from statsmodels.nonparametric.kernel_regression import KernelReg
-
-def _non_para_kernel_t4(X,Y,down_sample_idx):
+def _non_para_kernel(X,Y,down_sample_idx):
     # (no first cls),pseudotime r square calculation
     # this version has downsampling section
     # TO DO WHEN ONLY USING ONE GENE, WILL CAUSL PROBLEM WHEN COMBINING
@@ -121,7 +118,7 @@ def get_rsquare(load_cellDancer,gene_list,s0_merged_part_time,s0_merged_part_gen
     # downsample
     sampled_idx=getidx_downSampling_embedding(load_cellDancer,cell_choice=cell_choice)
     
-    # PARALLEL thread
+    # parallel thread
     from joblib import Parallel, delayed
     # run parallel
     with tqdm_joblib(tqdm(desc="Calculate rsquare", total=len(gene_list))) as progress_bar:
@@ -177,18 +174,17 @@ def adata_to_df_with_embed(adata,
     Arguments
     ---------
     adata: `anndata._core.anndata.AnnData`
-        The adata to transferred. Columns=['gene_name', 'unsplice', 'splice' ,'cellID' ,'clusters' ,'embedding1' ,'embedding2']
-    us_para: optional, `list` (default: ['Mu','Ms'])
+        The adata to be transferred.
+    us_para: `list` (default: ['Mu','Ms'])
         The attributes of the two count matrices of pre-mature (unspliced) and mature (spliced) abundances from adata.layers. By default, splice and unsplice columns (the two count matrices of spliced and unspliced abundances) are obtained from the ['Ms', 'Mu'] attributes of adata.layers.
-    cell_type_para: optional, `str` (default: 'celltype')
+    cell_type_para: `str` (default: 'celltype')
         The attribute of cell type to be obtained from adata.obs. By default, cell type information is obtained from ['celltype'] column of adata.obs.
-    embed_para: optional, `str` (default: 'X_umap')
+    embed_para: `str` (default: 'X_umap')
         The attribute of embedding space to be obtained from adata.obsm. It represents the 2-dimensional representation of all cells. The embedding1 and embedding2 columns are obtained from [‘X_umap’] attribute of adata.obsm.
-    save_path: optional, `str` (default: 'cell_type_u_s_sample_df.csv')
+    save_path: `str` (default: 'cell_type_u_s_sample_df.csv')
         Path to save the result of transferred csv file.
-    gene_list: optional, `list` (default: None)
+    gene_list: `list` (default: None)
         Specific gene(s) to be transfered.
-
     Returns
     -------
     raw_data: `pandas.DataFrame` 
@@ -205,13 +201,13 @@ def adata_to_df_with_embed(adata,
         data2 = data[:, data.var.index.isin([gene])].copy()
         u0 = data2.layers[us_para[0]][:,0].copy().astype(np.float32)
         s0 = data2.layers[us_para[1]][:,0].copy().astype(np.float32)
-        raw_data = pd.DataFrame({'gene_list':gene, 'unsplice':u0, 'splice':s0})
+        raw_data = pd.DataFrame({'gene_name':gene, 'unsplice':u0, 'splice':s0})
         return(raw_data)
 
     if gene_list is None: gene_list=adata.var.index
 
     for i,gene in enumerate(gene_list):
-        print("processing:"+str(i)+"/"+str(len(gene_list)))
+        print("processing:"+str(i+1)+"/"+str(len(gene_list)))
         data_onegene = adata_to_raw_one_gene(adata, us_para=us_para, gene=gene)
         if i==0:
             data_onegene.to_csv(save_path,header=True,index=False)
@@ -235,14 +231,215 @@ def adata_to_df_with_embed(adata,
 
     return(raw_data)
 
+def to_dynamo(cellDancer_df):
+    '''
+    Convert the output dataframe of cellDancer to the input of dynamo. The output of this function can be directly used in the downstream analyses of dynamo.
 
+    Example usage:
+
+    .. code-block:: python
+
+        import dynamo as dyn
+        import numpy as np
+        import pandas as pd
+        import anndata as ann
+        import matplotlib.pyplot as plt
+        import celldancer as cd
+        import celldancer.utilities as cdutil
+
+        # load the prediction result of all genes, the data could be achieved from section 'Deciphering gene regulation through vector fields analysis in pancreatic endocrinogenesis'
+        cellDancer_df=pd.read_csv('HgForebrainGlut_cellDancer_estimation_spliced.csv')
+        cellDancer_df=cd.compute_cell_velocity(cellDancer_df=cellDancer_df, projection_neighbor_choice='embedding', expression_scale='power10', projection_neighbor_size=100) # compute cell velocity
+
+        # transform celldancer dataframe to anndata
+        adata_from_dancer = cdutil.to_dynamo(cellDancer_df)
+
+        # plot the velocity vector
+        dyn.pl.streamline_plot(adata_from_dancer, color=["clusters"], basis = "cdr", show_legend="on data", show_arrowed_spines=True)
+        
+    -------
+    
+    .. image:: _static/dynamo_plt.png
+      :width: 60%
+      :alt: dynamo_plt
+
+    Arguments
+    ---------
+    cellDancer_df: `pandas.DataFrame` 
+        The output dataframe of cellDancer. 
+
+        cellDancer                  -->     dynamo
+
+        cellDancer_df.splice            -->     adata.X
+
+        cellDancer_df.loss              -->     adata.var.loss
+
+        cellDancer_df.cellID            -->     adata.obs
+
+        cellDancer_df.clusters          -->     adata.obs.clusters
+
+        cellDancer_df.splice            -->     adata.layers['X_spliced']
+
+        cellDancer_df.splice            -->     adata.layers['M_s']
+
+        cellDancer_df.unsplice          -->     adata.layers['X_unspliced']
+
+        cellDancer_df.unsplice          -->     adata.layers['M_u']
+
+        cellDancer_df.alpha             -->     adata.layers['alpha']
+
+        cellDancer_df.beta              -->     adata.layers['beta']
+
+        cellDancer_df.gamma             -->     adata.layers['gamma']
+
+        cellDancer_df.unsplice_predict - cellDancer_df.unsplice     -->    adata.layers['velocity_U']
+
+        cellDancer_df.splice_predict - cellDancer_df.splice         -->    adata.layers['velocity_S']
+
+        cellDancer_df[['embeddding1', 'embedding2']]   -->     adata.obsm['X_cdr']
+
+        cellDancer_df[['velocity1', 'velocity2']]      -->     adata.obsm['velocity_cdr']
+
+    Returns 
+    -------
+    adata
+    '''
+
+    # Sort the cellDancer_df by cellID, so if it's not done already, your cellDancer_df could be changed.
+    # This is because pd.DataFrame.pivot does this automatically and we don't want to mess up with
+    # the obsm etc
+    cellDancer_df = cellDancer_df.sort_values('cellID')
+
+    spliced = cellDancer_df.pivot(index='cellID', columns='gene_name', values='splice')
+    unspliced = cellDancer_df.pivot(index='cellID', columns='gene_name', values='unsplice')
+
+    spliced_predict = cellDancer_df.pivot(index='cellID', columns='gene_name', values='splice_predict')
+    unspliced_predict = cellDancer_df.pivot(index='cellID', columns='gene_name', values='unsplice_predict')
+
+    alpha = cellDancer_df.pivot(index='cellID', columns='gene_name', values='alpha')
+    beta = cellDancer_df.pivot(index='cellID', columns='gene_name', values='beta')
+    gamma = cellDancer_df.pivot(index='cellID', columns='gene_name', values='gamma')
+
+    one_gene = cellDancer_df['gene_name'].iloc[0]
+    one_cell = cellDancer_df['cellID'].iloc[0]
+
+    adata1 = ad.AnnData(spliced)
+
+    # var
+    adata1.var['highly_variable_genes'] = True
+    #adata1.var['loss'] = (cellDancer_df[cellDancer_df['cellID'] == one_cell]['loss']).tolist()
+    adata1.var['loss'] = cellDancer_df.pivot(index='gene_name', columns='cellID', values='loss').iloc[:, 0]
+    # celldancer uses all genes (high variable) for dynamics and transition.
+    adata1.var['use_for_dynamics'] = True
+    adata1.var['use_for_transition'] = True
+
+    # obs
+    if 'clusters' in cellDancer_df:
+        adata1.obs['clusters'] = cellDancer_df.pivot(index='cellID', columns='gene_name', values='clusters').iloc[:, 0]
+
+    #  layers
+    adata1.layers['X_spliced'] = spliced
+    adata1.layers['X_unspliced'] = unspliced
+
+    adata1.layers['M_s'] = spliced
+    adata1.layers['M_u'] = unspliced
+    adata1.layers['velocity_S'] = spliced_predict - spliced
+
+    adata1.layers['velocity_U'] = unspliced_predict - unspliced
+    adata1.layers['alpha'] = alpha
+    adata1.layers['beta'] = beta
+    adata1.layers['gamma'] = gamma
+
+    # obsm
+    adata1.obsm['X_cdr'] = cellDancer_df[cellDancer_df['gene_name'] == one_gene][['embedding1', 'embedding2']].values
+    # assuming no downsampling is used for the cell velocities in the cellDancer_df
+    if 'velocity1' in cellDancer_df:
+        adata1.obsm['velocity_cdr'] = cellDancer_df[cellDancer_df['gene_name'] == one_gene][['velocity1', 'velocity2']].values
+
+    # obsp
+    n_neighbors = 20
+    nn = NearestNeighbors(n_neighbors=n_neighbors)
+    nn.fit(adata1.obsm['X_cdr'])
+    connect_knn = nn.kneighbors_graph(mode='connectivity')
+    distance_knn = nn.kneighbors_graph(mode='distance')
+    adata1.obsp['connectivities'] = connect_knn
+    adata1.obsp['distances'] = distance_knn
+
+    # uns
+    dynamics_info = {'filter_gene_mode': 'final',
+                't': None,
+                'group': None,
+                'X_data': None,
+                'X_fit_data': None,
+                'asspt_mRNA': 'ss',
+                'experiment_type': 'conventional',
+                'normalized': True,
+                'model': 'static',
+                'est_method': 'ols',
+                'has_splicing': True,
+                'has_labeling': False,
+                'splicing_labeling': False,
+                'has_protein': False,
+                'use_smoothed': True,
+                'NTR_vel': False,
+                'log_unnormalized': False,
+                'fraction_for_deg': False}
+
+    adata1.uns['dynamics']= dynamics_info
+
+    return adata1
+
+def export_velocity_to_dynamo(cellDancer_df,adata):
+    '''
+    Replace the velocities in adata of dynamo (“adata” in parameters) with the cellDancer predicted velocities (“cellDancer_df” in parameters). The output can be directly used in the downstream analyses of dynamo.
+
+    -------
+    The vector field could be learned by dynamo based on the RNA velocity of cellDancer. Details are shown in the section ‘Application of dynamo.’
+    
+    .. image:: _static/dynamo_vector_field_pancreas.png
+      :width: 60%
+      :alt: dynamo_vector_field_pancreas
+
+    Arguments
+    ---------
+    cellDancer_df: `pandas.DataFrame`
+        The output dataframe of cellDancer. 
+
+        cellDancer                  -->     dynamo
+
+        bools of the existance of cellDancer_df['gene_name'] in adata.var      -->     adata.var['use_for_dynamics']
+
+        bools of the existance of cellDancer_df['gene_name'] in adata.var      -->     adata.var['use_for_transition']
+
+        cellDancer_df.splice_predict - cellDancer_df.splice                    -->    adata.layers['velocity_S']
+
+    adata: `anndata._core.anndata.AnnData`
+        The adata to be integrated with cellDancer velocity result.
+
+
+    Returns 
+    -------
+    adata
+    '''
+
+    dancer_genes = cellDancer_df['gene_name'].drop_duplicates()
+    cellDancer_df["velocity_S"] = cellDancer_df["splice_predict"]-cellDancer_df["splice"]
+    dancer_velocity_s = cellDancer_df[['cellID', 'gene_name', 'velocity_S']]
+    pivoted = dancer_velocity_s.pivot(index="cellID", columns="gene_name", values="velocity_S")
+    velocity_matrix = np.zeros(adata.shape)
+    adata_ds_zeros = pd.DataFrame(velocity_matrix, columns=adata.var.index, index=adata.obs.index)
+    celldancer_velocity_s_df = (adata_ds_zeros + pivoted).fillna(0)[adata.var.index]
+
+    adata.layers['velocity_S'] = scipy.sparse.csr_matrix(celldancer_velocity_s_df.values)
+    adata.var['use_for_dynamics'] = adata.var.index.isin(dancer_genes)
+    adata.var['use_for_transition'] = adata.var.index.isin(dancer_genes)
+    return(adata.copy())
 
 def adata_to_raw(adata,save_path,gene_list=None):
     '''convert adata to raw data format
     data:
     save_path:
     gene_list (optional):
-
     return: panda dataframe with gene_list,u0,s0,cellID
     
     run: test=adata_to_raw(adata,'/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/bin/cellDancer-development_20220128/src/output/test.csv',gene_list=genelist_all)
@@ -258,7 +455,7 @@ def adata_to_raw(adata,save_path,gene_list=None):
         data2 = data[:, data.var.index.isin([gene])].copy()
         u0 = data2.layers[para[0]][:,0].copy().astype(np.float32)
         s0 = data2.layers[para[1]][:,0].copy().astype(np.float32)
-        raw_data = pd.DataFrame({'gene_list':gene, 'u0':u0, 's0':s0})
+        raw_data = pd.DataFrame({'gene_name':gene, 'u0':u0, 's0':s0})
         raw_data['cellID']=adata.obs.index
         return(raw_data)
 
@@ -341,7 +538,6 @@ def calculate_occupy_ratio_and_cor(gene_choice,data, u_fragment=30, s_fragment=3
     ref: analysis_calculate_occupy_ratio.py
     parameters
     data -> rawdata[['gene_list', 'u0','s0']]
-
     return(ratio2, cor2)
     ratio2 [['gene_choice','ratio']]
     ratio2 [['gene_choice','correlation']]
@@ -387,10 +583,6 @@ def calculate_occupy_ratio_and_cor(gene_choice,data, u_fragment=30, s_fragment=3
     cor2 = pd.DataFrame({'gene_choice': gene_choice, 'correlation': cor[:,0]})
     return(ratio2, cor2)
 
-def para_cluster_heatmap():
-    '''para_cluster_heatmap'''
-    print('para_cluster_heatmap')
-
 def find_neighbors(adata, n_pcs=30, n_neighbors=30):
     '''Find neighbors by using pca on UMAP'''
     from scanpy import Neighbors
@@ -425,18 +617,6 @@ def find_neighbors(adata, n_pcs=30, n_neighbors=30):
             "n_pcs": n_pcs,
             "use_rep": "X_pca",
         }
-
-def moments(adata):
-    '''Calculate moments'''
-    connect = adata.obsp['connectivities'] > 0
-    connect.setdiag(1)
-    connect = connect.multiply(1.0 / connect.sum(1))
-    #pd.DataFrame(connect.todense(), adata.obs.index.tolist(), adata.obs.index.tolist())
-    #pd.DataFrame(connect.multiply(1.0 / connect.sum(1)).dot(adata.layers['unspliced'].todense()), 
-    #adata.obs.index.tolist(), adata.var.index.tolist())
-    adata.layers["Mu"] = csr_matrix.dot(connect, csr_matrix(adata.layers["unspliced"])).astype(np.float32).A
-    adata.layers["Ms"] = csr_matrix.dot(connect, csr_matrix(adata.layers["spliced"])).astype(np.float32).A
-
 
 def find_nn_neighbors(
         data=None, 
@@ -475,4 +655,3 @@ def extract_from_df(load_cellDancer, attr_list, gene_name=None):
     one_gene_idx = load_cellDancer.gene_name == gene_name
     data = load_cellDancer[one_gene_idx][attr_list].dropna()
     return data.to_numpy()
-

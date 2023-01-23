@@ -39,6 +39,26 @@ colormap_pancreas={
 'Epsilon':'#03B3B0'
 }
 
+colormap_hgForebrainGlut={
+0:'#9408F7',
+1:'#C729D6',
+2:'#FA4AB5',
+3:'#FF6A95',
+4:'#FF8B74',
+5:'#FFAC53',
+6:'#FFCD32'
+}
+
+colormap_hgforebrainglut={
+'Radial Glia':'#9408F7',
+'Radial Glia':'#C729D6',
+'Neuroblast':'#FA4AB5',
+'Neuroblast':'#FF6A95',
+'Immature Neuron':'#FF8B74',
+'Immature Neuron':'#FFAC53',
+'Neuron':'#FFCD32'
+}
+
 color_template = ["#08A8CE","#017351",'#56A65A',"#03c383","#aad962","#fbbf45","#ef6a32","#ed0345","#a12a5e","#710162","#3B9AB2"]
 
 def build_colormap(cluster_list):

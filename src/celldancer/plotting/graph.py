@@ -55,7 +55,7 @@ def PTO_Graph(
             legend='on')
         
     In this example, we use a force-directed node layout algorithm (`ForceAtlas2 
-    <https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0098679>`_)
+    <https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0098679>`_).
     A connection is made between any two cells within 3 (unit in the embedding).
     The resulted edge lengths indicate the time difference between nodes (the
     closer in pseudotime, the shorter the edge length). Edge bundling is applied
@@ -66,7 +66,7 @@ def PTO_Graph(
     Arguments
     ---------
     cellDancer_df: `pandas.DataFrame`
-        Data frame of velocity estimation, cell velocity, and pseudotime results. 
+        Dataframe of velocity estimation, cell velocity, and pseudotime results. 
         Columns=['cellIndex', 'gene_name', 
         'unsplice', 'splice', 
         'unsplice_predict', 'splice_predict', 

@@ -36,6 +36,7 @@ class DNN_layer(nn.Module):
         self.l3 = nn.Linear(h2, 3)
 
     def forward(self, unsplice, splice, alpha0, beta0, gamma0, dt):
+        #print(f"dt is {dt}")
         input = torch.tensor(np.array([np.array(unsplice), np.array(splice)]).T)
         x = self.l1(input)
         x = F.leaky_relu(x)
@@ -74,7 +75,7 @@ class DNN_module(nn.Module):
     load network "DNN_layer"
     predict splice_predict and unsplice_predict
     '''
-    def __init__(self, module, n_neighbors=30):
+    def __init__(self, module, n_neighbors = None):
         super().__init__()
         self.module = module
         self.n_neighbors = n_neighbors
@@ -85,11 +86,11 @@ class DNN_module(nn.Module):
                            alpha0, 
                            beta0, 
                            gamma0,
+                           dt,
                            embedding1,
                            embedding2, 
-                           epoch_num, 
                            barcode = None, 
-                           dt = 0.5,
+                           loss_func = None,
                            cost2_cutoff=None,
                            trace_cost_ratio=None,
                            corrcoef_cost_ratio=None):
@@ -105,7 +106,13 @@ class DNN_module(nn.Module):
         self.n_neighbors=min((points.shape[0]-1), self.n_neighbors)
         nbrs = NearestNeighbors(n_neighbors=self.n_neighbors, algorithm='ball_tree').fit(points)
         
-        distances, indices = nbrs.kneighbors(points) # indices: row -> individe cell, col -> nearby cells, value -> index of cells, the fist col is the index of row
+        distances, indices = nbrs.kneighbors(points) 
+        # indices: 
+        #   row -> cell, 
+        #   col -> neighboring cells, 
+        #   value -> index of cells, 
+        #   the fist col is the index of row
+
         expr = pd.merge(pd.DataFrame(splice, columns=['splice']), pd.DataFrame(unsplice, columns=['unsplice']), left_index=True, right_index=True)
         if barcode is not None:
             expr.index = barcode
@@ -122,15 +129,82 @@ class DNN_module(nn.Module):
             
             uv, sv = unsplice_predict-unsplice, splice_predict-splice # Velocity from (unsplice, splice) to (unsplice_predict, splice_predict)
             unv, snv = unsplice[indices.T[1:]] - unsplice, splice[indices.T[1:]] - splice # Velocity from (unsplice, splice) to its neighbors
+
             den = torch.sqrt(unv**2 + snv**2) * torch.sqrt(uv**2+sv**2)
             den[den==0] = -1
             cosine = torch.where(den!=-1, (unv*uv + snv*sv) / den, torch.tensor(1.)) # cosine: column -> individuel cell (cellI); row -> nearby cells of cell id ; value -> cosine between col and row cells
-            cosine_max = torch.max(cosine, 0)[0]
-            cosine_max_idx = torch.argmax(cosine, 0)
+            cosine_max, cosine_max_idx = torch.max(cosine, dim=0)
             cell_idx = torch.diag(indices[:, cosine_max_idx+1])
             return 1 - cosine_max, cell_idx
+
+
+
+        def rmse(unsplice, splice, unsplice_predict, splice_predict, indices):
+            """
+            This loss is defined as the rmse of the predicted velocity vector (uv, sv) from the neighboring velocity vectors (unv, snv).
+
+            This loss is used during revision.
+
+            """
+            uv, sv = unsplice_predict-unsplice, splice_predict-splice 
+            unv, snv = unsplice[indices.T[1:]] - unsplice, splice[indices.T[1:]] - splice 
+
+            rmse = (uv-unv)**2 + (sv-snv)**2
+            rmse = torch.sqrt(0.5*rmse)
+
+            # normalize across all neighboring cells using a softmax function.
+            # m = torch.nn.Softmax(dim=0)
+            # rmse = m(rmse)
+
+            rmse_min, rmse_min_idx = torch.min(rmse, dim=0)
+            cell_idx = torch.diag(indices[:, rmse_min_idx+1])
+            return rmse_min, cell_idx
+
+
+        def mix_loss(unsplice, splice, unsplice_predict, splice_predict, indices, mix_ratio = 0.5):
+            """
+            This loss is defined as the mix of rmse loss and cosine loss.
+
+            This loss is used during revision.
+
+            Parameters:
+            
+            unsplice: 1d tensor [n_cells] 
+            splice: 1d tensor [n_cells] 
+            indices: 2d array [n_cells, n_neighbors]
+            Return:
+                list of cosine distance and a list of the index of the next cell
+            """
+
+            #print("mix ratio, ", mix_ratio)
+            uv, sv = unsplice_predict-unsplice, splice_predict-splice 
+            unv, snv = unsplice[indices.T[1:]] - unsplice, splice[indices.T[1:]] - splice 
+            mag_v = torch.sqrt(uv**2 + sv**2)
+            mag_nv = torch.sqrt(unv**2 + snv**2)
+            mag = (mag_nv - mag_v)**2
+
+            # minimize mag or maximize -mag
+            # normalize across all neighboring cells using a softmax function
+            m = torch.nn.Softmax(dim=0)
+            mag = m(mag)
+
+            den = mag_v * mag_nv
+            den[den==0] = -1
+
+            # cosine: [n_neighbors x n_cells]
+            cosine = torch.where(den!=-1, (unv*uv + snv*sv) / den, torch.tensor(1.))
+
+            total = mix_ratio*(1-cosine) + (1 - mix_ratio)* mag
+            total_min, total_min_idx = torch.min(total, dim=0)
+
+            cell_idx = torch.diag(indices[:, total_min_idx+1])
+            return total_min, cell_idx
+
         
-        def trace_cost(unsplice, splice, unsplice_predict, splice_predict, idx,version):
+        def trace_cost(unsplice, splice, unsplice_predict, splice_predict, idx, version):
+
+            # This cost has been deprecated.
+
             uv, sv = unsplice_predict-unsplice, splice_predict-splice
             tan = torch.where(sv!=1000000, uv/sv, torch.tensor(0.00001))
             atan_theta = torch.atan(tan) + torch.pi/2
@@ -144,19 +218,32 @@ class DNN_module(nn.Module):
             return(cost)
 
         def corrcoef_cost(alphas, unsplice, beta, splice):
+
+            # This cost has been deprecated.
+            
             corrcoef1 = torch.corrcoef(torch.tensor([alphas.detach().numpy(),unsplice.detach().numpy()]))[1,0]
             corrcoef2 = torch.corrcoef(torch.tensor([beta.detach().numpy(), splice.detach().numpy()]))[1,0]
             corrcoef = corrcoef1 + corrcoef2
             cost=torch.where(corrcoef>=torch.tensor(0.0), torch.tensor(0.0), torch.tensor(-corrcoef))
             return(cost)
-            
         
-        if trace_cost_ratio==0 and corrcoef_cost_ratio==0:
-            cost1 = cosine_similarity(unsplice, splice, unsplice_predict, splice_predict, indices)[0]
-            cost_fin=torch.mean(cost1)
+        if trace_cost_ratio == 0 and corrcoef_cost_ratio == 0:
 
-        else:
-            # cosin cost
+            if loss_func == 'cosine':
+                cost1 = cosine_similarity(unsplice, splice, unsplice_predict, splice_predict, indices)[0]
+                cost_fin = torch.mean(cost1)
+
+            if loss_func == 'rmse':
+                cost1 = rmse(unsplice, splice, unsplice_predict, splice_predict, indices)[0]
+                cost_fin = torch.mean(cost1)
+
+            elif 'mix' in loss_func:
+                mix_ratio = loss_func[1]
+                cost1 = mix_loss(unsplice, splice, unsplice_predict, splice_predict, indices, mix_ratio=mix_ratio)[0]
+                cost_fin = torch.mean(cost1)
+
+        else: # trace cost and corrcoef cost have been deprecated.
+            # cosine cost
             cost1,idx = cosine_similarity(unsplice, splice, unsplice_predict, splice_predict, indices)
             cost1_normalize=(cost1-torch.min(cost1))/torch.max(cost1)
             cost1_mean = torch.mean(cost1_normalize)
@@ -200,10 +287,12 @@ class ltModule(pl.LightningModule):
     train network using "DNN_module"
     '''
     def __init__(self, 
-                backbone, 
+                backbone=None, 
                 initial_zoom=2, 
                 initial_strech=1,
-                learning_rate=0.001,
+                learning_rate=None,
+                dt=None,
+                loss_func = None,
                 cost2_cutoff=0,
                 optimizer='Adam',
                 trace_cost_ratio=0,
@@ -219,6 +308,8 @@ class ltModule(pl.LightningModule):
         self.initial_zoom = initial_zoom
         self.initial_strech = initial_strech
         self.learning_rate=learning_rate
+        self.dt=dt
+        self.loss_func=loss_func
         self.cost2_cutoff=cost2_cutoff
         self.optimizer=optimizer
         self.trace_cost_ratio=trace_cost_ratio
@@ -259,7 +350,13 @@ class ltModule(pl.LightningModule):
         beta0 = np.float32(1.0)
         gamma0 = np.float32(umax/smax*self.initial_strech)
 
-        cost, unsplice_predict, splice_predict, alphas, beta, gamma = self.backbone.velocity_calculate(unsplice, splice, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio)
+        cost, unsplice_predict, splice_predict, alphas, beta, gamma = self.backbone.velocity_calculate( \
+                unsplice, splice, alpha0, beta0, gamma0, self.dt, embedding1, embedding2, \
+                loss_func = self.loss_func, \
+                cost2_cutoff = self.cost2_cutoff, \
+                trace_cost_ratio = self.trace_cost_ratio, \
+                corrcoef_cost_ratio=self.corrcoef_cost_ratio)
+
         if self.cost_type=='average': # keep the window len <= check_val_every_n_epoch
             if len(self.cost_window)<self.average_cost_window_size:
                 self.cost_window.append(cost)
@@ -327,7 +424,14 @@ class ltModule(pl.LightningModule):
         alpha0 = np.float32(umax*2)
         beta0 = np.float32(1.0)
         gamma0 = np.float32(umax/smax)
-        cost, unsplice_predict, splice_predict, alphas, beta, gamma = self.backbone.velocity_calculate(unsplice, splice, alpha0, beta0, gamma0,embedding1,embedding2,self.current_epoch,cost2_cutoff=self.cost2_cutoff,trace_cost_ratio=self.trace_cost_ratio,corrcoef_cost_ratio=self.corrcoef_cost_ratio)
+
+        cost, unsplice_predict, splice_predict, alphas, beta, gamma = self.backbone.velocity_calculate( \
+                unsplice, splice, alpha0, beta0, gamma0, self.dt, embedding1, embedding2, \
+                loss_func = self.loss_func, \
+                cost2_cutoff = self.cost2_cutoff, \
+                trace_cost_ratio = self.trace_cost_ratio, \
+                corrcoef_cost_ratio=self.corrcoef_cost_ratio)
+
         self.test_cellDancer_df= self.backbone.summary_para(
             unsplice, splice, unsplice_predict.data.numpy(), splice_predict.data.numpy(), 
             alphas.data.numpy(), beta.data.numpy(), gamma.data.numpy(), 
@@ -430,6 +534,10 @@ def _train_thread(datamodule,
                   check_val_every_n_epoch=None,
                   norm_u_s=None,
                   patience=None,
+                  learning_rate=None,
+                  dt=None,
+                  loss_func=None,
+                  n_neighbors=None,
                   ini_model=None,
                   model_save_path=None):
 
@@ -437,8 +545,10 @@ def _train_thread(datamodule,
     torch.manual_seed(seed)
     random.seed(seed)
     np.random.seed(seed)
-    backbone = DNN_module(DNN_layer(100, 100))    # iniate network (DNN_layer) and loss function (DynamicModule)
-    model = ltModule(backbone=backbone)
+
+    # iniate network (DNN_layer) and loss function (DynamicModule)
+    backbone = DNN_module(DNN_layer(100, 100), n_neighbors=n_neighbors)
+    model = ltModule(backbone=backbone, dt=dt, learning_rate=learning_rate, loss_func=loss_func)
 
     selected_data = datamodule.subset(data_indices)
 
@@ -447,6 +557,10 @@ def _train_thread(datamodule,
     data_df=pd.DataFrame({'unsplice':unsplice,'splice':splice,'embedding1':embedding1,'embedding2':embedding2})
     data_df['gene_name']=this_gene_name
     try:
+
+        # Note
+        # here n_neighbors in the downsampling_embedding function is for selecting initial model.
+        # which is different from the n_neighbors in _train_tread for velocity calculation.
         _, sampling_ixs_select_model, _ = downsampling_embedding(data_df, # for select model
                             para='neighbors',
                             step=(20,20),
@@ -470,7 +584,9 @@ def _train_thread(datamodule,
     if check_val_every_n_epoch is None:
         # not use early stop
         trainer = pl.Trainer(
-            max_epochs=max_epoches, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1, 
+            max_epochs=max_epoches, 
+            progress_bar_refresh_rate=0, 
+            reload_dataloaders_every_n_epochs=1, 
             logger = False,
             enable_checkpointing = False,
             enable_model_summary=False,
@@ -478,7 +594,9 @@ def _train_thread(datamodule,
     else:
         # use early stop
         trainer = pl.Trainer(
-            max_epochs=max_epoches, progress_bar_refresh_rate=0, reload_dataloaders_every_n_epochs=1, 
+            max_epochs=max_epoches, 
+            progress_bar_refresh_rate=0, 
+            reload_dataloaders_every_n_epochs=1, 
             logger = False,
             enable_checkpointing = False,
             check_val_every_n_epoch = check_val_every_n_epoch,
@@ -562,10 +680,14 @@ def velocity(
     max_epoches=200, 
     check_val_every_n_epoch=10,
     patience=3,
+    learning_rate=0.001,
+    dt=0.5,
+    n_neighbors=30,
     permutation_ratio=0.125,
     speed_up=True,
     norm_u_s=True,
     norm_cell_distribution=True,
+    loss_func='cosine',
     n_jobs=-1,
     save_path=None,
 ):
@@ -575,7 +697,7 @@ def velocity(
     Arguments
     ---------
     cell_type_u_s: `pandas.DataFrame`
-        Data frame that contains the unspliced abundance, spliced abundance, embedding space, and cell type information. Columns=['gene_name', 'unsplice', 'splice' ,'cellID' ,'clusters' ,'embedding1' ,'embedding2']
+        Dataframe that contains the unspliced abundance, spliced abundance, embedding space, and cell type information. Columns=['gene_name', 'unsplice', 'splice' ,'cellID' ,'clusters' ,'embedding1' ,'embedding2']
     gene_list: optional, `list` (default: None)
         Gene list for velocity estimation. `None` if to estimate the velocity of all genes.
     max_epoches: optional, `int` (default: 200)
@@ -584,6 +706,8 @@ def velocity(
         Check loss every n train epochs.
     patience: optional, `int` (default: 3)
         Number of checks with no improvement after which training will be stopped.
+    dt: optional, `float` (default: 0.5)
+        Step size
     permutation_ratio: optional, `float` (default: 0.125)
         Sampling ratio of cells in each epoch when training each gene.
     speed_up: optional, `bool` (default: True)
@@ -592,11 +716,12 @@ def velocity(
         `True` if normalize unsplice (and splice) reads by dividing max value of unspliced (and spliced) reads.
     norm_cell_distribution: optional, `bool` (default: True)
         `True` if the bias of cell distribution is to be removed on embedding space (many cells share the same position of unspliced (and spliced) reads).
+    loss_func: optional, `str` (default: `cosine`)
+        Currently support `'cosine'`, `'rmse'`, and (`'mix'`, mix_ratio).
     n_jobs: optional, `int` (default: -1)
         The maximum number of concurrently running jobs.
     save_path: optional, `str` (default: 200)
         Path to save the result of velocity estimation.
-
     Returns
     -------
     loss_df: `pandas.DataFrame`
@@ -642,6 +767,10 @@ def velocity(
             max_epoches=max_epoches,
             check_val_every_n_epoch=check_val_every_n_epoch,
             patience=patience,
+            learning_rate=learning_rate,
+            n_neighbors=n_neighbors,
+            dt=dt,
+            loss_func=loss_func,
             save_path=save_path,
             norm_u_s=norm_u_s)
         for data_index in range(0,len(gene_list_buring)))
@@ -685,6 +814,10 @@ def velocity(
             data_indices=[data_index], 
             max_epoches=max_epoches,
             check_val_every_n_epoch=check_val_every_n_epoch,
+            n_neighbors=n_neighbors,
+            dt=dt,
+            loss_func=loss_func,
+            learning_rate=learning_rate,
             patience=patience,
             save_path=save_path,
             norm_u_s=norm_u_s)
