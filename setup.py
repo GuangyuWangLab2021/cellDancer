@@ -1,11 +1,16 @@
 import setuptools
+with open("readme.rst", "rt", encoding="utf8") as f:
+    long_description = f.read()
 
+
+# long_description=open("readme.rst").read()
 setuptools.setup(
-    name="celldancer",
-    version="1.1.3",
+    name="test_20230321_sl_243",
+    version="1.1.11",
     author="Wang Lab",
     author_email="gwang2@houstonmethodist.org",
     description="Study RNA velocity through neural network.",
+    long_description=long_description,
     long_description_content_type="text/markdown",
     classifiers=[
         "Programming Language :: Python :: 3",

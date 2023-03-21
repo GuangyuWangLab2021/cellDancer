@@ -25,7 +25,9 @@ Installation
 ========================================================
 cellDancer requires Python version >= 3.7.6 to run.
 
-To run cellDancer locally, create an `conda <https://docs.conda.io/en/latest>`_ or `Anaconda <https://www.anaconda.com/>`_ environment as ``conda create -n cellDancer python==3.7.6``, and activate the new environment with ``conda activate cellDancer``. Then install the dependencies by ``pip install -r requirements.txt`` using `requirememts.txt <chttps://drive.google.com/file/d/1-yhX3yioYOJEsuYimnb8ja9AP4OKjczC/view>`_ .
+To run cellDancer locally, create an `conda <https://docs.conda.io/en/latest>`_ or `Anaconda <https://www.anaconda.com/>`_ environment as ``conda create -n cellDancer python==3.7.6``, and activate the new environment with ``conda activate cellDancer``. cellDancer could be installed with ``pip install celldancer``.
 
 To install cellDancer from source code, run:
 ``pip install 'your_path/Source Code/cellDancer'``
+
+The dependencies could also be installed by ``pip install -r requirements.txt``.
