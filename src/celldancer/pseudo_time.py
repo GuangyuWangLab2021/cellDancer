@@ -1083,7 +1083,6 @@ def pseudo_time(
         output_path=None):
 
     """Compute the gene-shared pseudotime based on the projection of the RNA velocity on the embedding space.
-
     Arguments
     ---------
     cellDancer_df: `pandas.DataFrame`
@@ -1092,7 +1091,6 @@ def pseudo_time(
         'unsplice_predict', 'splice_predict',
         'alpha', 'beta', 'gamma', 'loss', 'cellID, 'clusters',
         'embedding1', 'embedding2', 'velocity1', 'velocity2']
-
     grid: `tuple`
         (n_x, n_y), where n_x, n_y are integers.
         The embedding space (2d, [xmin, xmax] x [ymin, ymax]) is divided into
