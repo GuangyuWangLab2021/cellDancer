@@ -37,7 +37,7 @@ To install cellDancer from source code, run:
 
 The dependencies could also be installed by ``pip install -r requirements.txt``.
 
-For M1 Mac users if you encountered a problem while installing Bleizer. Please refer to the following link:
+For M1 Mac users if you encountered a problem while installing bezier. Please refer to the following link:
 https://bezier.readthedocs.io/en/2021.2.12/#installing
 
 
