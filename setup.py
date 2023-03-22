@@ -1,22 +1,27 @@
 import setuptools
-with open("readme.rst", "rt", encoding="utf8") as f:
+
+project_urls = {
+  'cellDancer': 'https://github.com/GuangyuWangLab2021/cellDancer',
+  'Documentation':'https://guangyuwanglab2021.github.io/cellDancer_website/'
+}
+
+with open("readme_pypi.rst", "rt", encoding="utf8") as f:
     long_description = f.read()
 
-
-# long_description=open("readme.rst").read()
 setuptools.setup(
-    name="test_20230321_sl_243",
-    version="1.1.11",
+    name="celldancer",
+    version="1.1.4",
     author="Wang Lab",
     author_email="gwang2@houstonmethodist.org",
     description="Study RNA velocity through neural network.",
     long_description=long_description,
-    long_description_content_type="text/markdown",
+    long_description_content_type="text/x-rst; charset=UTF-8",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    project_urls = project_urls,
     package_dir={"": "src"},
     packages=setuptools.find_packages(where="src"),
     package_data={'': ['model/*.pt']},
