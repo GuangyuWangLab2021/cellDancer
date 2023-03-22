@@ -38,4 +38,5 @@ To install cellDancer from source code, run:
 For M1 Mac users if you encountered a problem while installing bezier. Please refer to the following link:
 https://bezier.readthedocs.io/en/2021.2.12/#installing
 
-If any other dependency could not be installed, try ``pip install --no-deps celldancer``. Then install the dependencies by ``pip install -r requirements.txt``.
+If any other dependency could not be installed with ``pip install celldancer``, try ``pip install --no-deps celldancer``. Then install the dependencies by ``pip install -r requirements.txt``.
+
