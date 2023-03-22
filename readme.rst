@@ -33,7 +33,7 @@ cellDancer requires Python version >= 3.7.6 to run.
 To run cellDancer locally, create an `conda <https://docs.conda.io/en/latest>`_ or `Anaconda <https://www.anaconda.com/>`_ environment as ``conda create -n cellDancer python==3.7.6``, and activate the new environment with ``conda activate cellDancer``. cellDancer could be installed with ``pip install celldancer``.
 
 To install cellDancer from source code, run:
-``pip install 'your_path/Source Code/cellDancer'``
+``pip install 'your_path/Source Code/cellDancer'``.
 
 For M1 Mac users if you encountered a problem while installing bezier. Please refer to the following link:
 https://bezier.readthedocs.io/en/2021.2.12/#installing
