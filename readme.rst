@@ -8,6 +8,9 @@ cellDancer - Estimating Cell-dependent RNA Velocity
   :width: 100%
   :alt: cell_type_u_s_sample_df
 
+Cite:
+Shengyu Li#, Pengzhi Zhang#, Weiqing Chen, Lingqun Ye, Kristopher W. Brannan, Nhat-Tu Le, Jun-ichi Abe, John P. Cooke, Guangyu Wang. A relay velocity model infers cell-dependent RNA velocity. Nature Biotechnology (2023) https://doi.org/10.1038/s41587-023-01728-5
+
 cellDancer's key applications
 ========================================================
 * Estimate cell-specific RNA velocity for each gene.
