@@ -190,7 +190,7 @@ def adata_to_df_with_embed(adata,
     raw_data: `pandas.DataFrame` 
         pandas DataFrame with columns gene_name, unsplice, splice, cellID, clusters, embedding1, embedding2.
     """
-
+    from tqdm import tqdm
     def adata_to_raw_one_gene(data, us_para, gene):
         '''
         convert adata to raw data format (one gene)
@@ -205,9 +205,8 @@ def adata_to_df_with_embed(adata,
         return(raw_data)
 
     if gene_list is None: gene_list=adata.var.index
-
-    for i,gene in enumerate(gene_list):
-        print("processing:"+str(i+1)+"/"+str(len(gene_list)))
+    
+    for i,gene in enumerate(tqdm(gene_list)):
         data_onegene = adata_to_raw_one_gene(adata, us_para=us_para, gene=gene)
         if i==0:
             data_onegene.to_csv(save_path,header=True,index=False)
@@ -445,6 +444,8 @@ def adata_to_raw(adata,save_path,gene_list=None):
     run: test=adata_to_raw(adata,'/Users/shengyuli/Library/CloudStorage/OneDrive-HoustonMethodist/work/Velocity/bin/cellDancer-development_20220128/src/output/test.csv',gene_list=genelist_all)
     ref: mel - loom_to_celldancer_raw.py
     '''
+    from tqdm import tqdm
+
     def adata_to_raw_one_gene(data, para, gene):
         '''
         convert adata to raw data format (one gene)
@@ -461,8 +462,7 @@ def adata_to_raw(adata,save_path,gene_list=None):
 
     if gene_list is None: gene_list=adata.var.index
 
-    for i,gene in enumerate(gene_list):
-        print("processing:"+str(i)+"/"+str(len(adata.var_names)))
+    for i,gene in enumerate(tqdm(gene_list)):
         data_onegene = adata_to_raw_one_gene(adata, para=['Mu', 'Ms'], gene=gene)
         if i==0:
             data_onegene.to_csv(save_path,header=True,index=False)
