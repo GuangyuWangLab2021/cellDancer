@@ -10,7 +10,7 @@ with open("readme_pypi.rst", "rt", encoding="utf8") as f:
 
 setuptools.setup(
     name="celldancer",
-    version="1.1.6",
+    version="1.1.7",
     author="Wang Lab",
     author_email="gwang2@houstonmethodist.org",
     description="Study RNA velocity through neural network.",

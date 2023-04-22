@@ -837,7 +837,7 @@ def velocity(
             norm_u_s=norm_u_s)
             for data_index in range(0,len(gene_list_batch)))
 
-        # show unpredicted gene list
+        # unpredicted gene list
         gene_name_lst=[x for x in result if x is not None]
         for i in gene_name_lst:
             unpredicted_gene_lst.append(i)
