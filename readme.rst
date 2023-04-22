@@ -20,10 +20,10 @@ cellDancer's key applications
 
 What's new
 ========================================================
-cellDancer is updated to v1.1.6
+cellDancer is updated to v1.1.5
 
 * Added progress bar for adata_to_df_with_embed() and adata_to_raw().
-* Added try except to catch genes with low quality.
+* Added try except in velocity() to catch genes with low quality.
 
 cellDancer is updated to v1.1.4
 
