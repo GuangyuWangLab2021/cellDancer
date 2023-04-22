@@ -839,8 +839,8 @@ def velocity(
     # show unpredicted gene list
     gene_name_lst=[x for x in result if x is not None]
     if len(gene_name_lst)!=0:
-        not_pred_info='Not predicted gene list:'+str(gene_name_lst)+'. Try visualizing the unspliced and spliced columns of the gene(s) to check the quality.'
-        logger_cd.info(not_pred_info)
+        not_pred_err='Not predicted gene list:'+str(gene_name_lst)+'. Try visualizing the unspliced and spliced columns of the gene(s) to check the quality.'
+        logger_cd.error(not_pred_err)
 
     # summarize
     cellDancer_df = os.path.join(save_path,'TEMP', "cellDancer_estimation*.csv")
@@ -862,7 +862,7 @@ def velocity(
 
     if len(cellDancer_df_files)==0:
         # if no gene predicted
-        logger_cd.info('None of the genes were predicted. Try visualizing the unspliced and spliced columns of the gene(s) to check the quality.')
+        logger_cd.error('None of the genes were predicted. Try visualizing the unspliced and spliced columns of the gene(s) to check the quality.')
         return None, None
     else:
         cellDancer_df=combine_csv(os.path.join(save_path,"cellDancer_estimation.csv"),cellDancer_df_files)
