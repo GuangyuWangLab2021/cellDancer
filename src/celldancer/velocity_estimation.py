@@ -18,9 +18,14 @@ from joblib import Parallel, delayed
 from tqdm import tqdm
 import pkg_resources
 import warnings
+
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", UserWarning)
 import logging
+handle='cellDancer'
+logger_cd=logging.getLogger(handle)
+logging.getLogger(handle).setLevel(logging.INFO)
+
 logging.getLogger("pytorch_lightning").setLevel(logging.WARNING)
 from .sampling import *
 
@@ -540,98 +545,106 @@ def _train_thread(datamodule,
                   n_neighbors=None,
                   ini_model=None,
                   model_save_path=None):
-
-    seed = 0
-    torch.manual_seed(seed)
-    random.seed(seed)
-    np.random.seed(seed)
-
-    # iniate network (DNN_layer) and loss function (DynamicModule)
-    backbone = DNN_module(DNN_layer(100, 100), n_neighbors=n_neighbors)
-    model = ltModule(backbone=backbone, dt=dt, learning_rate=learning_rate, loss_func=loss_func)
-
-    selected_data = datamodule.subset(data_indices)
-
-    unsplice, splice, this_gene_name, unsplicemax, splicemax, embedding1, embedding2=selected_data.fit_dataset.__getitem__(0)
-
-    data_df=pd.DataFrame({'unsplice':unsplice,'splice':splice,'embedding1':embedding1,'embedding2':embedding2})
-    data_df['gene_name']=this_gene_name
+    
     try:
+        seed = 0
+        torch.manual_seed(seed)
+        random.seed(seed)
+        np.random.seed(seed)
 
-        # Note
-        # here n_neighbors in the downsampling_embedding function is for selecting initial model.
-        # which is different from the n_neighbors in _train_tread for velocity calculation.
-        _, sampling_ixs_select_model, _ = downsampling_embedding(data_df, # for select model
-                            para='neighbors',
-                            step=(20,20),
-                            n_neighbors=30,
-                            target_amount=None,
-                            projection_neighbor_choice='embedding')
-    except:
-        sampling_ixs_select_model=list(data_df.index)
+        # iniate network (DNN_layer) and loss function (DynamicModule)
+        backbone = DNN_module(DNN_layer(100, 100), n_neighbors=n_neighbors)
+        model = ltModule(backbone=backbone, dt=dt, learning_rate=learning_rate, loss_func=loss_func)
+
+        selected_data = datamodule.subset(data_indices)
+
+        unsplice, splice, this_gene_name, unsplicemax, splicemax, embedding1, embedding2=selected_data.fit_dataset.__getitem__(0)
+
+        data_df=pd.DataFrame({'unsplice':unsplice,'splice':splice,'embedding1':embedding1,'embedding2':embedding2})
+        data_df['gene_name']=this_gene_name
+        try:
+
+            # Note
+            # here n_neighbors in the downsampling_embedding function is for selecting initial model.
+            # which is different from the n_neighbors in _train_tread for velocity calculation.
+            _, sampling_ixs_select_model, _ = downsampling_embedding(data_df, # for select model
+                                para='neighbors',
+                                step=(20,20),
+                                n_neighbors=30,
+                                target_amount=None,
+                                projection_neighbor_choice='embedding')
+        except:
+            sampling_ixs_select_model=list(data_df.index)
+            
+        gene_downsampling=downsampling(data_df=data_df, gene_list=[this_gene_name], downsampling_ixs=sampling_ixs_select_model)
+        if ini_model=='circle':
+            model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'circle.pt')).name
+        if ini_model=='branch':
+            model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'branch.pt')).name
+        else:
+            model_path=select_initial_net(this_gene_name, gene_downsampling, data_df)
+        model.load(model_path)
+
+        early_stop_callback = EarlyStopping(monitor="loss", min_delta=0.0, patience=patience,mode='min')
+
+        if check_val_every_n_epoch is None:
+            # not use early stop
+            trainer = pl.Trainer(
+                max_epochs=max_epoches, 
+                progress_bar_refresh_rate=0, 
+                reload_dataloaders_every_n_epochs=1, 
+                logger = False,
+                enable_checkpointing = False,
+                enable_model_summary=False,
+                )
+        else:
+            # use early stop
+            trainer = pl.Trainer(
+                max_epochs=max_epoches, 
+                progress_bar_refresh_rate=0, 
+                reload_dataloaders_every_n_epochs=1, 
+                logger = False,
+                enable_checkpointing = False,
+                check_val_every_n_epoch = check_val_every_n_epoch,
+                enable_model_summary=False,
+                callbacks=[early_stop_callback]
+                )
+
+        if max_epoches > 0:
+            trainer.fit(model, selected_data)   # train network
+
+        trainer.test(model, selected_data,verbose=False)    # predict
         
-    gene_downsampling=downsampling(data_df=data_df, gene_list=[this_gene_name], downsampling_ixs=sampling_ixs_select_model)
-    if ini_model=='circle':
-        model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'circle.pt')).name
-    if ini_model=='branch':
-        model_path=model_path=pkg_resources.resource_stream(__name__,os.path.join('model', 'branch.pt')).name
-    else:
-        model_path=select_initial_net(this_gene_name, gene_downsampling, data_df)
-    model.load(model_path)
+        if(model_save_path != None):
+            model.save(model_save_path)
 
-    early_stop_callback = EarlyStopping(monitor="loss", min_delta=0.0, patience=patience,mode='min')
+        loss_df = model.validation_loss_df
+        cellDancer_df = model.test_cellDancer_df
 
-    if check_val_every_n_epoch is None:
-        # not use early stop
-        trainer = pl.Trainer(
-            max_epochs=max_epoches, 
-            progress_bar_refresh_rate=0, 
-            reload_dataloaders_every_n_epochs=1, 
-            logger = False,
-            enable_checkpointing = False,
-            enable_model_summary=False,
-            )
-    else:
-        # use early stop
-        trainer = pl.Trainer(
-            max_epochs=max_epoches, 
-            progress_bar_refresh_rate=0, 
-            reload_dataloaders_every_n_epochs=1, 
-            logger = False,
-            enable_checkpointing = False,
-            check_val_every_n_epoch = check_val_every_n_epoch,
-            enable_model_summary=False,
-            callbacks=[early_stop_callback]
-            )
+        if norm_u_s:
+            cellDancer_df.unsplice=cellDancer_df.unsplice*unsplicemax
+            cellDancer_df.splice=cellDancer_df.splice*splicemax
+            cellDancer_df.unsplice_predict=cellDancer_df.unsplice_predict*unsplicemax
+            cellDancer_df.splice_predict=cellDancer_df.splice_predict*splicemax
+            cellDancer_df.beta=cellDancer_df.beta*unsplicemax
+            cellDancer_df.gamma=cellDancer_df.gamma*splicemax
 
-    if max_epoches > 0:
-        trainer.fit(model, selected_data)   # train network
+        if(model_save_path != None):
+            model.save(model_save_path)
+        
+        header_loss_df=['gene_name','epoch','loss']
+        header_cellDancer_df=['cellIndex','gene_name','unsplice','splice','unsplice_predict','splice_predict','alpha','beta','gamma','loss']
+        
+        loss_df.to_csv(os.path.join(save_path,'TEMP', ('loss'+'_'+this_gene_name+'.csv')),header=header_loss_df,index=False)
+        cellDancer_df.to_csv(os.path.join(save_path,'TEMP', ('cellDancer_estimation_'+this_gene_name+'.csv')),header=header_cellDancer_df,index=False)
+        
+        return None
 
-    trainer.test(model, selected_data,verbose=False)    # predict
-    
-    if(model_save_path != None):
-        model.save(model_save_path)
+    except:
+        return this_gene_name
 
-    loss_df = model.validation_loss_df
-    cellDancer_df = model.test_cellDancer_df
 
-    if norm_u_s:
-        cellDancer_df.unsplice=cellDancer_df.unsplice*unsplicemax
-        cellDancer_df.splice=cellDancer_df.splice*splicemax
-        cellDancer_df.unsplice_predict=cellDancer_df.unsplice_predict*unsplicemax
-        cellDancer_df.splice_predict=cellDancer_df.splice_predict*splicemax
-        cellDancer_df.beta=cellDancer_df.beta*unsplicemax
-        cellDancer_df.gamma=cellDancer_df.gamma*splicemax
 
-    if(model_save_path != None):
-        model.save(model_save_path)
-    
-    header_loss_df=['gene_name','epoch','loss']
-    header_cellDancer_df=['cellIndex','gene_name','unsplice','splice','unsplice_predict','splice_predict','alpha','beta','gamma','loss']
-    
-    loss_df.to_csv(os.path.join(save_path,'TEMP', ('loss'+'_'+this_gene_name+'.csv')),header=header_loss_df,index=False)
-    cellDancer_df.to_csv(os.path.join(save_path,'TEMP', ('cellDancer_estimation_'+this_gene_name+'.csv')),header=header_cellDancer_df,index=False)
-    return None
 
 
 def build_datamodule(cell_type_u_s,
@@ -823,6 +836,13 @@ def velocity(
             norm_u_s=norm_u_s)
             for data_index in range(0,len(gene_list_batch)))
 
+    # show unpredicted gene list
+    gene_name_lst=[x for x in result if x is not None]
+    if len(gene_name_lst)!=0:
+        not_pred_info='Not predicted gene list:'+str(gene_name_lst)+'. Try visualizing the unspliced and spliced columns of the gene(s) to check the quality.'
+        logger_cd.info(not_pred_info)
+
+    # summarize
     cellDancer_df = os.path.join(save_path,'TEMP', "cellDancer_estimation*.csv")
     cellDancer_df_files = glob.glob(cellDancer_df)
     loss_df = os.path.join(save_path, 'TEMP',"loss*.csv")
@@ -840,23 +860,28 @@ def velocity(
                     fout.write(f.read())
         return(pd.read_csv(save_path))
 
-    cellDancer_df=combine_csv(os.path.join(save_path,"cellDancer_estimation.csv"),cellDancer_df_files)
-    loss_df=combine_csv(os.path.join(save_path,"cellDancer_estimation.csv"),loss_df_files)
+    if len(cellDancer_df_files)==0:
+        # if no gene predicted
+        logger_cd.info('None of the genes were predicted. Try visualizing the unspliced and spliced columns of the gene(s) to check the quality.')
+        return None, None
+    else:
+        cellDancer_df=combine_csv(os.path.join(save_path,"cellDancer_estimation.csv"),cellDancer_df_files)
+        loss_df=combine_csv(os.path.join(save_path,"cellDancer_estimation.csv"),loss_df_files)
 
-    shutil.rmtree(os.path.join(save_path,'TEMP'))
+        shutil.rmtree(os.path.join(save_path,'TEMP'))
 
-    cellDancer_df.sort_values(by = ['gene_name', 'cellIndex'], ascending = [True, True])
-    onegene=cell_type_u_s[cell_type_u_s.gene_name==cell_type_u_s.gene_name[0]]
-    embedding_info=onegene[['cellID','clusters','embedding1','embedding2']]
-    gene_amt=len(cellDancer_df.gene_name.drop_duplicates())
-    embedding_col=pd.concat([embedding_info]*gene_amt)
-    embedding_col.index=cellDancer_df.index
-    cellDancer_df=pd.concat([cellDancer_df,embedding_col],axis=1)
-    cellDancer_df.to_csv(os.path.join(save_path, ('cellDancer_estimation.csv')),index=False)
+        cellDancer_df.sort_values(by = ['gene_name', 'cellIndex'], ascending = [True, True])
+        onegene=cell_type_u_s[cell_type_u_s.gene_name==cell_type_u_s.gene_name[0]]
+        embedding_info=onegene[['cellID','clusters','embedding1','embedding2']]
+        gene_amt=len(cellDancer_df.gene_name.drop_duplicates())
+        embedding_col=pd.concat([embedding_info]*gene_amt)
+        embedding_col.index=cellDancer_df.index
+        cellDancer_df=pd.concat([cellDancer_df,embedding_col],axis=1)
+        cellDancer_df.to_csv(os.path.join(save_path, ('cellDancer_estimation.csv')),index=False)
 
-    loss_df.to_csv(os.path.join(save_path, ('loss.csv')),index=False)
+        loss_df.to_csv(os.path.join(save_path, ('loss.csv')),index=False)
 
-    return loss_df, cellDancer_df
+        return loss_df, cellDancer_df
 
     
 def select_initial_net(gene, gene_downsampling, data_df):
