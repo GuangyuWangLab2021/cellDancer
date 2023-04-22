@@ -817,6 +817,7 @@ def velocity(
     else: 
         print(data_len,' genes were arranged to ',len(id_ranges),' portions.')
     
+    unpredicted_gene_lst=list()
     for id_range in tqdm(id_ranges,desc="Velocity Estimation", total=len(id_ranges),position=1,leave=False, bar_format='{l_bar}{bar:10}{r_bar}{bar:-10b}'):
         gene_list_batch=gene_list[id_range[0]:id_range[1]]
         datamodule=build_datamodule(cell_type_u_s,speed_up,norm_u_s,permutation_ratio,norm_cell_distribution,gene_list=gene_list_batch)
@@ -836,10 +837,12 @@ def velocity(
             norm_u_s=norm_u_s)
             for data_index in range(0,len(gene_list_batch)))
 
-    # show unpredicted gene list
-    gene_name_lst=[x for x in result if x is not None]
-    if len(gene_name_lst)!=0:
-        not_pred_err='Not predicted gene list:'+str(gene_name_lst)+'. Try visualizing the unspliced and spliced columns of the gene(s) to check the quality.'
+        # show unpredicted gene list
+        gene_name_lst=[x for x in result if x is not None]
+        for i in gene_name_lst:
+            unpredicted_gene_lst.append(i)
+    if len(unpredicted_gene_lst)!=0:
+        not_pred_err='Not predicted gene list:'+str(unpredicted_gene_lst)+'. Try visualizing the unspliced and spliced columns of the gene(s) to check the quality.'
         logger_cd.error(not_pred_err)
 
     # summarize
