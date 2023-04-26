@@ -17,6 +17,7 @@ from scipy import interpolate
 
 from matplotlib.pyplot import cm
 from matplotlib.colors import ListedColormap
+import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
     from diffusion import *
@@ -251,9 +252,9 @@ def closest_distance_between_two_paths(path1, path2, cell_embedding):
         temp = path1 - path2[:, None]
         A = np.sum(temp**2, axis=2)
         pair = np.unravel_index(np.argmin(A), A.shape)
-        print("The closest distance is ", np.sqrt(A[pair]))
-        print("Between ", pair[1], " from refPath1 and ", \
-                pair[0], " from refPath2.")
+        #print("The closest distance is ", np.sqrt(A[pair]))
+        #print("Between ", pair[1], " from refPath1 and ", \
+        #        pair[0], " from refPath2.")
         fig, ax = plt.subplots(figsize=(6, 6))
         plt.scatter(cell_embedding[:,0], cell_embedding[:,1], alpha = 0.3)
         plt.scatter(path1[:,0], path1[:,1], c=range(len(path1)), s=5)
@@ -264,7 +265,97 @@ def closest_distance_between_two_paths(path1, path2, cell_embedding):
         return np.sqrt(A[pair]), pair[::-1]
     else:
         return np.Inf,(np.nan,np.nan)
-    
+
+
+def resolve_terminal_cells(terminal_cells, 
+                           cell_time_subclusters,
+                           sorted_refPaths,
+                           cell_embedding, 
+                           grid_mass,
+                           cell_grid_idx,
+                           vel,
+                           cluster,
+                           cell_fate,
+                           dt,
+                           t_total,
+                           n_repeats,
+                           psrng_seeds_diffusion,
+                           MAX_ALLOWED_ZERO_TIME_CELLS,
+                           MAX_ALLOWED_TERM_CELLS,
+                           n_jobs,
+                           level=0,
+                           NO_ZERO=False,
+                           NO_TERM=False,
+                           ):
+    # get subsampled cell embedding & mass matrix
+    print(f"level is {level}")
+    if level > 10:
+        print(f"WARNING: Abnormally too many times ({level}) to resolve terminal cells.")
+        print(f"WARNING: This is likely due to a too large dt ({dt}).")
+        print(f"WARNING: You can either use this result if you think your dt is reasonable; or rerun with a smaller dt.")
+        return False
+    sub_embedding = cell_embedding[terminal_cells]
+    sub_grid_mass = np.zeros_like(grid_mass)
+    for cell in terminal_cells:
+        i = tuple(cell_grid_idx[cell])
+        sub_grid_mass[i] = grid_mass[i]
+
+   # generate new trajectories starting from the terminal cells
+   #print("Sample trajs for terminal cells in cluster ", cluster, " ...")
+    sub_traj = run_diffusion(
+            cell_embedding, 
+            vel=vel,
+            grid_mass=sub_grid_mass, 
+            dt=dt, 
+            t_total=t_total, 
+            eps=1e-3, 
+            off_cell_init=False, 
+            init_cell=terminal_cells, 
+            n_repeats=n_repeats, 
+            psrng_seeds_diffusion=psrng_seeds_diffusion,
+            n_jobs=n_jobs)
+        
+    # Find the longest trajectory
+    newPaths = truncate_end_state_stuttering(sub_traj, cell_embedding)
+    traj_displacement = np.array([compute_trajectory_displacement(ipath) for ipath in newPaths])
+
+    order = np.argsort(traj_displacement)[::-1]
+    sorted_traj = newPaths[order]
+    ref_path = sorted_traj[0]
+
+    # re-assign time for zero time cells
+    sub_cell_time = projection_cell_time_one_cluster(
+            cell_embedding, 
+            ref_path, 
+            cluster, 
+            cell_fate)
+
+    sorted_refPaths.append(ref_path)
+        
+    term_out = recur_cell_time_assignment_intracluster(
+            {cell: sub_cell_time[cell] for cell in terminal_cells},
+            cell_time_subclusters, 
+            cluster, 
+            sorted_refPaths, 
+            cell_fate,
+            cell_embedding,
+            vel, 
+            cell_grid_idx, 
+            grid_mass, 
+            dt=dt, 
+            t_total=t_total, 
+            n_repeats=n_repeats, 
+            n_jobs=n_jobs,
+            psrng_seeds_diffusion=psrng_seeds_diffusion,
+            MAX_ALLOWED_ZERO_TIME_CELLS=MAX_ALLOWED_ZERO_TIME_CELLS,
+            MAX_ALLOWED_TERM_CELLS=MAX_ALLOWED_TERM_CELLS,
+            NO_ZERO=NO_ZERO,
+            NO_TERM=NO_TERM,
+            level=level+1)
+
+    cell_time_subclusters, sorted_refPaths = term_out[0], term_out[1]
+    return cell_time_subclusters, sorted_refPaths
+
     
 def recur_cell_time_assignment_intracluster(
     unresolved_cell_time_cluster, 
@@ -278,11 +369,15 @@ def recur_cell_time_assignment_intracluster(
     grid_mass, 
     dt=0.001, 
     t_total=10000, 
-    n_repeats = 10, 
-    n_jobs = -1,
-    psrng_seeds_diffusion = None,
-    MAX_ALLOWED_ZERO_TIME_CELLS = 0.05,
-    MAX_ALLOWED_TERM_CELLS = 0.05):
+    n_repeats=10, 
+    n_jobs=-1,
+    n_recur=0,
+    psrng_seeds_diffusion=None,
+    MAX_ALLOWED_ZERO_TIME_CELLS=0.05,
+    MAX_ALLOWED_TERM_CELLS=0.05,
+    NO_ZERO=False,
+    NO_TERM=False,
+    level=0):
     '''
     Recursive function to consolidate cell time within a cluster.
     
@@ -296,7 +391,7 @@ def recur_cell_time_assignment_intracluster(
     sorted_refPaths: list
         list of paths in a cluster ordered from long to short in displacement. 
         
-    cell_embedding, vel, grid_mass: a set of parameters for the diffusion simulations.
+    cell_embedding, vel, grid_mass: a set of parameters from the diffusion simulations.
     
     Return
     ------
@@ -305,10 +400,11 @@ def recur_cell_time_assignment_intracluster(
     cell_time_subclusters: list
     sorted_refPaths: list
         a list of longest trajectories used for cell time projection
+    level: integer
+        times that the function runs.
     '''
     
-    #print("\n\n")
-    #print("Cluster ", cluster)
+    #print("resolving intraCluster ", cluster)
     ZERO = 0
     TERMINAL_TIME = max(unresolved_cell_time_cluster.values())
 
@@ -334,8 +430,8 @@ def recur_cell_time_assignment_intracluster(
 
     # non-zero/non-terminal time cells form a subcluster.
     cell_time_mid=dict()
-    NO_ZERO = len(zero_time_cells) < MAX_ALLOWED_ZERO_TIME_CELLS
-    NO_TERM = len(terminal_cells) < MAX_ALLOWED_TERM_CELLS
+    NO_ZERO = (len(zero_time_cells) < MAX_ALLOWED_ZERO_TIME_CELLS) or NO_ZERO
+    NO_TERM = (len(terminal_cells) < MAX_ALLOWED_TERM_CELLS) or NO_TERM
     if NO_ZERO:
         #print("Only ", len(zero_time_cells), " zero cells left. ")
         #print(zero_time_cells)
@@ -361,124 +457,65 @@ def recur_cell_time_assignment_intracluster(
     #    return cell_time_subclusters, sorted_refPaths
 
     if not NO_ZERO:
-        #print(len(zero_time_cells), " zero cells left.")
-        # get subsampled cell embedding & mass matrix
-        sub_embedding = cell_embedding[zero_time_cells]
-        sub_grid_mass = np.zeros_like(grid_mass)
-        for cell in zero_time_cells:
-            i = tuple(cell_grid_idx[cell])
-            sub_grid_mass[i] = grid_mass[i]
-        # generate new trajectories starting from the zero-time cells
-        #print("Sample trajs for zero-time cells in cluster ", cluster, "  ...")
-        sub_traj=run_diffusion(
-                cell_embedding, 
-                vel=vel,
-                grid_mass=sub_grid_mass, 
-                dt=dt, 
-                t_total=t_total, 
-                eps=1e-3, 
-                off_cell_init=False, 
-                init_cell=zero_time_cells, 
-                n_repeats = n_repeats, 
-                psrng_seeds_diffusion = psrng_seeds_diffusion,
-                n_jobs = n_jobs)
-        
-        # Find the longest trajectory
-        newPaths = truncate_end_state_stuttering(sub_traj, cell_embedding)
-        traj_displacement = np.array([compute_trajectory_displacement(ipath) 
-            for ipath in newPaths])
-        order = np.argsort(traj_displacement)[::-1]
-        sorted_traj = newPaths[order]
-        ref_path = sorted_traj[0]
-
-        # re-assign time for zero time cells
-        sub_cell_time = projection_cell_time_one_cluster(
-                cell_embedding, 
-                ref_path, 
-                cluster, 
-                cell_fate)
-
-        sorted_refPaths.append(ref_path)
-        
-        zero_out = recur_cell_time_assignment_intracluster(
-                {cell: sub_cell_time[cell] for cell in zero_time_cells},
+        #print(len(zero_time_cells), " ZERO cells left.")
+        resolve_out = resolve_terminal_cells(
+                zero_time_cells, 
                 cell_time_subclusters,
-                cluster, 
-                sorted_refPaths, 
-                cell_fate,
+                sorted_refPaths,
                 cell_embedding, 
-                vel, 
-                cell_grid_idx, 
-                grid_mass, 
-                dt=dt, 
-                t_total=t_total, 
-                n_repeats = n_repeats, 
-                n_jobs = n_jobs,
-                psrng_seeds_diffusion = psrng_seeds_diffusion,
-                MAX_ALLOWED_ZERO_TIME_CELLS=MAX_ALLOWED_ZERO_TIME_CELLS,
-                MAX_ALLOWED_TERM_CELLS=MAX_ALLOWED_TERM_CELLS)
-        cell_time_subclusters, sorted_refPaths = zero_out[0], zero_out[1]
+                grid_mass,
+                cell_grid_idx,
+                vel,
+                cluster,
+                cell_fate,
+                dt,
+                t_total,
+                n_repeats,
+                psrng_seeds_diffusion,
+                MAX_ALLOWED_ZERO_TIME_CELLS,
+                MAX_ALLOWED_TERM_CELLS,
+                n_jobs,
+                level=level,
+                NO_ZERO=NO_ZERO,
+                NO_TERM=NO_TERM)
+
+        if isinstance(resolve_out, tuple):
+            cell_time_subclusters, sorted_refPaths = resolve_out
+        else:
+            NO_ZERO = True
+        level = 0
+
 
     if not NO_TERM:
-        #print(len(terminal_cells), " terminal cells left.")
-        # get subsampled cell embedding & mass matrix
-        sub_embedding = cell_embedding[terminal_cells]
-        sub_grid_mass = np.zeros_like(grid_mass)
-        for cell in terminal_cells:
-            i = tuple(cell_grid_idx[cell])
-            sub_grid_mass[i] = grid_mass[i]
-        # generate new trajectories starting from the terminal cells
-        #print("Sample trajs for terminal cells in cluster ", cluster, " ...")
-        sub_traj=run_diffusion(
-                cell_embedding, 
-                vel=vel,
-                grid_mass=sub_grid_mass, 
-                dt=dt, 
-                t_total=t_total, 
-                eps=1e-3, 
-                off_cell_init=False, 
-                init_cell=terminal_cells, 
-                n_repeats = n_repeats, 
-                psrng_seeds_diffusion = psrng_seeds_diffusion,
-                n_jobs = n_jobs)
-        
-        # Find the longest trajectory
-        newPaths = truncate_end_state_stuttering(sub_traj, cell_embedding)
-        traj_displacement = np.array([compute_trajectory_displacement(ipath) 
-            for ipath in newPaths])
-        order = np.argsort(traj_displacement)[::-1]
-        sorted_traj = newPaths[order]
-        ref_path = sorted_traj[0]
-
-        # re-assign time for zero time cells
-        sub_cell_time = projection_cell_time_one_cluster(
-                cell_embedding, 
-                ref_path, 
-                cluster, 
-                cell_fate)
-
-        sorted_refPaths.append(ref_path)
-        
-        term_out = recur_cell_time_assignment_intracluster(
-                {cell: sub_cell_time[cell] for cell in terminal_cells},
+        #print(len(terminal_cells), " TERMINAL cells left.")
+        resolve_out = resolve_terminal_cells(
+                terminal_cells, 
                 cell_time_subclusters,
-                cluster, 
-                sorted_refPaths, 
-                cell_fate,
+                sorted_refPaths,
                 cell_embedding, 
-                vel, 
-                cell_grid_idx, 
-                grid_mass, 
-                dt=dt, 
-                t_total=t_total, 
-                n_repeats = n_repeats, 
-                n_jobs = n_jobs,
-                psrng_seeds_diffusion = psrng_seeds_diffusion,
-                MAX_ALLOWED_ZERO_TIME_CELLS=MAX_ALLOWED_ZERO_TIME_CELLS,
-                MAX_ALLOWED_TERM_CELLS=MAX_ALLOWED_TERM_CELLS)
-        cell_time_subclusters, sorted_refPaths = term_out[0], term_out[1]
+                grid_mass,
+                cell_grid_idx,
+                vel,
+                cluster,
+                cell_fate,
+                dt,
+                t_total,
+                n_repeats,
+                psrng_seeds_diffusion,
+                MAX_ALLOWED_ZERO_TIME_CELLS,
+                MAX_ALLOWED_TERM_CELLS,
+                n_jobs,
+                level=level,
+                NO_ZERO=NO_ZERO,
+                NO_TERM=NO_TERM)
+        if isinstance(resolve_out, tuple):
+            cell_time_subclusters, sorted_refPaths = resolve_out
+        else:
+            NO_TERM = True
+        level = 0
 
-    return cell_time_subclusters, sorted_refPaths
+
+    return cell_time_subclusters, sorted_refPaths, level, NO_ZERO, NO_TERM
     
     
 def cell_time_assignment_intercluster(
@@ -497,8 +534,8 @@ def cell_time_assignment_intercluster(
     unresolved_cell_time: list
         a list of dictionary {cellID : time}
         cellIDs and corresponding unresolved time for all cells.
-    cell_fate: dictionary
-        {cell:cluster}
+    cell_fate_dict: dictionary
+        {cell index:cluster}
     cell_embedding: numpy ndarray
         all downsampled cell embedding
     Return
@@ -738,19 +775,22 @@ def export_cell_time(cell_time, cell_fate, sampling_ixs, filename):
         
 
 def overlap_crit_intracluster(cell_embedding, cell_fate_dict, quant):
+    """
+    Calculate the cutoff distance (in embedding space) according to intracluster distances.
+    """
     cutoff = list()
 
     cell_ID = [cell for cell, fate in cell_fate_dict.items()]
-    cell_fate = [fate for cell, fate in cell_fate_dict.items()]
-    cell_embedding = cell_embedding[cell_ID]
+    cell_fate = [cell_fate_dict[cell] for cell in cell_ID]
+    cell_embedding_sub = cell_embedding[cell_ID]
     for cluster_ID in np.unique(cell_fate):
-        cell_cluster = cell_embedding[cell_fate == cluster_ID]
-        temp1 = cell_cluster - cell_cluster[:,None]
+        cell_cluster = cell_embedding_sub[cell_fate == cluster_ID]
+        temp1 = cell_cluster - cell_cluster[:, None]
         temp2 = np.linalg.norm(temp1, axis=-1)
         
         # drop the self distances
         temp3 = temp2[~np.eye(temp2.shape[0], dtype=bool)]
-        cutoff.append((np.quantile(temp3, quant)))
+        cutoff.append(np.quantile(temp3, quant))
     return max(cutoff)
 
 
