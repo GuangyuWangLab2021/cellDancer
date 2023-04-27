@@ -39,12 +39,12 @@ https://bezier.readthedocs.io/en/2021.2.12/#installing
 
 If any other dependency could not be installed with ``pip install celldancer``, try ``pip install --no-deps celldancer``. Then install the dependencies by ``pip install -r requirements.txt`` or manually install each package in requirements.txt.
 
-Support
-========================================================
-Welcome bug reports and suggestions to our Github issue page!
-
 Frequently asked questions
 ========================================================
 Q: How should I prepare the input for my own data?
 
 A: The `Data Preparation <https://guangyuwanglab2021.github.io/cellDancer_website/data_preprocessing.html>`_ page introduces the details of how to prepare and pre-process for you own data.
+
+Support
+========================================================
+Welcome bug reports and suggestions to our Github issue page!
