@@ -45,6 +45,6 @@ Welcome bug reports and suggestions to our Github issue page!
 
 Frequently asked questions
 ========================================================
-How could I prepare the input for my own data?
+Q: How should I prepare the input for my own data?
 
-The `Data Preparation <https://guangyuwanglab2021.github.io/cellDancer_website/data_preprocessing.html>`_ page introduces the details of how to prepare and pre-process for you own data.
+A: The `Data Preparation <https://guangyuwanglab2021.github.io/cellDancer_website/data_preprocessing.html>`_ page introduces the details of how to prepare and pre-process for you own data.
