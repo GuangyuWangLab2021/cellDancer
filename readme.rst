@@ -14,9 +14,9 @@ Shengyu Li#, Pengzhi Zhang#, Weiqing Chen, Lingqun Ye, Kristopher W. Brannan, Nh
 
 cellDancer's key applications
 ========================================================
-* Estimate cell-specific RNA velocity for each gene.
-* Derive cell fates in embedding space.
-* Estimate pseudotime for each cell in embedding space.
+* Enable accurate inference of dynamic cell state transitions in heterogeneous cell populations.
+* Estimate cell-specific transcription (α), splicing (β) and degradation (γ) rates for each gene and reveal RNA turnover strategies.
+* Improves downstream analysis such as vector field predictions.
 
 What's new
 ========================================================
@@ -37,5 +37,14 @@ To install cellDancer from source code, run:
 For M1 Mac users if you encountered a problem while installing bezier. Please refer to the following link:
 https://bezier.readthedocs.io/en/2021.2.12/#installing
 
-If any other dependency could not be installed with ``pip install celldancer``, try ``pip install --no-deps celldancer``. Then install the dependencies by ``pip install -r requirements.txt``.
+If any other dependency could not be installed with ``pip install celldancer``, try ``pip install --no-deps celldancer``. Then install the dependencies by ``pip install -r requirements.txt`` or manually install each package in requirements.txt.
 
+Support
+========================================================
+Welcome bug reports and suggestions to our Github issue page!
+
+Frequently asked questions
+========================================================
+How could I prepare the input for my own data?
+
+The `Data Preparation <https://guangyuwanglab2021.github.io/cellDancer_website/data_preprocessing.html>`_ page introduces the details of how to prepare and pre-process for you own data.
