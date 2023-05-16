@@ -29,7 +29,10 @@ Installation
 ========================================================
 cellDancer requires Python version >= 3.7.6 to run.
 
-To run cellDancer locally, create an `conda <https://docs.conda.io/en/latest>`_ or `Anaconda <https://www.anaconda.com/>`_ environment as ``conda create -n cellDancer python==3.7.6``, and activate the new environment with ``conda activate cellDancer``. cellDancer could be installed with ``pip install celldancer``.
+To run cellDancer locally, we recommend to create a `conda <https://docs.conda.io/en/latest>`_ environment: ``conda create -n cellDancer python==3.7.6``. Then activate the new environment with ``conda activate cellDancer``. cellDancer package could be installed from pypi with ``pip install celldancer``.
+
+To install the latest version from GitHub, run:
+``pip install git+https://github.com/GuangyuWangLab2021/cellDancer.git``
 
 To install cellDancer from source code, run:
 ``pip install 'your_path/Source Code/cellDancer'``.
@@ -47,4 +50,4 @@ A: The `Data Preparation <https://guangyuwanglab2021.github.io/cellDancer_websit
 
 Support
 ========================================================
-Welcome bug reports and suggestions to our Github issue page!
+Welcome bug reports and suggestions to our GitHub issue page!
