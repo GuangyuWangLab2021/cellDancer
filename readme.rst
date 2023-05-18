@@ -50,6 +50,8 @@ Q: How should I prepare the input for my own data?
 
 A: The `Data Preparation <https://guangyuwanglab2021.github.io/cellDancer_website/data_preprocessing.html>`_ page introduces the details of how to prepare and pre-process your own data.
 
+If you have any other question related to your specific contition, welocome to post it in our github `issue <https://github.com/GuangyuWangLab2021/cellDancer/issues>`_ page or email to sli5@houstonmethodist.org
+
 Support
 ========================================================
 Welcome bug reports and suggestions to our GitHub issue page!
