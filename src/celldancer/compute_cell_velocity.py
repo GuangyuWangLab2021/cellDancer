@@ -101,6 +101,11 @@ def compute_cell_velocity(
     row_has_NaN = is_NaN. any(axis=1)
     cellDancer_df = cellDancer_df[~row_has_NaN].reset_index(drop=True)
     
+    if 'velocity1' in cellDancer_df.columns:
+        del cellDancer_df['velocity1']
+    if 'velocity2' in cellDancer_df.columns:
+        del cellDancer_df['velocity2']
+    
     if gene_list is None:
         gene_list=cellDancer_df.gene_name.drop_duplicates()
 
