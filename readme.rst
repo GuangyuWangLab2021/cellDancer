@@ -45,7 +45,7 @@ To install cellDancer from source code, run:
 
 If any other dependency could not be installed with ``pip install celldancer``, try ``pip install --no-deps celldancer``. Then install the dependencies by ``pip install -r requirements.txt`` or manually install each package in requirements.txt.
 
-To be compatible with Dynamo (optional), after first `pip install celldancer` and then `pip install dynamo-release`, installing Dynamo will update numpy to 1.24.0, and we can downgrade numpy back to 1.20.0 with ``pip install numpy==1.20.0`` to let them be compatible.
+To be compatible with Dynamo (optional), after first ``pip install celldancer`` and then ``pip install dynamo-release``, installing Dynamo will update numpy to 1.24.0, and we can downgrade numpy back to 1.20.0 with ``pip install numpy==1.20.0`` to let them be compatible.
 
 Frequently asked questions
 ========================================================
