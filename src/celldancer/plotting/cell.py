@@ -85,7 +85,7 @@ def scatter_cell(
             markeredgewidth=0,
             markersize=legend_marker_size)
 
-    if isinstance(colors, list):
+    if isinstance(colors, (list, tuple)):
         #print("\nbuild a colormap for a list of clusters as input\n")
         colors = build_colormap(colors)
     

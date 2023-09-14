@@ -327,15 +327,18 @@ def to_dynamo(cellDancer_df):
     # var
     adata1.var['highly_variable_genes'] = True
     #adata1.var['loss'] = (cellDancer_df[cellDancer_df['cellID'] == one_cell]['loss']).tolist()
-    adata1.var['loss'] = cellDancer_df.pivot(index='gene_name', columns='cellID', values='loss').iloc[:, 0]
+    loss = cellDancer_df.pivot(index='gene_name', columns='cellID', values='loss').iloc[:, 0]
+    loss.index = loss.index.astype(str)
+    adata1.var['loss'] = loss
     # celldancer uses all genes (high variable) for dynamics and transition.
     adata1.var['use_for_dynamics'] = True
     adata1.var['use_for_transition'] = True
 
     # obs
     if 'clusters' in cellDancer_df:
-        adata1.obs['clusters'] = cellDancer_df.pivot(index='cellID', columns='gene_name', values='clusters').iloc[:, 0]
-
+        clusters = cellDancer_df.pivot(index='cellID', columns='gene_name', values='clusters').iloc[:, 0]
+        clusters.index = clusters.index.astype(str)
+        adata1.obs['clusters'] = clusters
     #  layers
     adata1.layers['X_spliced'] = spliced
     adata1.layers['X_unspliced'] = unspliced
@@ -651,7 +654,7 @@ def extract_from_df(load_cellDancer, attr_list, gene_name=None):
     Returns a numpy array.
     '''
     if gene_name is None:
-        gene_name = load_cellDancer.gene_name[0]
+        gene_name = load_cellDancer.gene_name.iloc[0]
     one_gene_idx = load_cellDancer.gene_name == gene_name
     data = load_cellDancer[one_gene_idx][attr_list].dropna()
     return data.to_numpy()
