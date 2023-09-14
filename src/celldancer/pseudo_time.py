@@ -288,12 +288,12 @@ def resolve_terminal_cells(terminal_cells,
                            NO_TERM=False,
                            ):
     # get subsampled cell embedding & mass matrix
-    print(f"level is {level}")
+    #print(f"level is {level}")
     if level > 10:
         print(f"WARNING: Abnormally too many times ({level}) to resolve terminal cells.")
         print(f"WARNING: This is likely due to a too large dt ({dt}).")
         print(f"WARNING: You can either use this result if you think your dt is reasonable; or rerun with a smaller dt.")
-        return False
+        return None
     sub_embedding = cell_embedding[terminal_cells]
     sub_grid_mass = np.zeros_like(grid_mass)
     for cell in terminal_cells:
@@ -404,7 +404,9 @@ def recur_cell_time_assignment_intracluster(
         times that the function runs.
     '''
     
-    #print("resolving intraCluster ", cluster)
+    # print("resolving intraCluster ", cluster)
+    # print(len(cell_time_subclusters), len(sorted_refPaths))
+
     ZERO = 0
     TERMINAL_TIME = max(unresolved_cell_time_cluster.values())
 
@@ -454,7 +456,7 @@ def recur_cell_time_assignment_intracluster(
 
     # This is where the recursive method ends.
     #if NO_ZERO and NO_TERM:
-    #    return cell_time_subclusters, sorted_refPaths
+    #    return cell_time_subclusters, sorted_refPaths, level, NO_ZERO, NO_TERM
 
     if not NO_ZERO:
         #print(len(zero_time_cells), " ZERO cells left.")
@@ -481,8 +483,8 @@ def recur_cell_time_assignment_intracluster(
 
         if isinstance(resolve_out, tuple):
             cell_time_subclusters, sorted_refPaths = resolve_out
-        else:
-            NO_ZERO = True
+        #else:
+        NO_ZERO = True
         level = 0
 
 
@@ -510,10 +512,9 @@ def recur_cell_time_assignment_intracluster(
                 NO_TERM=NO_TERM)
         if isinstance(resolve_out, tuple):
             cell_time_subclusters, sorted_refPaths = resolve_out
-        else:
-            NO_TERM = True
+        #else:
+        NO_TERM = True
         level = 0
-
 
     return cell_time_subclusters, sorted_refPaths, level, NO_ZERO, NO_TERM
     
@@ -992,8 +993,7 @@ def compute_cell_time(
     # [cell_0_cluster, cell_1_cluster, ..., cell_n_cluster]
     n_clusters = len(clusters)
 
-    print("There are %d clusters." % (n_clusters))
-    print(np.array(clusters))
+    print("There are %d cluster of cells according to the endpoints of the velocity-driven paths." % (n_clusters))
     
     cell_time_per_cluster = [projection_cell_time_one_cluster(cell_embedding, 
         path_clusters[cluster][0], cluster, cell_fate) for cluster in clusters]
@@ -1031,12 +1031,16 @@ def compute_cell_time(
                 MAX_ALLOWED_ZERO_TIME_CELLS = 0.05,
                 MAX_ALLOWED_TERM_CELLS = 0.05)
         cell_time_subclusters, refPaths = cluster_out[0], cluster_out[1]
-        #print("number of paths: ", len(refPaths))
-        #print("number of subclusters: ", len(cell_time_subclusters))
+        # print("Summarizing:")
+        # print("ClusterID: ", clusterID)
+        # print("number of paths: ", len(refPaths))
+        # print("number of subclusters: ", len(cell_time_subclusters))
+        # print("\n\n")
 
         #print("\nDisplay reference paths for cluster", clusterID)
         #fig, ax = plt.subplots(figsize=(6,6))
         #plt.scatter(cell_embedding[:,0], cell_embedding[:,1], alpha = 0.3)
+        refPaths = refPaths[:len(cell_time_subclusters)]
         for j in range(len(refPaths)):
             path = refPaths[j]
             #plt.scatter(path[:,0], path[:,1], c=range(len(path)), s=5)
@@ -1110,9 +1114,9 @@ def compute_cell_time(
 
 def pseudo_time(
         cellDancer_df, 
-        grid, 
-        dt, 
-        t_total=1000, 
+        grid=None, 
+        dt=0.05, 
+        t_total=200, 
         n_repeats=10,
         psrng_seeds_diffusion=None,
         n_jobs=-1,
@@ -1131,7 +1135,7 @@ def pseudo_time(
         'unsplice_predict', 'splice_predict',
         'alpha', 'beta', 'gamma', 'loss', 'cellID, 'clusters',
         'embedding1', 'embedding2', 'velocity1', 'velocity2']
-    grid: `tuple`
+    grid: optional, `tuple` (default: `None`)
         (n_x, n_y), where n_x, n_y are integers.
         The embedding space (2d, [xmin, xmax] x [ymin, ymax]) is divided into
         n_x * n_y grids. The cells in the same grid share the same velocity
@@ -1139,13 +1143,13 @@ def pseudo_time(
         If it's set to `None`, then a recommended value for n_x and n_y is
         the square root of the number of selected cells (rounded to the nearest
         tenth.)
-    dt: `float` 
+    dt: optional, `float` (default: 0.05)
         Time step used to advance a cell on the embedding for generation of
         cell diffusion trajectories. Parameter `dt` should be set together
         with `t_total`. Excessively small values of `dt` demand large `t_total`,
         and drastically increase computing time; Excessively large values of
-        `dt` lead to low-resolution and unrealistic pseudotime estimation.
-    t_total: optional, `float` (default: 1000)
+        `dt` lead to low-resolution and unrealistic pseudotime estimation. 
+    t_total: optional, `float` (default: 200)
         Total number of time steps used for generation of cell diffusion
         trajectories.
         The diffusion is stopped by any of the criteria:
@@ -1218,6 +1222,9 @@ def pseudo_time(
     else:
         normalized_abr_umap = None
 
+
+    if grid is None:
+        grid = (int(np.sqrt(len(cell_embedding))), int(np.sqrt(len(cell_embedding))))
 
     __ = generate_grid(cell_embedding, 
             normalized_embedding,
