@@ -18,6 +18,10 @@ cellDancer's key applications
 * Estimate cell-specific transcription (α), splicing (β) and degradation (γ) rates for each gene and reveal RNA turnover strategies.
 * Improves downstream analysis such as vector field predictions.
 
+To be done
+========================================================
+- [ ] Update an anndata-compatible version.
+
 What's new
 ========================================================
 cellDancer is updated to v1.1.7
